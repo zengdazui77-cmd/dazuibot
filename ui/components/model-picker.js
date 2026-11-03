@@ -17,6 +17,12 @@ export { groupModels, normModel, sameModel, shortModel } from "../lib/models.js"
 const infoStore = createStore(null);
 /** 价格目录拿到了没有：true 拿到 / false 没拿到 / null 还没取。false 时界面必须明说，不能留白 */
 const pricingStore = createStore(null);
+/**
+ * 能力表（/v1/model-profiles）拿到了没有。站上的 new-api 没有这个端点，所以常年是 false。
+ * 它决定的是「视觉 / 工具调用 / 推理」三项**未知**——不是「不支持」：
+ * 徽章缺席不能让客户读成结论，所以 false 时列表顶部要有一行说明。
+ */
+const profilesStore = createStore(null);
 let infoLoading = false;
 /** 先取一次（对话页挂上时就取，打开选择器时滑块不用等）；force 用于"重试" */
 export function prefetchModelInfo(force = false) {
@@ -27,10 +33,12 @@ export function prefetchModelInfo(force = false) {
     .then((d) => {
       infoStore.set(d.models || {});
       pricingStore.set(d.pricing !== false);
+      profilesStore.set(d.profiles !== false);
     })
     .catch(() => {
       infoStore.set({});
       pricingStore.set(false);
+      profilesStore.set(false);
     })
     .finally(() => (infoLoading = false));
 }
@@ -43,6 +51,10 @@ function useModelInfoRaw() {
 /** 价格目录是否拿到（null = 还在取） */
 function usePricingOk() {
   return useStore(pricingStore);
+}
+/** 能力表是否拿到（null = 还在取） */
+function useProfilesOk() {
+  return useStore(profilesStore);
 }
 
 const num = (n) => String(+Number(n).toFixed(n < 1 ? 3 : 2));
@@ -210,9 +222,24 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
   const showAll = !!pref.showAllModels;
   // 价格目录没拿到时明说 + 重试（这个端点每台客户机都打，静默失败等于没有信号）
   const pricingOk = usePricingOk();
-  const all = models || [];
+  const profilesOk = useProfilesOk();
+  /**
+   * 列表 = 网关列的（这把 Key 真能调的）+ 价格目录里的（全站的）。
+   * 站主要求「用户可自行选择所有模型」，所以差集也要列出来，只是标注不可用：
+   * 静默隐藏会让客户永远不知道自己少了一半模型、也不知道该找站主开什么权限。
+   * models 为 null 是"还在取"，这时不合并（否则会先闪一下只有目录的那一大串）。
+   */
+  const all = useMemo(() => {
+    if (models === null) return [];
+    const set = new Set(models || []);
+    for (const id of Object.keys(info || {})) set.add(id);
+    return [...set];
+  }, [models, info]);
   const list = useMemo(() => visibleModels(all, showAll, current), [all, showAll, current]);
   const hidden = all.length - list.length;
+  // 当前 Key 调不了的那些：后端在拿得到 /v1/models 时会给 available=false；undefined 是"不知道"，不标注
+  const unavailable = (m) => info?.[normModel(m)]?.available === false || info?.[normModel(m)?.split("/").pop()]?.available === false;
+  const unCount = list.filter(unavailable).length;
   const groups = useMemo(() => groupModels(list, q), [list, q]);
   const { isOpen, toggle } = useFamilies(groups, current);
   const folding = !q.trim() && groups.length > 1;
@@ -268,10 +295,12 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
     const i = idx;
     // 开关打开时，被藏起来的模型也会列出来，但旁边写明"可能不支持对话"，让客户自己判断
     const maybe = it.m && showAll && looksNonChat(it.m) ? t("models.maybeNonChat") : "";
-    const line = [maybe, note].filter(Boolean).join(" · ");
-    return html`<li role="option" aria-selected=${sel === i} class=${`${sel === i ? "sel" : ""} ${(!it.reset && sameModel(it.m, current)) || (it.reset && !current) ? "cur" : ""}`}
+    // 当前 Key 的分组不含它：照样可选（换分组/找站主开权限后就通了），但必须写清现在调不了
+    const noKey = it.m && unavailable(it.m) ? t("models.notInKeyGroup") : "";
+    const line = [noKey, maybe, note].filter(Boolean).join(" · ");
+    return html`<li role="option" aria-selected=${sel === i} class=${`${sel === i ? "sel" : ""} ${(!it.reset && sameModel(it.m, current)) || (it.reset && !current) ? "cur" : ""} ${noKey ? "noKey" : ""}`}
       onPointerMove=${() => setSel(i)} onClick=${() => choose(it)}>
-      <span class="v">${label}</span>${line && html`<span class=${`n${maybe ? " maybe" : ""}`} title=${it.reset || it.custom ? undefined : t("models.noteTitle")}>${line}</span>`}
+      <span class="v">${label}</span>${line && html`<span class=${`n${maybe || noKey ? " maybe" : ""}`} title=${it.reset || it.custom ? undefined : t("models.noteTitle")}>${line}</span>`}
       <span class="check"><${Icon} name="check" size="sm" /></span>
     </li>`;
   };
@@ -294,6 +323,10 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
       ${pricingOk === false && html`<li class="explained" style="pointer-events:auto">
         <span class="v" style="white-space:normal">${t("models.pricingUnavailable")}</span>
         <button type="button" class="text" onClick=${() => prefetchModelInfo(true)}>${t("common.retry")}</button></li>`}
+      ${profilesOk === false && html`<li class="explained" style="pointer-events:auto">
+        <span class="v" style="white-space:normal">${t("models.capsUnknown")}</span>
+        <button type="button" class="text" onClick=${() => prefetchModelInfo(true)}>${t("common.retry")}</button></li>`}
+      ${unCount > 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.notInKeyGroupCount", { count: unCount })}</span></li>`}
       ${models === null && !error && [0, 1, 2, 3, 4].map((k) => html`<li key=${k}><span class="skel" style=${{ width: 60 + ((k * 37) % 30) + "%" }}></span></li>`)}
       ${error && html`<li class="explained" style="pointer-events:auto"><span class="v" style="white-space:normal;color:var(--red)">${t("models.loadFailed", { error })}</span>
         ${onRetry && html`<button type="button" class="text" onClick=${onRetry}>${t("common.retry")}</button>`}</li>`}
@@ -307,7 +340,7 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
         folding ? html`${head(g, ms)}${isOpen(g) && rows(ms)}` : html`${groups.length > 1 && html`<li class="group">${familyName(g)}</li>`}${rows(ms)}`,
       )}
       ${custom && item({ m: custom, custom: true }, t("models.useCustom", { id: custom }), t("models.customId"))}
-      ${models && !list.length && !q && hidden === 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
+      ${all.length === 0 && !q && hidden === 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
     </ul>
     ${foot && html`<div class="foot"><button type="button" disabled=${foot.disabled} onClick=${() => { onClose(); foot.onClick(); }}>${foot.label}</button></div>`}
   `;

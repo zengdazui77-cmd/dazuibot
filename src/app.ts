@@ -43,7 +43,7 @@ import {
 } from "./modelflare.js";
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
-import { loadModelInfoWithStatus, type ModelInfo, type Rates } from "./account/model-info.js";
+import { loadModelInfoWithStatus, type ModelInfo, type ModelInfoResult, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
@@ -175,8 +175,8 @@ export class App {
   private offPwsh: (() => void) | undefined;
   private accountTimer: NodeJS.Timeout | undefined;
   private picksTimer: NodeJS.Timeout | undefined;
-  private modelInfoCache: { at: number; models: Record<string, ModelInfo>; pricing: boolean } | undefined;
-  private modelInfoLoading: Promise<{ at: number; models: Record<string, ModelInfo>; pricing: boolean }> | undefined;
+  private modelInfoCache: { at: number } & ModelInfoResult | undefined;
+  private modelInfoLoading: Promise<{ at: number } & ModelInfoResult> | undefined;
   /** 各机器人预算 Key 的总额与余额（每 5 分钟随余额一起读；后台工作在剩下不到 20% 时停下，3e） */
   private botBudgetCache: { at: number; data: Record<string, { limitUsd: number; remainUsd: number }> } | undefined;
   /** 数据目录锁（命令行、Docker：同一个数据目录只能一个宿主，调度器开始之前拿） */
@@ -556,8 +556,12 @@ export class App {
     this.store.deleteBot(botId);
   }
 
-  /** 模型选择器里的能力与参考价（缓存一小时）。pricing=false：价格目录没拿到，界面要明说 */
-  async modelInfoState(force = false): Promise<{ models: Record<string, ModelInfo>; pricing: boolean }> {
+  /**
+   * 模型选择器里的能力与参考价（缓存一小时）。
+   * pricing=false：价格目录没拿到；profiles=false：能力表没拿到（视觉/工具/推理是「未知」，不是「不支持」）。
+   * 两种都要让界面明说，不能留白。
+   */
+  async modelInfoState(force = false): Promise<ModelInfoResult> {
     if (!force && this.modelInfoCache && Date.now() - this.modelInfoCache.at < 3600_000) return this.modelInfoCache;
     // 同时来的几次（代理启动时上下文长度和接口一起问）共用一次加载
     this.modelInfoLoading ??= (async () => {
@@ -569,7 +573,7 @@ export class App {
         pricingUrl: `${modelflareIssuer()}/api/pricing`,
         quality: loadQualitySnapshot(),
       });
-      this.modelInfoCache = { at: Date.now(), models: r.models, pricing: r.pricing };
+      this.modelInfoCache = { at: Date.now(), ...r };
       return this.modelInfoCache;
     })().finally(() => (this.modelInfoLoading = undefined));
     return this.modelInfoLoading;

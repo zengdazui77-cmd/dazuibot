@@ -9,7 +9,7 @@ import fs from "node:fs";
 import { candidates, paretoFrontier, pickStops, levelOf, defaultStop, anchorOf, tiers } from "../ui/lib/frontier.js";
 // @ts-expect-error 脚本是不经构建的 JS
 import * as upd from "../scripts/update-model-quality.mjs";
-import { loadModelInfo, strategyFactors, type PricingCatalog, type PricingEntry } from "../src/account/model-info.js";
+import { loadModelInfo, loadModelInfoWithStatus, strategyFactors, type PricingCatalog, type PricingEntry } from "../src/account/model-info.js";
 import { appEffort, qualityFor, type QualitySnapshot } from "../src/account/model-quality.js";
 
 const pt = (id: string, intelligence: number, cost: number) => ({ id, intelligence, cost });
@@ -142,6 +142,46 @@ describe("应用实际用的那一档", () => {
     expect(info["gpt-6-astra"]).toMatchObject({ factors: { low_cost: 0.03, balanced: 0.08, stable: 0.08 }, quality: { intelligence: 51, costPerTask: 2.73 } });
     expect(info["claude-opus-5-5"]).toMatchObject({ quality: { intelligence: 58, costPerTask: 10.04 } });
     expect(info["not-on-modelflare"]).toBeUndefined();
+  });
+
+  it("可用性：目录是全站的，/v1/models 决定这把 Key 能不能用；列表拿不到时一个 available 都不打", async () => {
+    // 真实形状：价格目录 68 条（全站），/v1/models 只有 6 条（按 Key 所属分组），model-profiles 404
+    const catalog = {
+      group_ratio: { 国模: 0.38, Claude: 0.32 },
+      usable_group: { 国模: "国产模型", Claude: "默认分组" },
+      data: [
+        { model_name: "glm-5.3", quota_type: 0, input_price: 1, completion_ratio: 1, enable_groups: ["国模"] },
+        { model_name: "claude-opus-5", quota_type: 0, input_price: 5, completion_ratio: 5, enable_groups: ["Claude"] },
+        { model_name: "gpt-6-sol", quota_type: 0, input_price: 75, completion_ratio: 2, enable_groups: ["国模", "Claude"] },
+      ],
+    };
+    const routes: Record<string, unknown> = {
+      "/api/pricing": catalog,
+      "/v1/models": { data: [{ id: "glm-5.3" }, { id: "gpt-6-sol" }] },
+    };
+    const fetchImpl = (async (url: string) => {
+      const body = routes[new URL(url).pathname];
+      // 站上没有 /v1/model-profiles：404
+      return body === undefined ? new Response("Invalid URL", { status: 404 }) : new Response(JSON.stringify(body));
+    }) as unknown as typeof fetch;
+    const st = await loadModelInfoWithStatus({ baseUrl: "http://x/v1", apiKey: "k", headers: {}, pricingUrl: "http://x/api/pricing", fetchImpl });
+    // 404 = 能力位「未知」，界面要明说，不能把徽章的缺席当成「不支持」
+    expect(st.profiles).toBe(false);
+    expect(st.pricing).toBe(true);
+    expect(st.models["glm-5.3"]).toMatchObject({ available: true, groups: ["国模"] });
+    // 站上有、这把 Key 的分组没有：不许静默隐藏，界面要显示并标注
+    expect(st.models["claude-opus-5"]).toMatchObject({ available: false, groups: ["Claude"] });
+    // 多分组的模型：groups 原样保留（价格口径是 factors，不是 groups）
+    expect(st.models["gpt-6-sol"]).toMatchObject({ available: true, groups: ["国模", "Claude"] });
+
+    // 没有 Key 或模型列表拿不到：available 全 undefined（不知道≠不可用）
+    const noList = (async (url: string) => {
+      const body = routes[new URL(url).pathname];
+      return body === undefined || new URL(url).pathname.endsWith("/models") ? new Response("no", { status: 404 }) : new Response(JSON.stringify(body));
+    }) as unknown as typeof fetch;
+    const st2 = await loadModelInfoWithStatus({ baseUrl: "http://x/v1", apiKey: "k", headers: {}, pricingUrl: "http://x/api/pricing", fetchImpl: noList });
+    expect(st2.models["claude-opus-5"]).toMatchObject({ groups: ["Claude"] });
+    expect(st2.models["claude-opus-5"]).not.toHaveProperty("available");
   });
 });
 

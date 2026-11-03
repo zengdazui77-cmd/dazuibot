@@ -395,10 +395,11 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     if (p === "/media/models" && m === "GET") return send(res, 200, await app.mediaModels());
     if (p === "/models/info" && m === "GET") {
       // pricing=false 时界面要显示"价格信息暂不可用"+重试，不能留空白：
-      // 这个端点每台客户机都会打，静默失败就等于没有任何客户端侧信号
-      if (!app.magpie) return send(res, 200, { models: {}, pricing: false });
+      // 这个端点每台客户机都会打，静默失败就等于没有任何客户端侧信号。
+      // profiles=false 同理：能力表没拿到时视觉/工具/推理是「未知」，界面不能把徽章的缺席当成「不支持」。
+      if (!app.magpie) return send(res, 200, { models: {}, pricing: false, profiles: false });
       const st = await app.modelInfoState(url.searchParams.get("refresh") === "1");
-      return send(res, 200, { models: st.models, pricing: st.pricing });
+      return send(res, 200, { models: st.models, pricing: st.pricing, profiles: st.profiles });
     }
     if (seg[0] === "account") {
       const sub = seg.slice(1).join("/");

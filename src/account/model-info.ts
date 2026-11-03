@@ -1,10 +1,13 @@
 /**
  * 模型选择器里的能力与参考价：
  * - 能力来自 GET {线路}/v1/model-profiles（带 Key；上下文、视觉、工具调用、推理）。
- * - 价格与模型支持的接口来自公开价格目录 GET https://modelflare.dev/api/pricing（不带 Key，国内线路不开放）。
+ *   本站的 new-api **没有这个端点**（实测 404），所以这几项恒为 undefined——那是「未知」。
+ * - 哪些模型这把 Key 真能用，来自带 Key 的 GET {线路}/v1/models（按 Key 所属分组返回）；
+ *   价格目录是全站的，两者取交集才是「可用」，差集要显示出来但标注不可用。
+ * - 价格与模型支持的接口来自公开价格目录 GET {站点根}/api/pricing（不带 Key，国内线路不开放）。
  *   只算按 token 计费和按次计费的模型：价格 = 基础价 × 该模型可用公开分组里最低的分组倍率 ×
  *   模型售价倍率，单位美元 / 百万 tokens（按次为美元 / 次）。这是“起步参考价”，实际以账单为准；
- *   阶梯计费、图片、视频等复杂计费不展示价格。
+ *   阶梯计费（本站的 billing_mode=tiered_expr）、图片、视频等复杂计费不展示价格。
  * - 模型智能与每次任务的花费（「模型智能」滑块）：Artificial Analysis 的快照（model-quality.ts），花费再乘上
  *   这个模型在三种性价比下的分组倍率（factors）。
  */
@@ -25,6 +28,18 @@ export interface ModelInfo {
   factors?: Record<RoutingStrategy, number>;
   /** 应用实际用的那一档的 AA 智能指数与每次任务的花费（官方定价，美元） */
   quality?: { intelligence: number; costPerTask: number };
+  /**
+   * 所属分组（enable_groups 原样），只给模型选择器分类用。
+   * **不要用它算价格**：同一模型可能在多个分组里、各组倍率差一个数量级，价格口径是 factors。
+   */
+  groups?: string[];
+  /**
+   * 当前 Key 能不能用这个模型（来自带 Key 的 GET /v1/models）。
+   * undefined = 不知道（没有 Key，或模型列表没拿到）——**不能当 false 渲染**：
+   * 目录是全站的（本站在 68 条），而 Key 只覆盖它被授权的分组，把「不知道」说成「不可用」
+   * 与说成「可用」一样错。知道为 false 时界面必须显示并标注，不许静默隐藏。
+   */
+  available?: boolean;
 }
 
 interface Profile {
@@ -152,10 +167,13 @@ export function estimateRates(entry: PricingEntry, catalog: PricingCatalog): Rat
  * 能力表与价格目录的状态。
  * pricing=false 表示公开价格目录没拿到——这时价格区是空的，界面必须明说而不是留白：
  * 这个端点每台客户机开机都会打、而且无鉴权，失败静默等于没有任何信号。
+ * profiles=false 表示能力表（/v1/model-profiles）没拿到——视觉 / 工具调用 / 推理是**未知**，
+ * 不是「不支持」。界面必须把这件事说出来，否则客户会把徽章的缺席当成结论。
  */
 export interface ModelInfoResult {
   models: Record<string, ModelInfo>;
   pricing: boolean;
+  profiles: boolean;
 }
 
 export async function loadModelInfo(o: {
@@ -188,10 +206,14 @@ export async function loadModelInfoWithStatus(o: {
       return undefined;
     }
   };
-  const [profiles, catalog] = await Promise.all([
-    o.apiKey ? get<{ data?: Record<string, Profile> }>(`${o.baseUrl}/model-profiles`, { Authorization: `Bearer ${o.apiKey}`, ...o.headers }) : undefined,
+  const [profiles, catalog, listed] = await Promise.all([
+    o.apiKey ? get<{ data?: Record<string, Profile> }>(`${o.baseUrl}/model-profiles`, { Authorization: `Bearer ${o.apiKey}`, ...o.headers }) : Promise.resolve(undefined),
     get<PricingCatalog>(o.pricingUrl, {}),
+    // 这把 Key 到底能用哪些模型：站上的 /v1/models 按 Key 所属分组返回（实测目录 68 条、Key 只 6 条）。
+    // 拿不到就是 undefined，那样下面一个 available 都不打——「不知道」不是「不可用」。
+    o.apiKey ? get<{ data?: Array<{ id?: unknown }> }>(`${o.baseUrl}/models`, { Authorization: `Bearer ${o.apiKey}`, ...o.headers }) : Promise.resolve(undefined),
   ]);
+  const usable = Array.isArray(listed?.data) ? new Set(listed.data.map((m) => String(m?.id ?? "")).filter(Boolean)) : undefined;
   const out: Record<string, ModelInfo> = {};
   for (const [id, p] of Object.entries(profiles?.data ?? {})) {
     out[id] = {
@@ -209,8 +231,15 @@ export async function loadModelInfoWithStatus(o: {
     // 没有 Key（拿不到 model-profiles）时，上下文长度用公开目录里的
     if (Number(entry.context_window) > 0 && !out[entry.model_name]?.context) out[entry.model_name] = { ...out[entry.model_name], context: Number(entry.context_window) };
     if (Array.isArray(entry.supported_endpoint_types)) out[entry.model_name] = { ...out[entry.model_name], endpoints: entry.supported_endpoint_types.map(String) };
+    // 分组只给选择器分类用；价格仍由 factors 决定（一个模型可能在多个分组里，倍率差一个数量级）
+    if (Array.isArray(entry.enable_groups)) out[entry.model_name] = { ...out[entry.model_name], groups: entry.enable_groups.map(String) };
     const factors = strategyFactors(entry, catalog!);
     if (factors) out[entry.model_name] = { ...out[entry.model_name], factors };
+  }
+  // 可用性：目录里的都打上标记（拿得到模型列表时）；网关列出来但目录里没有的补一条，否则它不可选
+  if (usable) {
+    for (const id of Object.keys(out)) out[id] = { ...out[id], available: usable.has(id) };
+    for (const id of usable) if (!out[id]) out[id] = { available: true };
   }
   // 智能与花费：要知道走哪个接口、推理不推理（上面的 endpoints、reasoning），才知道取哪一档
   for (const [id, entry] of Object.entries(o.quality?.models ?? {})) {
@@ -218,5 +247,5 @@ export async function loadModelInfoWithStatus(o: {
     if (q) out[id] = { ...out[id], quality: q };
   }
   // 价格目录是公开无鉴权的，拿不到就是拿不到——把这件事如实报给界面，别让它渲染成一片空白
-  return { models: out, pricing: !!catalog };
+  return { models: out, pricing: !!catalog, profiles: !!profiles };
 }
