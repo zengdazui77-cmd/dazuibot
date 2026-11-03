@@ -19,9 +19,13 @@ import { t } from "./i18n/index.js";
 
 export type ModelflareLine = "auto" | "global" | "cn";
 
-// TODO(site): 站主确认域名续费后再定稿
-/** 站点自己的中转站基址（含 /v1）。白标值，改这里即可 */
-const RELAY_GLOBAL = "https://go.zdzui.xyz/v1";
+/**
+ * 站点自己的中转站基址（含 /v1）。白标值，改这里即可。
+ * 2026-11 定稿，站主确认名下只有两个域名：`zdzui.xyz`（站点）与 `api.zdzui.xyz`（中转站）。
+ * 现行证书 SAN 覆盖 api.zdzui.xyz / zdzui.xyz；更早用过的那个子域 DNS 不解析、也不在 SAN 内
+ * （客户端会抛 ERR_TLS_CERT_ALTNAME_INVALID），已弃用。所以 API 只能是 api.zdzui.xyz。
+ */
+const RELAY_GLOBAL = "https://api.zdzui.xyz/v1";
 /** 只开了一条线路时，cn 与 global 同址：白名单和线路选择都不会因此失效 */
 const RELAY_CN = RELAY_GLOBAL;
 
@@ -69,9 +73,11 @@ export const MODELFLARE_PROVIDER = "modelflare";
  */
 export const ACCOUNT_LOGIN_ENABLED = false;
 
-/** 站点主页：注册、充值、控制台都在这里（大陆线路通常只开放 /v1，不提供网页） */
-// TODO(site): 站主确认域名续费后再定稿
-export const MODELFLARE_WEB = "https://api2.zdzui.xyz";
+/**
+ * 站点根：注册、充值、控制台、价格都在这里。
+ * 用主域而不是中转站域名——站主名下只有 `zdzui.xyz` 与 `api.zdzui.xyz`，网页在第一个上。
+ */
+export const MODELFLARE_WEB = "https://zdzui.xyz";
 
 /**
  * 账户登录（OIDC 授权码 + PKCE，RFC 8252 原生应用）。client_id 是公开值：本程序是公共客户端，
@@ -102,7 +108,11 @@ export function webUrl(pathname: string, campaign?: string): string {
 
 export const SIGNUP_URL = webUrl("/sign-up", "amb_signup");
 export const TOPUP_URL = webUrl("/billing", "amb_topup");
-export const CONSOLE_URL = webUrl("/dashboard/overview", "amb_console");
+/**
+ * 控制台没有 `/overview` 这个 section：站点的前端是 `/dashboard/$section` 动态段，
+ * section 不在白名单里会被 redirect 回默认页。所以只给 `/dashboard`，让站点自己决定落在哪。
+ */
+export const CONSOLE_URL = webUrl("/dashboard", "amb_console");
 
 /**
  * 调用归因：每个经中转站的请求都带 X-Modelflare-Skill（站点只记到用量日志，
@@ -245,25 +255,56 @@ export function keyTail(key: string): string {
 }
 
 export interface KeyBalance {
-  available: number;
-  used: number;
-  /** USD（zdzui 以美元计价）；站点改了显示单位时原样带回 */
+  /**
+   * 可用余额（USD）。只用 API Key（没有登录账户）时**拿不到**，此时是 null：
+   * 站点的账户余额在 `/api/user/self`，要 session token，sk- key 换不来。
+   * 界面拿到 null 时不要显示金额（更不要显示上限占位值 1e8），只显示「已用 $X」。
+   */
+  available: number | null;
+  /** 已用金额（USD）；拿不到时 null */
+  used: number | null;
+  /** USD（站点以美元计价）；站点改了显示单位时原样带回 */
   unit: string;
 }
 
 /**
- * 只有 API Key（没有登录账户）时的余额：GET {base}/dashboard/billing/credit_grants。
- * 返回的是整个账户钱包，不是这一把 Key 的额度；国内线路也开放这个 /v1 路径。
+ * `hard_limit_usd` 到这个量级就是 new-api 的「无限额度」占位值，不是真余额（实测 1e8）。
+ * 低于它的才当作这把 Key 的剩余额度上限。
  */
-export async function fetchKeyBalance(baseUrl: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<KeyBalance> {
-  const res = await fetchImpl(`${baseUrl}/dashboard/billing/credit_grants`, {
-    headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(t("modelflare.balance_failed", { status: res.status }));
-  const body = (await res.json()) as { total_available?: unknown; total_used?: unknown; unit?: unknown };
-  const available = Number(body.total_available);
-  const used = Number(body.total_used);
-  if (!Number.isFinite(available)) throw new Error(t("modelflare.bad_balance"));
-  return { available, used: Number.isFinite(used) ? used : 0, unit: typeof body.unit === "string" && body.unit ? body.unit : "USD" };
+const UNLIMITED_USD = 1e7;
+
+/**
+ * 只有 API Key（没有登录账户）时的额度。只打两个**实测存在**的接口：
+ *   GET {root}/v1/dashboard/billing/usage        → { object:"list", total_usage }  单位美分，/100 得美元
+ *   GET {root}/v1/dashboard/billing/subscription → { hard_limit_usd, … }          这把 Key 的剩余额度上限
+ *
+ * 站点是 new-api，**没有** `/dashboard/billing/credit_grants`：带 /v1 实测 404，不带 /v1 会落到
+ * 前端的兜底页（200 但 content-type 是 text/html），`res.json()` 必抛。所以这里一次都不请求它。
+ *
+ * 两个都拿不到就返回 null（界面走「余额不可用」），**不抛错**：余额读不到不该让整个账户面板失败。
+ */
+export async function fetchKeyBalance(baseUrl: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<KeyBalance | null> {
+  const root = baseUrl.replace(/\/+v1\/?$/, "").replace(/\/+$/, "");
+  const get = async (path: string): Promise<Record<string, unknown> | undefined> => {
+    try {
+      const res = await fetchImpl(`${root}${path}`, {
+        headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) return undefined;
+      // SPA 兜底页是 text/html：先看 content-type，别让 json() 抛到调用方
+      if (!/json/i.test(res.headers.get("content-type") ?? "")) return undefined;
+      const body: unknown = await res.json();
+      return body && typeof body === "object" ? (body as Record<string, unknown>) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const [usage, sub] = await Promise.all([get("/v1/dashboard/billing/usage"), get("/v1/dashboard/billing/subscription")]);
+  const cents = Number(usage?.total_usage);
+  const used = Number.isFinite(cents) ? cents / 100 : null;
+  const limit = Number(sub?.hard_limit_usd);
+  const available = Number.isFinite(limit) && limit < UNLIMITED_USD ? limit : null;
+  if (used === null && available === null) return null;
+  return { available, used, unit: "USD" };
 }

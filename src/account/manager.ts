@@ -1,7 +1,8 @@
 /**
  * zdzui 账户：登录 / 退出、本机设备 Key、余额与低余额提醒、每个机器人的预算 Key、
- * 用量 / 通知 / 邀请、Key 的性价比（路由策略）。只用 API Key 连接（没有登录账户）时，余额改从 credit_grants 读，
- * 依赖账户授权的功能（用量、通知、邀请、机器人预算、性价比）不可用。
+ * 用量 / 通知 / 邀请、Key 的性价比（路由策略）。只用 API Key 连接（没有登录账户）时，余额改从
+ * `/v1/dashboard/billing/{usage,subscription}` 读（站点没有 credit_grants，见 fetchKeyBalance）；
+ * 拿不到就用「已用」顶替，不显示假余额。依赖账户授权的功能（用量、通知、邀请、机器人预算、性价比）不可用。
  */
 import os from "node:os";
 import { logger } from "../log.js";
@@ -21,8 +22,8 @@ export interface AccountHooks {
   disconnect(): Promise<void>;
   setBotKey(botId: string, key: string): Promise<void>;
   removeBotKey(botId: string): Promise<void>;
-  /** 只有 API Key 时的余额；没有连接时 undefined */
-  keyBalance(): Promise<KeyBalance | undefined>;
+  /** 只有 API Key 时的额度；没有连接时 undefined，连上了但读不到时 null */
+  keyBalance(): Promise<KeyBalance | null | undefined>;
   /** 内置网关共用连接当前那把 Key 的最后 4 位；没连接时为空 */
   sharedKeyTail(): string;
   /** 共用连接的 Key 已经不能用：没连接，或 zdzui 说这把 Key 无效 */
@@ -322,14 +323,15 @@ export class AccountManager {
         // 启动后、之后每 5 分钟、切回窗口时都顺带核对一次 Key；不拖慢余额的返回
         void this.repairKeys(60_000);
       } else {
+        // undefined = 没连上；null = 连上了但两个额度接口都没给出数（站点对 sk- key 不提供余额）
         const b = await this.o.hooks.keyBalance();
         this.snapshot = {
           ...this.snapshot,
-          source: b ? "key" : "none",
-          balanceUsd: b ? b.available : null,
-          usedUsd: b ? b.used : null,
+          source: b === undefined ? "none" : "key",
+          balanceUsd: b?.available ?? null,
+          usedUsd: b?.used ?? null,
           updatedAt: Date.now(),
-          error: "",
+          error: b === null ? t("account.balance_unavailable") : "",
         };
       }
       this.checkLowBalance();

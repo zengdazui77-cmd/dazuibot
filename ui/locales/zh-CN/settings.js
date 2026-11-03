@@ -228,7 +228,7 @@ export default {
     balance: {
       name: "余额",
       error: "读取失败：{error}",
-      fromKey: "这把 Key 所在账户的钱包余额",
+      fromKey: "这把 Key 的已用金额（站点只对登录态提供账户余额）",
       updated: "更新于 {time}",
       keys: "余额 充值 钱包 balance top up",
       refresh: "刷新余额",

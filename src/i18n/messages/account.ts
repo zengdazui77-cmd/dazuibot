@@ -12,6 +12,8 @@ export const zh = {
   revoked_elsewhere: "zdzui 授权已失效（可能在网页上撤销了），请重新登录",
   sign_in_first: "请先登录 zdzui 账户",
   low_balance: "zdzui 余额只剩 ${balance}，低于提醒线 ${threshold}。充值：{url}",
+  // 只用 API Key 时站点给不出账户余额（sk- key 换不到 /api/user/self）；两个额度接口都没给出数时才用这句
+  balance_unavailable: "站点未返回额度数据",
   budget_needs_login: "给机器人设预算需要先登录 zdzui 账户",
   key_reissued: "本机用的 zdzui API Key 已被删除，已自动重新签发一把",
   bot_key_reissued: "机器人「{name}」的预算 Key 已被删除，已按 ${limit} 的预算重新签发（用量从零算起）",
@@ -48,6 +50,7 @@ export const en: Catalog<typeof zh> = {
   revoked_elsewhere: "Your zdzui authorization has expired (it may have been revoked on the website). Please sign in again",
   sign_in_first: "Sign in to your zdzui account first",
   low_balance: "Your zdzui balance is down to ${balance}, below your ${threshold} alert threshold. Top up: {url}",
+  balance_unavailable: "The site returned no quota data",
   budget_needs_login: "Sign in to your zdzui account to set a bot budget",
   key_reissued: "This computer's zdzui API key was deleted, so a new one was issued automatically",
   bot_key_reissued: "The budget key for bot \"{name}\" was deleted, so a new one was issued with the ${limit} budget (spending starts from zero)",

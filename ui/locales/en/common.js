@@ -49,10 +49,12 @@ export default {
     label: "Language",
     system: "System",
   },
-  /** Keep the three unknown states apart — a bare "—" reads as "the balance is broken" */
+  /** Keep the unknown states apart — a bare "—" reads as "the balance is broken" */
   balance: {
     pending: "Reading…",
     unavailable: "Balance unavailable",
     network: "Network not responding",
+    /** An API key gets no account balance from the site, only the amount used */
+    used: "{amount} used",
   },
 };

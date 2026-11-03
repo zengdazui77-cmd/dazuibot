@@ -11,7 +11,8 @@ import { UTM, webUrl, SIGNUP_URL, TOPUP_URL, CONSOLE_URL, MODELFLARE_WEB } from 
 import { mfLink, tagLink, MF_SITE, MF_CONSOLE, MF_DOCS_LINK, MF_KEYS, MF_PRICING, MF_SIGNUP, MF_TOPUP } from "../ui/lib/links.js";
 
 const params = (url: string) => Object.fromEntries(new URL(url).searchParams);
-const SITE = "https://api2.zdzui.xyz";
+// 站主名下只有两个域名：zdzui.xyz（网页）与 api.zdzui.xyz（中转站）。网页链接一律走第一个。
+const SITE = "https://zdzui.xyz";
 
 describe("UTM 来源参数", () => {
   it("后端：只有 utm_source 和 amb_ 开头的 utm_campaign", () => {
@@ -20,6 +21,8 @@ describe("UTM 来源参数", () => {
     expect(params(SIGNUP_URL)).toEqual({ utm_source: "zdzui", utm_campaign: "amb_signup" });
     expect(params(TOPUP_URL).utm_campaign).toBe("amb_topup");
     expect(params(CONSOLE_URL).utm_campaign).toBe("amb_console");
+    // 控制台只能给 /dashboard：站点前端是 /dashboard/$section 动态段，没有 /overview 这个 section
+    expect(new URL(CONSOLE_URL).pathname).toBe("/dashboard");
     // 后端与界面必须指向同一个站点根，否则客户在应用里点链接会分叉到两个域名
     expect(MODELFLARE_WEB).toBe(SITE);
     expect(new URL(SIGNUP_URL).origin).toBe(SITE);
@@ -35,7 +38,9 @@ describe("UTM 来源参数", () => {
       expect(new URL(url).origin).toBe(SITE);
     }
     expect(MF_SIGNUP).toBe(`${SITE}/sign-up?utm_source=zdzui&utm_campaign=amb_signup`);
-    // 没有独立文档站时 MF_DOCS 就是站点根：拼出来的路径仍然落在本站，不会 404
+    // 控制台没有 /overview 这个 section（真实路由是 /dashboard/$section），传它只会被 redirect
+    expect(new URL(MF_CONSOLE).pathname).toBe("/dashboard");
+    // 没有独立文档站时 MF_DOCS 就是站点根：给人点的链接落在本站（media_docs 读的 /llms-full.txt 没有，404 是预期）
     expect(new URL(MF_DOCS_LINK).origin).toBe(SITE);
     expect(params(mfLink("/pricing", "amb_pricing"))).toEqual({ utm_source: "zdzui", utm_campaign: "amb_pricing" });
   });

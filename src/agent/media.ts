@@ -5,8 +5,9 @@
  * 或机器人设成每次都问时问。
  * - 模型取自 GET /v1/models?scope=authorized&kind=image|video（这把 Key 真正能用的）；参数范围、是否必须带参考素材、
  *   参考价、推荐顺序取自公开价格目录 /api/pricing。
- * - 每个模型的请求格式都不一样，以 docs.modelflare.dev 上该模型的文档为准：代理先用 media_docs 读文档，按文档写
- *   请求体（body）；宿主只填 model、把 "workspace:路径" 换成文件内容、发请求、保存结果。不带 body 时发最简单的文字请求。
+ * - 每个模型的请求格式都不一样，以媒体文档（媒体文档 = `{站点根}/llms-full.txt`，见下面的 DOCS_URL）里该模型的章节为准：
+ *   代理先用 media_docs 读文档，按文档写请求体（body）；宿主只填 model、把 "workspace:路径" 换成文件内容、发请求、保存结果。
+ *   不带 body 时发最简单的文字请求。**本站目前不提供 llms-full.txt**，取不到时 media_docs 只回一句可操作提示，不影响生成。
  * - 图片：Gemini 图片模型走 /v1/models/{id}:generateContent，其余走 /v1/images/generations（改图走 /v1/images/edits）。
  * - 视频：POST /v1/videos 建任务 → 轮询 → GET /v1/videos/{id}/content 下载。
  */
@@ -106,12 +107,20 @@ const MAX_BYTES = 200 * 1024 * 1024;
 const MAX_REFERENCE_BYTES = 20 * 1024 * 1024;
 const CACHE_MS = 3600_000;
 /**
- * 模型文档站基址（media_docs 工具读它下面的 llms-full.txt）。
- * 指向站点根：自有站点还没有文档站时 media_docs 会返回「读取文档失败（HTTP 404）」，
- * 那是给代理看的一句可操作提示，不影响图片/视频生成（生成只依赖 /v1 的模型列表与调用接口）。
- * 站主后续在该路径下发布一份 llms-full.txt 即可自动生效，不用改代码。
+ * 模型文档基址（media_docs 工具读它下面的 llms-full.txt）。
+ * 指向站点根：自有站点没有独立文档站。**本站目前没有 llms-full.txt**，取不到时走下面的 UNAVAILABLE，
+ * 不影响图片/视频生成（生成只依赖 /v1 的模型列表与调用接口）。
+ * 站主后续在该路径下发布一份 llms-full.txt 即可自动生效，不用改代码——所以这里不改措辞、也不做兜底文档。
  */
 const DOCS_URL = MODELFLARE_WEB;
+/**
+ * media_docs 取不到文档时的**唯一**回复（404、连不上、章节缺失都走这句）。
+ * 这句话是给代理看的操作指令，不是给人看的错误：说清「别重试、别猜字段、只给必填参数」，
+ * 否则代理会连着试几次 media_docs、再瞎猜 ratio / duration 之类的参数，客户只看到它在兜圈子。
+ */
+const UNAVAILABLE =
+  "本站目前不提供模型文档（llms-full.txt）。不要重试 media_docs，也不要猜 ratio、duration 这类参数：" +
+  "直接调用 generate_* 工具并**只**给 prompt（需要时加 model），其余字段留空，程序会用该模型的默认值。";
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "video/mp4": "mp4", "video/webm": "webm" };
 const MIME: Record<string, string> = {
   ".png": "image/png",
@@ -367,19 +376,17 @@ export class MediaService {
     return blocks.join("\n\n");
   }
 
-  /** media_docs 工具：该模型在 docs.modelflare.dev 上的那一页（Markdown） */
+  /** media_docs 工具：从 {站点根}/llms-full.txt 取该模型的章节（Markdown）。本站目前没有这个文件，失败是预期路径。 */
   async docs(model: unknown): Promise<string> {
     const id = String(model ?? "").trim();
     if (!id) throw new MediaError("缺少 model");
     if (!this.docsCache || Date.now() - this.docsCache.at > CACHE_MS) {
-      const res = await this.fetch(`${this.docsUrl}/llms-full.txt`, { signal: AbortSignal.timeout(30_000) }).catch((e: Error) => {
-        throw new MediaError(`读取文档失败：${e.message}`);
-      });
-      if (!res.ok) throw new MediaError(`读取文档失败（HTTP ${res.status}）`);
+      const res = await this.fetch(`${this.docsUrl}/llms-full.txt`, { signal: AbortSignal.timeout(30_000) }).catch(() => undefined);
+      if (!res || !res.ok) throw new MediaError(UNAVAILABLE);
       this.docsCache = { at: Date.now(), text: await res.text() };
     }
     const text = docSection(this.docsCache.text, this.docsUrl, "image", id) || docSection(this.docsCache.text, this.docsUrl, "video", id);
-    if (!text) throw new MediaError(`文档里没有 ${id} 的页面，模型列表见 ${this.docsUrl}/models/`);
+    if (!text) throw new MediaError(UNAVAILABLE);
     const cap = 24_000;
     return `${text.length > cap ? `${text.slice(0, cap)}\n…（已截断）` : text}\n\n---\n按上面的请求格式写 generate_* 工具的 body（不用写 model，也不要自己用 curl 调接口：你没有 Key，程序会代发）。本地文件写成 "workspace:相对路径"（换成 data URL）或 "workspace-base64:相对路径"（换成纯 Base64，例如 Gemini 的 inline_data.data）。`;
   }

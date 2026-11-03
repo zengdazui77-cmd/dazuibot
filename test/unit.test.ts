@@ -14,7 +14,7 @@ import { FeishuReply } from "../src/channels/feishu/card.js";
 import { feishuParts } from "../src/channels/feishu/channel.js";
 import { redactValue, mask } from "../src/log.js";
 import { loadConfig } from "../src/config.js";
-import { verifyModelflareKey, modelflareBaseUrl, modelflareIssuer, normalizeLine, keyTail, MODELFLARE_LINES, RELAY_ORIGINS, __setRelayTestEndpoints } from "../src/modelflare.js";
+import { verifyModelflareKey, modelflareBaseUrl, modelflareIssuer, normalizeLine, keyTail, fetchKeyBalance, MODELFLARE_LINES, RELAY_ORIGINS, __setRelayTestEndpoints } from "../src/modelflare.js";
 import { saveConfigFile } from "../src/config.js";
 import { FakeFeishu, feishuEvent, listen, mockOpenAI } from "./helpers.js";
 
@@ -230,11 +230,11 @@ describe("安全", () => {
 
 describe("Modelflare", () => {
   it("线路：白名单两条，auto=国际；地址不随环境变量变", () => {
-    expect(modelflareBaseUrl("auto")).toBe("https://go.zdzui.xyz/v1");
+    expect(modelflareBaseUrl("auto")).toBe("https://api.zdzui.xyz/v1");
     expect(modelflareBaseUrl("global")).toBe(MODELFLARE_LINES.global);
     // 只开一条线路时 cn 与 global 同址，白名单和线路选择都不会因此失效
-    expect(modelflareBaseUrl("cn")).toBe("https://go.zdzui.xyz/v1");
-    expect([...RELAY_ORIGINS]).toEqual(["https://go.zdzui.xyz/v1"]);
+    expect(modelflareBaseUrl("cn")).toBe("https://api.zdzui.xyz/v1");
+    expect([...RELAY_ORIGINS]).toEqual(["https://api.zdzui.xyz/v1"]);
 
     // 白标的核心保证：环境变量改不动地址，也改不动白名单（否则白名单就是自指的，等于没校验）
     const saved = { ...process.env };
@@ -243,9 +243,9 @@ describe("Modelflare", () => {
       process.env.AMB_RELAY_CN = "https://attacker.example/v1";
       process.env.AMB_MODELFLARE_BASE_URL = "https://attacker.example/v1";
       process.env.AMB_MODELFLARE_ISSUER = "https://attacker.example";
-      expect(modelflareBaseUrl("auto")).toBe("https://go.zdzui.xyz/v1");
-      expect([...RELAY_ORIGINS]).toEqual(["https://go.zdzui.xyz/v1"]);
-      expect(modelflareIssuer()).toBe("https://api2.zdzui.xyz");
+      expect(modelflareBaseUrl("auto")).toBe("https://api.zdzui.xyz/v1");
+      expect([...RELAY_ORIGINS]).toEqual(["https://api.zdzui.xyz/v1"]);
+      expect(modelflareIssuer()).toBe("https://zdzui.xyz");
     } finally {
       for (const k of ["AMB_RELAY_GLOBAL", "AMB_RELAY_CN", "AMB_MODELFLARE_BASE_URL", "AMB_MODELFLARE_ISSUER"]) {
         if (saved[k] === undefined) delete process.env[k];
@@ -261,7 +261,7 @@ describe("Modelflare", () => {
     } finally {
       __setRelayTestEndpoints(undefined);
     }
-    expect(modelflareBaseUrl("cn")).toBe("https://go.zdzui.xyz/v1");
+    expect(modelflareBaseUrl("cn")).toBe("https://api.zdzui.xyz/v1");
 
     expect(normalizeLine("cn")).toBe("cn");
     expect(normalizeLine("https://evil.example")).toBe("auto");
@@ -303,6 +303,35 @@ describe("Modelflare", () => {
     const down = await verifyModelflareKey("http://127.0.0.1:9/v1", "k", { line: "auto" });
     expect(down).toMatchObject({ ok: false, code: "network", suggestLine: "cn" });
     expect(await verifyModelflareKey("http://127.0.0.1:9/v1", "k", { line: "cn" })).not.toHaveProperty("suggestLine");
+  });
+  it("只用 Key 的额度：usage 的美分换成美元，subscription 的无限占位值不当余额", async () => {
+    // 站点是 new-api：这两个接口实测存在，credit_grants 不存在（带 /v1 404，不带 /v1 是前端 HTML 兜底页）
+    const seen: string[] = [];
+    let sub = JSON.stringify({ soft_limit_usd: 1e8, hard_limit_usd: 1e8, has_payment_method: true });
+    let usageCt = "application/json";
+    const srv = await listen((req, res) => {
+      seen.push(String(req.url));
+      const ct = req.url?.endsWith("/usage") ? usageCt : "application/json";
+      res.writeHead(200, { "content-type": ct }).end(req.url?.endsWith("/usage") ? JSON.stringify({ object: "list", total_usage: 15840 }) : sub);
+    });
+    try {
+      const base = srv.url + "/v1";
+      // 单位是美分：站上实测 total_usage = 15840.1238 → $158.40
+      // 1e8 是「无限额度」占位值：不当余额，只报告已用
+      expect(await fetchKeyBalance(base, "k")).toEqual({ available: null, used: 158.4, unit: "USD" });
+      expect(seen.some((u) => u.includes("credit_grants"))).toBe(false);
+      expect(seen).toEqual(["/v1/dashboard/billing/usage", "/v1/dashboard/billing/subscription"]);
+      // 真的限额（低于阈值）才当作可用余额
+      sub = JSON.stringify({ hard_limit_usd: 5 });
+      expect(await fetchKeyBalance(base, "k")).toMatchObject({ available: 5, used: 158.4 });
+      // usage 落到 SPA 兜底页（200 + text/html）：不抛、不把 HTML 当 JSON
+      usageCt = "text/html";
+      expect(await fetchKeyBalance(base, "k")).toMatchObject({ available: 5, used: null });
+    } finally {
+      await srv.close();
+    }
+    // 两个都拿不到：返回 null，让界面走「余额不可用」，而不是抛错把整个账户面板弄失败
+    expect(await fetchKeyBalance("http://127.0.0.1:9/v1", "k")).toBeNull();
   });
   it("配置写回：只改给出的键，其余保留；读取时规范化", () => {
     const dir = tmp();

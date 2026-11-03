@@ -5,7 +5,7 @@
 这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载)。
 
 - 一个机器人 = 人设 + 默认模型 + 记忆。账号是全局的（设置 › 连接），所有机器人共用，同一个服务可以加多个。定位：自用、单用户。
-- 模型来自本站的[中转站](https://api2.zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)：**白标版首次启动只填 API Key**（账户登录已关闭，见 `ACCOUNT_LOGIN_ENABLED`），校验 `GET https://go.zdzui.xyz/v1/models` 通过后模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。
+- 模型来自本站的[中转站](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)：**白标版首次启动只填 API Key**（账户登录已关闭，见 `ACCOUNT_LOGIN_ENABLED`），校验 `GET https://api.zdzui.xyz/v1/models` 通过后模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。
 - 三种运行方式，同一套代码：**桌面版（Electron）**、**命令行 `npm start`**、**Docker**。
 
 ## 目录结构
@@ -88,13 +88,13 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 
 ## 模型（Modelflare）
 
-- **白标版：首次启动只有「粘贴 API Key」一条路**（`src/modelflare.ts` 的 `ACCOUNT_LOGIN_ENABLED = false`）。站点用的是 new-api，不提供 OIDC Provider，登录这条路必然失败，所以界面不再显示登录入口。填 Key → 校验 `GET https://go.zdzui.xyz/v1/models` → 选默认模型 → 开始对话。`npm run init` 的交互同样跳过登录分支。
+- **白标版：首次启动只有「粘贴 API Key」一条路**（`src/modelflare.ts` 的 `ACCOUNT_LOGIN_ENABLED = false`）。站点用的是 new-api，不提供 OIDC Provider，登录这条路必然失败，所以界面不再显示登录入口。填 Key → 校验 `GET https://api.zdzui.xyz/v1/models` → 选默认模型 → 开始对话。`npm run init` 的交互同样跳过登录分支。
 - 上游原有的「登录 / 注册」流程**仍完整留在代码里**：OIDC 授权码 + PKCE（RFC 7636），按 RFC 8252 作为原生应用——公共客户端（`client_id` 为 `anymodel-bot`，没有也不需要客户端密钥），授权结果回调到本机 `127.0.0.1` 的临时端口。站主哪天补上 OIDC Provider，把 `ACCOUNT_LOGIN_ENABLED` 改回 `true` 即恢复，`test/account.integration.test.ts` 的 5 个用例绑在同一个开关上，会一起恢复。
 - 账户凭据（refresh token）存在数据目录的 `modelflare-account.json`（权限 600），桌面版用系统钥匙串加密（Electron safeStorage）；界面只拿到账户名称。「退出登录」会撤销这台电脑的授权，站点同时删除登录时为它和各机器人签发的 Key。**登录关闭时这条不生效，该文件不会生成。**
-- 余额：不常驻显示，点侧栏左下角的头像弹出，设置 → Modelflare 里也有，显示账户钱包余额（只用 API Key 时读 `/v1/dashboard/billing/credit_grants`）；「充值」打开 Modelflare 网页，回到窗口时自动刷新。余额低于提醒线（默认 1 美元，可改或关闭）时在应用里提醒一次，也可以设置让机器人发到你的微信 / 飞书。
+- 余额：不常驻显示，点侧栏左下角的头像弹出，设置 → Modelflare 里也有。只用 API Key 时读 `GET /v1/dashboard/billing/usage`（`total_usage`，单位**美分**）与 `GET /v1/dashboard/billing/subscription`（`hard_limit_usd`；到 `1e7` 量级是 new-api 的「无限额度」占位值，不当余额）。站点的 new-api **没有** `credit_grants`（带 `/v1` 实测 404，不带 `/v1` 会落到前端兜底页，200 但是 HTML），所以这里一次都不请求它。sk- Key 拿不到账户余额（那在 `/api/user/self`，要 session token），`KeyBalance.available` 因此是 `number | null`：为 null 时界面不显示金额，只显示「已用 $X」，绝不显示 `1e8` 这种占位数字。「充值」打开站点网页，回到窗口时自动刷新。余额低于提醒线（默认 1 美元，可改或关闭）时在应用里提醒一次，也可以设置让机器人发到你的微信 / 飞书。
 - 登录后还能在 设置 → Modelflare 查看按天、按模型的用量，Modelflare 发来的通知，以及复制邀请链接。
 - 机器人预算（需要登录）：机器人设置 → 预算，开启后这个机器人用自己的 Key（内置网关里单独的 provider），最多花设定的美元数；关闭后回到共用的 Key。
-- 生图 / 生视频：代理模式下机器人有 `media_models`（可用模型、默认模型、参数范围、参考价）、`media_docs`（从站点根 `https://api2.zdzui.xyz` 读该模型的请求格式；白标后没有独立文档站，路径拼在站点根下，取不到时只回一句可操作提示、不影响生成本身）、`generate_image`、`generate_video` 四个工具，并自带一份 media 技能说明。各模型的参数格式不同，机器人按文档写请求体，工作区里的参考图写成 `workspace:路径` 即可；Key 始终只在本程序里，由本程序带着该机器人用的 Key 调中转站，结果存进机器人工作区的 `media/`，再交付到聊天。
+- 生图 / 生视频：代理模式下机器人有 `media_models`（可用模型、默认模型、参数范围、参考价）、`media_docs`（从站点根 `https://zdzui.xyz` 读 `/llms-full.txt`；白标后没有独立文档站，**本站目前不提供这个文件**，取不到时只回一句可操作提示、不影响生成本身）、`generate_image`、`generate_video` 四个工具，并自带一份 media 技能说明。各模型的参数格式不同，机器人按文档写请求体，工作区里的参考图写成 `workspace:路径` 即可；Key 始终只在本程序里，由本程序带着该机器人用的 Key 调中转站，结果存进机器人工作区的 `media/`，再交付到聊天。
 - 生成前确认：直接生成，不打扰你。机器人选了不是默认的模型、要求没说清，都不问：它按最合理的理解生成，再说一句用了什么。只在预计花费超过 $0.5 时（按参考价、张数、视频时长和分辨率估算；视频估不出来也算）先在聊天里问你这次用哪个模型（附提示词、参数、参考价和为什么问）。可以确认、换成别的模型或取消；微信回复编号或模型名，飞书 / 网页点选。10 分钟内没回答就不生成。想每次都确认：机器人设置 → 生图 / 生视频 → 生成前确认 →「每次都问」。
 - 联网搜索：代理的 `web_search` 不用 DeepSeek 自带的搜索（它要 DeepSeek 的 Key），经 `amb-web-search` 插件交给本程序搜。默认免费、不用设置：依次试 Exa 的公开 MCP、必应、DuckDuckGo，上次成功的先试，出错的（限流、验证页、必应给出不相干的结果）跳过 10 分钟。设置 → 网络与访问 → 联网搜索 可以换成 Tavily、Exa、博查、智谱（填 Key）或自己的 SearXNG，填了就先用它，出错时退回免费的。Key 和渠道令牌一样存在本机数据库里，代理进程拿不到。桌面版搜索走系统代理；命令行版用 Node 的 fetch（设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。
 - 聊天渠道账号（`src/core/routes.ts`）：微信、飞书、Telegram、Slack、Discord 的账号也是全局的，在设置 › 连接里添加，可以起别名。消息交给哪个机器人：这个人用 `/bot` 选过的 → 账号的默认机器人 → 第一个机器人。`/bot` 列出机器人，发一次 `/bot 名字` 就切换并记住，之后这个会话一直和它聊。每个机器人的系统提示词里都有其他机器人的名单和切换方法，用户问起时答得上来。名单和主人跟着账号走，能用这个账号的人可以和任何机器人聊。账号的 key 是命名空间：升级前的渠道 key 就是原来的机器人 id，登录态、配额、名单、队列都不用搬，默认机器人也是原来那个。删除机器人不影响账号。
@@ -107,7 +107,8 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 模型智能（模型选择器的第二个滑块）：在这个账户能用、又有 Artificial Analysis 数据的模型里，按智能指数（越高越好）和每次任务的花费（越低越好）取帕累托前沿，最多 5 档，最便宜的和最强的总在。智能取应用实际用的那一档：走 Responses 接口的推理模型默认发 medium，就用 AA 的 medium 那一行，其余用 AA 的默认那一行（`src/account/model-quality.ts`）。花费 = AA 的每次任务花费（官方定价）× 这个模型在当前性价比下的价格比例（可用公开分组的倍率 × 售价倍率：省钱取最低，质量取最高，均衡取居中；企业专用分组不算；没登录或不支持时按均衡估）。拖到哪一档就把模型换成那个；点模型名进完整列表，照样手动选，选了不在档上的模型时滑块显示「自定义」。前沿不到两档时选择器直接是列表。算法在 `ui/lib/frontier.js`。
 - AA 数据在仓库里：`assets/model-quality.json`（`updatedAt`、`source`、只留用得到的字段，已经按 Modelflare 的模型 ID 对应好）。刷新：`node scripts/update-model-quality.mjs`，默认抓公开排行榜页面 https://artificialanalysis.ai/leaderboards/models 和 Modelflare 的公开价格目录；设了 `AA_API_KEY` 时改用官方 API（字段还没有拿 Key 核对过）。`--html <文件>`、`--pricing <文件>` 用保存下来的页面和目录，`--dry-run` 只打印。页面结构变了（找不到列、行的形状不对、数字解析不出来、行数太少、对上的模型太少）时退出码为 1 并说明是哪一项，原来的快照不动。名字按规则对不上的模型写在脚本的 `OVERRIDES` 里。数据来自 Artificial Analysis，选择器底部注明出处。
 - 调用归因：经中转站的请求都带 `X-Modelflare-Skill: zdzui-assistant/<版本>`（**头名沿用上游未改，值是本产品名**，站点后台按 `zdzui-assistant/` 配统计规则），链接都带 `utm_source=zdzui&utm_campaign=amb_<位置>`（应用内 `amb_signup`、`amb_topup`、`amb_console` 等，README 与仓库文档 `amb_readme`，官网 `amb_homepage`；格式由 `test/utm.unit.test.ts` 固定）。
-- 线路：白标后只有一条线路 —— API 基址 `https://go.zdzui.xyz/v1`（`cn` 与 `global` 同址，见 `src/modelflare.ts` 的 `RELAY_GLOBAL` / `RELAY_CN`），站点根 `https://api2.zdzui.xyz`。**地址是编译期字面量，不读环境变量**。线路由用户选定，不自动切换。
+- 线路：白标后只有一条线路 —— API 基址 `https://api.zdzui.xyz/v1`（`cn` 与 `global` 同址，见 `src/modelflare.ts` 的 `RELAY_GLOBAL` / `RELAY_CN`），站点根 `https://zdzui.xyz`（网页在主域，不在中转站域名上）。**地址是编译期字面量，不读环境变量**。线路由用户选定，不自动切换。
+  站主名下只有这两个域名。现行证书 `CN=api2.zdzui.xyz`、SAN = `api.zdzui.xyz, api2.zdzui.xyz, zdzui.xyz`；`go.zdzui.xyz` 已弃用：该子域 DNS 不解析、也不在 SAN 内，客户端连它会抛 `ERR_TLS_CERT_ALTNAME_INVALID`。**烧进代码的域名必须出现在 SAN 里**——发布前用 `openssl s_client -servername <域名> -showcerts | openssl x509 -noout -ext subjectAltName` 核一遍。
 - 设置 → Modelflare：账户、余额与充值、余额提醒、用量、通知、邀请；连接状态（只显示 Key 尾号）；未登录时可更换密钥或断开（机器人与会话保留，断开后回到首次连接页）；默认模型、刷新模型列表。
 - 对话中输入框右侧的模型按钮可为当前会话切换模型（也可设为机器人默认）；`/model`、`/reset`、`/new`、`/status`、`/stop`、`/help` 照常可用。
 - 处理过程：代理回合的每一步（模型请求及用时与 tokens、工具调用及参数与输出、重试、子代理）折叠在回复上方的"用时"一行里，点开查看；微信 / 飞书会话在信息面板 → 最近会话里看，正在处理的那一轮实时显示并可中止。

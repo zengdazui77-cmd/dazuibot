@@ -25,8 +25,9 @@ export function AccountButton({ username, account, settingsOn, onSettings, onMod
   const ref = useRef(null);
   const me = ((account && account.state === "signed_in" && account.name) || username || t("sidebar.localUser")).trim();
   // 账户弹层的开合看的是"有没有值得展示的账户信息"，不是"有没有余额数字"：
-  // 拉取失败也要能点开看到失败原因（balanceText 会给出「余额暂不可用」/「网络未响应」）
-  const hasBal = !!(account && ((account.balanceUsd !== null && account.balanceUsd !== undefined) || account.error));
+  // 拉取失败也要能点开看到失败原因（balanceText 会给出「余额暂不可用」/「网络未响应」）；
+  // 只用 API Key 时站点不给余额，只有「已用」——那也要能点开
+  const hasBal = !!(account && ((account.balanceUsd !== null && account.balanceUsd !== undefined) || (account.usedUsd !== null && account.usedUsd !== undefined) || account.error));
   const bal = hasBal ? balanceText(account, t) : "";
   return html`<button type="button" class=${`account${open ? " on" : ""}`} ref=${ref}
       aria-label=${bal ? t("sidebar.account") : t("sidebar.openSettings")} aria-haspopup=${bal ? "dialog" : undefined} aria-expanded=${bal ? open : undefined}

@@ -4,9 +4,12 @@
 // 白标：这里必须是字面量，不能改成读环境变量或由服务端下发。
 // 本文件由 web 服务原样吐给渲染进程（server.ts 的 /amb/static/），渲染进程没有 process.env；
 // 而这些常量是模块级 export const，在任何请求之前就求值了，改成动态要动所有 import 方。
-// TODO(site): 站主确认域名续费后再定稿
-export const MF_SITE = "https://api2.zdzui.xyz";
-/** 没有独立文档站时指向站点根：拼路径仍然合法，链接不会 404 */
+// 2026-11 定稿：站主名下只有 zdzui.xyz（网页）与 api.zdzui.xyz（中转站），网页链接用第一个。
+export const MF_SITE = "https://zdzui.xyz";
+/**
+ * 文档基址 = 站点根。给人点的链接拼路径仍然合法；
+ * 但 fetch 的路径（media_docs 读 /llms-full.txt）本站目前**没有**，404 是预期行为。
+ */
 export const MF_DOCS = MF_SITE;
 
 export function mfLink(path, campaign) {
@@ -16,7 +19,9 @@ export function mfLink(path, campaign) {
   return u.toString();
 }
 
-export const MF_CONSOLE = mfLink("/dashboard/overview", "amb_console");
+// 控制台：站点的前端是 /dashboard/$section 动态段，section 不在白名单里会被 redirect，
+// 所以只给 /dashboard（站主从主包的路由表里核过，没有 /dashboard/overview 这条）
+export const MF_CONSOLE = mfLink("/dashboard", "amb_console");
 export const MF_KEYS = mfLink("/keys", "amb_keys");
 export const MF_SIGNUP = mfLink("/sign-up", "amb_signup");
 export const MF_TOPUP = mfLink("/billing", "amb_topup");
@@ -43,16 +48,19 @@ export function usd(n) {
 }
 
 /**
- * 余额的展示文本。三种"没有数"的状态必须分开说，不要退回「—」——客户会以为余额坏了：
- *   有值        → 金额
+ * 余额的展示文本。四种状态必须分开说，不要退回「—」——客户会以为余额坏了：
+ *   有余额      → 金额
+ *   没余额有已用 → 「已用 $X」（只用 API Key 时站点不给账户余额，见 fetchKeyBalance）
  *   有 error    → 拉取失败。像超时/网络错就说「网络未响应」，否则「余额暂不可用」+ 重试
  *   都没有      → 读取中（还没拉过）
- * 服务端的 error 是原样透传的错误消息（fetchKeyBalance 抛出的文案或 fetch 的原生错误），
- * 没有错误码可用，所以这里只能按关键词分类。
+ * 服务端的 error 是原样透传的错误消息，没有错误码可用，所以这里只能按关键词分类。
  */
 export function balanceText(acct, t) {
   const v = acct?.balanceUsd;
   if (v !== null && v !== undefined && Number.isFinite(Number(v))) return usd(v);
+  // 不显示上限占位值（1e8）：说「已用」比说一个假余额诚实
+  const used = acct?.usedUsd;
+  if (used !== null && used !== undefined && Number.isFinite(Number(used))) return t("common.balance.used", { amount: usd(used) });
   const err = String(acct?.error || "");
   if (!err) return t("common.balance.pending");
   return /timeout|timed out|abort|fetch failed|network|ECONN|ENOTFOUND|ETIMEDOUT/i.test(err)

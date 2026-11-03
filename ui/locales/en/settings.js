@@ -228,7 +228,7 @@ export default {
     balance: {
       name: "Balance",
       error: "Couldn't load: {error}",
-      fromKey: "Wallet balance of the account this key belongs to",
+      fromKey: "Amount used by this key (the site only reports an account balance when signed in)",
       updated: "Updated {time}",
       keys: "balance top up wallet credit",
       refresh: "Refresh balance",
