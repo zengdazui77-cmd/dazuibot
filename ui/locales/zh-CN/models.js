@@ -17,6 +17,12 @@ export default {
   useCustom: "使用「{id}」",
   customId: "自定义模型 ID",
   none: "没有可用模型：这个 Key 所在的分组还没有开放模型",
+  /** 明显不能对话的模型默认隐藏；打开这一档后它们会带着标记一起列出来 */
+  showAllCount: "显示全部模型（已隐藏 {count} 个）",
+  showAllOn: "显示全部模型（已开）",
+  maybeNonChat: "可能不支持对话",
+  /** 价格目录（公开、无鉴权）没拿到时显示，不能留空白 */
+  pricingUnavailable: "价格信息暂不可用。参考价来自站点的公开价格目录，只作参考，实际扣费以账单为准",
   /** 选择器的两个滑块 */
   tiers: {
     value: "性价比",

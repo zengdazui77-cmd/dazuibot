@@ -1,4 +1,4 @@
-// 模型选择器（magpie picker 的样式；数据来自 Modelflare 的 /v1/models）。按模型族分组，组头可以展开收起。
+// 模型选择器（magpie picker 的样式；数据来自 zdzui 的 /v1/models）。按模型族分组，组头可以展开收起。
 // 不做厂商图标栏：各厂商 logo 是第三方商标，未取得授权前不用。
 // 对话和机器人设置里打开时先是两个滑块（TierPanel）：性价比（账户级，Key 的路由策略）和模型智能（沿帕累托前沿的几档，
 // lib/frontier.js）；点模型名进完整列表，照样可以手动选。
@@ -7,21 +7,31 @@ import { html, Popover, Icon, Stops } from "./ui.js";
 import { api } from "../lib/api.js";
 import { createStore, useStore, failed } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
-import { OTHER_FAMILY, groupModels, modelFamily, normModel, sameModel, shortModel } from "../lib/models.js";
+import { OTHER_FAMILY, groupModels, looksNonChat, modelFamily, normModel, sameModel, shortModel, visibleModels } from "../lib/models.js";
+import { prefs, setPrefs } from "../lib/prefs.js";
 import { DEFAULT_STRATEGY, STRATEGIES, defaultStop, levelOf, tiers } from "../lib/frontier.js";
 
 export { groupModels, normModel, sameModel, shortModel } from "../lib/models.js";
 
 // —— 模型能力与参考价（/models/info，后端缓存一小时；界面第一次打开选择器时取一次）——
 const infoStore = createStore(null);
+/** 价格目录拿到了没有：true 拿到 / false 没拿到 / null 还没取。false 时界面必须明说，不能留白 */
+const pricingStore = createStore(null);
 let infoLoading = false;
-/** 先取一次（对话页挂上时就取，打开选择器时滑块不用等） */
-export function prefetchModelInfo() {
-  if (infoStore.get() || infoLoading) return;
+/** 先取一次（对话页挂上时就取，打开选择器时滑块不用等）；force 用于"重试" */
+export function prefetchModelInfo(force = false) {
+  if (infoLoading) return;
+  if (!force && infoStore.get()) return;
   infoLoading = true;
-  api("/models/info")
-    .then((d) => infoStore.set(d.models || {}))
-    .catch(() => infoStore.set({}))
+  api(`/models/info${force ? "?refresh=1" : ""}`)
+    .then((d) => {
+      infoStore.set(d.models || {});
+      pricingStore.set(d.pricing !== false);
+    })
+    .catch(() => {
+      infoStore.set({});
+      pricingStore.set(false);
+    })
     .finally(() => (infoLoading = false));
 }
 /** 模型资料；还没取到时 null */
@@ -29,6 +39,10 @@ function useModelInfoRaw() {
   const info = useStore(infoStore);
   useEffect(prefetchModelInfo, []);
   return info;
+}
+/** 价格目录是否拿到（null = 还在取） */
+function usePricingOk() {
+  return useStore(pricingStore);
 }
 
 const num = (n) => String(+Number(n).toFixed(n < 1 ? 3 : 2));
@@ -71,7 +85,7 @@ const AA_URL = "https://artificialanalysis.ai/";
 /** 档名：levelOf 的 0…4 */
 const LEVELS = ["min", "low", "medium", "high", "max"];
 
-/** 第一个滑块显示不显示：登录了 Modelflare 账户，而且 Modelflare 认这个设置 */
+/** 第一个滑块显示不显示：登录了 zdzui 账户，而且 zdzui 认这个设置 */
 export const showsStrategy = (account) => !!(account && account.state === "signed_in" && account.keyQuality && account.keyQuality.supported);
 /** 按哪种性价比算花费：显示第一个滑块时用账户的，否则按均衡估 */
 export const strategyOf = (account) => (showsStrategy(account) ? account.keyQuality.strategy : DEFAULT_STRATEGY);
@@ -84,7 +98,7 @@ export const levelLabel = (cur, n) => (cur >= 0 ? t(`models.tiers.level.${LEVELS
 
 /**
  * 两个滑块的面板（不带状态）。stops / cur / anchor 来自 frontier.js 的 tiers；model 是当前模型。
- * 没有第一个滑块时（没登录、Modelflare 不支持）只有模型智能；前沿不到两档时只剩模型名，点它进列表。
+ * 没有第一个滑块时（没登录、zdzui 不支持）只有模型智能；前沿不到两档时只剩模型名，点它进列表。
  * 右上角的恢复默认只在不是默认（均衡 + 居中那一档）时出现。
  */
 export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, canReset, onStrategy, onStop, onList, onReset }) {
@@ -159,7 +173,7 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
         .then((r) => onAccount(r))
         .catch((e) => {
           failed(e);
-          // Modelflare 不支持时状态里 supported 变成 false，第一个滑块随之收起
+          // zdzui 不支持时状态里 supported 变成 false，第一个滑块随之收起
           return api("/account").then(onAccount).catch(() => {});
         })
         .finally(() => setPendingStrategy(null));
@@ -191,10 +205,18 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
   useEffect(() => {
     if (onBack) searchRef.current?.focus();
   }, []);
-  const groups = useMemo(() => groupModels(models || [], q), [models, q]);
+  // 明显不能对话的模型默认藏起来；开关是本机偏好，存 localStorage，重启后仍然是客户选的那一档
+  const pref = useStore(prefs);
+  const showAll = !!pref.showAllModels;
+  // 价格目录没拿到时明说 + 重试（这个端点每台客户机都打，静默失败等于没有信号）
+  const pricingOk = usePricingOk();
+  const all = models || [];
+  const list = useMemo(() => visibleModels(all, showAll, current), [all, showAll, current]);
+  const hidden = all.length - list.length;
+  const groups = useMemo(() => groupModels(list, q), [list, q]);
   const { isOpen, toggle } = useFamilies(groups, current);
   const folding = !q.trim() && groups.length > 1;
-  const custom = q.trim() && !(models || []).some((m) => sameModel(m, q.trim())) ? q.trim() : "";
+  const custom = q.trim() && !list.some((m) => sameModel(m, q.trim())) ? q.trim() : "";
   const flat = [
     ...(reset && !q ? [{ reset: true }] : []),
     ...groups.flatMap(([g, ms]) => {
@@ -244,9 +266,12 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
   const item = (it, label, note) => {
     idx++;
     const i = idx;
+    // 开关打开时，被藏起来的模型也会列出来，但旁边写明"可能不支持对话"，让客户自己判断
+    const maybe = it.m && showAll && looksNonChat(it.m) ? t("models.maybeNonChat") : "";
+    const line = [maybe, note].filter(Boolean).join(" · ");
     return html`<li role="option" aria-selected=${sel === i} class=${`${sel === i ? "sel" : ""} ${(!it.reset && sameModel(it.m, current)) || (it.reset && !current) ? "cur" : ""}`}
       onPointerMove=${() => setSel(i)} onClick=${() => choose(it)}>
-      <span class="v">${label}</span>${note && html`<span class="n" title=${it.reset || it.custom ? undefined : t("models.noteTitle")}>${note}</span>`}
+      <span class="v">${label}</span>${line && html`<span class=${`n${maybe ? " maybe" : ""}`} title=${it.reset || it.custom ? undefined : t("models.noteTitle")}>${line}</span>`}
       <span class="check"><${Icon} name="check" size="sm" /></span>
     </li>`;
   };
@@ -266,15 +291,23 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
       <input ref=${searchRef} placeholder=${t("models.filterOrId")} value=${q} onInput=${(e) => { setQ(e.target.value); setSel(0); }} onKeyDown=${onKey} aria-label=${t("models.filter")} />
     </div>
     <ul role="listbox" ref=${listRef}>
+      ${pricingOk === false && html`<li class="explained" style="pointer-events:auto">
+        <span class="v" style="white-space:normal">${t("models.pricingUnavailable")}</span>
+        <button type="button" class="text" onClick=${() => prefetchModelInfo(true)}>${t("common.retry")}</button></li>`}
       ${models === null && !error && [0, 1, 2, 3, 4].map((k) => html`<li key=${k}><span class="skel" style=${{ width: 60 + ((k * 37) % 30) + "%" }}></span></li>`)}
       ${error && html`<li class="explained" style="pointer-events:auto"><span class="v" style="white-space:normal;color:var(--red)">${t("models.loadFailed", { error })}</span>
         ${onRetry && html`<button type="button" class="text" onClick=${onRetry}>${t("common.retry")}</button>`}</li>`}
+      ${(hidden > 0 || showAll) && html`<li class="explained" style="pointer-events:auto">
+        <label class="switch-row">
+          <input type="checkbox" checked=${showAll} onChange=${(e) => setPrefs({ showAllModels: e.target.checked })} />
+          <span class="v" style="white-space:normal">${hidden > 0 ? t("models.showAllCount", { count: hidden }) : t("models.showAllOn")}</span>
+        </label></li>`}
       ${reset && !q && item({ reset: true }, reset.label, reset.note)}
       ${groups.map(([g, ms]) =>
         folding ? html`${head(g, ms)}${isOpen(g) && rows(ms)}` : html`${groups.length > 1 && html`<li class="group">${familyName(g)}</li>`}${rows(ms)}`,
       )}
       ${custom && item({ m: custom, custom: true }, t("models.useCustom", { id: custom }), t("models.customId"))}
-      ${models && !models.length && !q && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
+      ${models && !list.length && !q && hidden === 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
     </ul>
     ${foot && html`<div class="foot"><button type="button" disabled=${foot.disabled} onClick=${() => { onClose(); foot.onClick(); }}>${foot.label}</button></div>`}
   `;

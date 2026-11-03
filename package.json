@@ -1,9 +1,9 @@
 {
-  "name": "anymodel-bot",
-  "productName": "anymodel bot",
-  "version": "0.1.16",
+  "name": "zdzui-assistant",
+  "productName": "zdzui 助手",
+  "version": "1.0.0-zdzui.1",
   "private": true,
-  "description": "anymodel bot：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
+  "description": "zdzui 助手：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
   "license": "MIT",
   "type": "module",
   "main": "dist/electron/main.js",
@@ -53,13 +53,14 @@
     "vitest": "^5.0.5"
   },
   "author": {
-    "name": "anymodel bot",
-    "email": "support@anymodel.bot"
+    "name": "zdzui",
+    "email": "support@zdzui.xyz"
   },
   "build": {
-    "appId": "dev.anymodel.bot",
-    "productName": "anymodel bot",
-    "artifactName": "anymodel-bot-${version}-${os}-${arch}.${ext}",
+    "appId": "xyz.zdzui.assistant",
+    "productName": "zdzui 助手",
+    "artifactName": "zdzui-assistant-${version}-${os}-${arch}.${ext}",
+    "publish": null,
     "directories": {
       "output": "release",
       "buildResources": "assets"

@@ -17,7 +17,7 @@
 
   /* —— 环境：窗口最底层的柔光，玻璃透出它；色相光跟着当前机器人变（shell.css 的 .app） —— */
   --bg: #efefed;              /* 窗口底色、引导页 */
-  --aura-brand: color-mix(in srgb, var(--lime-500) 30%, transparent);  /* 左上角的品牌黄绿光 */
+  --aura-brand: color-mix(in srgb, var(--lime-500) 30%, transparent);  /* 左上角的品牌信号光 */
   --aura-l: .88;              /* 机器人色相光：OKLCH 亮度 */
   --aura-c: .06;              /* 彩度 */
   --aura-a: .85;              /* 不透明度 */
@@ -73,17 +73,17 @@
   --ctl-fg: #5e5e5e;          /* 静默控件上的图标与文字 */
   --placeholder: #949494;
 
-  /* —— 品牌：墨色负责操作，Modelflare 黄绿是"亮起的信号"（用法见 README「品牌色」） —— */
-  --primary: var(--olive-950);        /* 主按钮、打开的开关：浅色下是 Modelflare 墨色 */
+  /* —— 品牌：墨色负责操作，亮青蓝是"亮起的信号"（用法见 README「品牌色」） —— */
+  --primary: var(--olive-950);        /* 主按钮、打开的开关：浅色下是品牌墨色 */
   --primary-hover: color-mix(in srgb, var(--olive-950) 84%, var(--white));
   --primary-press: color-mix(in srgb, var(--olive-950) 72%, var(--white));
   --on-primary: var(--white);
-  --primary-edge: inset 0 1px 0 rgba(255, 255, 255, .16), 0 1px 2px rgba(22, 26, 0, .28);  /* 主按钮的顶边高光 + 落影 */
-  --send-bg: var(--olive-950);        /* 发送 / 停止：墨色圆钮 + 黄绿箭头 */
+  --primary-edge: inset 0 1px 0 rgba(255, 255, 255, .16), 0 1px 2px rgba(10, 26, 47, .28);  /* 主按钮的顶边高光 + 落影 */
+  --send-bg: var(--olive-950);        /* 发送 / 停止：墨色圆钮 + 亮青蓝箭头 */
   --send-fg: var(--lime-500);
   --accent: var(--olive-950);         /* 焦点描边、勾选、指示点、链接 */
-  --accent-solid: var(--lime-500);    /* 黄绿填充面：应用标志、"已保存"、选中模板的图标 */
-  --on-accent: var(--olive-950);      /* 黄绿面上的字，15.39:1 */
+  --accent-solid: var(--lime-500);    /* 信号色填充面：应用标志、"已保存"、选中模板的图标 */
+  --on-accent: var(--olive-950);      /* 信号面上的字，8.93:1 */
   --accent-line: color-mix(in srgb, var(--olive-500) 35%, transparent);
   --accent-soft: color-mix(in srgb, var(--lime-500) 45%, transparent);  /* 焦点光晕 */
   --accent-wash: color-mix(in srgb, var(--lime-500) 14%, transparent);  /* 选中卡片的底 */
@@ -259,7 +259,7 @@
   --ctl-fg: #a3a3a3;
   --placeholder: #707070;
 
-  --primary: var(--lime-500);         /* 深色下主操作直接是黄绿，和 Modelflare 官网一致 */
+  --primary: var(--lime-500);         /* 深色下主操作直接用信号色，对比度 8.93:1 */
   --primary-hover: var(--lime-300);
   --primary-press: var(--lime-600);
   --on-primary: var(--olive-950);

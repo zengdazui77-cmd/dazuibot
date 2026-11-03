@@ -13,7 +13,7 @@ import { diagnosticsReport, safeStatus, testAgent, testModel } from "../diagnost
 import { ZOOMS, normalizeLowBalance, saveConfigFile } from "../config.js";
 import { ApiError, ROUTING_STRATEGIES } from "../account/client.js";
 import { OAuthError } from "../account/oauth.js";
-import { normalizeLine } from "../modelflare.js";
+import { ACCOUNT_LOGIN_ENABLED, normalizeLine } from "../modelflare.js";
 import { SseReply } from "./sse-reply.js";
 import { LiveTurns, type LiveTurn } from "./live.js";
 import { botWorkspace, describeFile, resolveFile, runnable, sendFile } from "./files.js";
@@ -191,7 +191,7 @@ function publicAccess(e: AccessEntry) {
   };
 }
 
-/** 账户操作的错误：Modelflare 返回的状态码原样带给界面（没有状态码的网络错误按 502） */
+/** 账户操作的错误：zdzui 返回的状态码原样带给界面（没有状态码的网络错误按 502） */
 async function accountCall<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
@@ -394,15 +394,20 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     }
     if (p === "/media/models" && m === "GET") return send(res, 200, await app.mediaModels());
     if (p === "/models/info" && m === "GET") {
-      if (!app.magpie) return send(res, 200, { models: {} });
-      return send(res, 200, { models: await app.modelInfo(url.searchParams.get("refresh") === "1") });
+      // pricing=false 时界面要显示"价格信息暂不可用"+重试，不能留空白：
+      // 这个端点每台客户机都会打，静默失败就等于没有任何客户端侧信号
+      if (!app.magpie) return send(res, 200, { models: {}, pricing: false });
+      const st = await app.modelInfoState(url.searchParams.get("refresh") === "1");
+      return send(res, 200, { models: st.models, pricing: st.pricing });
     }
     if (seg[0] === "account") {
       const sub = seg.slice(1).join("/");
       if (m !== "GET" && !app.magpie) throw new HttpError(409, t("web.externalNoAccount"));
       // 浏览器登录的回调落在本程序所在机器的 127.0.0.1；界面监听在非本机地址（Docker、远程部署）时，
-      // 用户的浏览器访问不到它，只能粘贴 API Key
-      const loginAvailable = isLoopback(host);
+      // 用户的浏览器访问不到它，只能粘贴 API Key。
+      // 白标：站点不提供 OIDC，ACCOUNT_LOGIN_ENABLED 为 false，loginAvailable 恒为 false，
+      // 界面据此隐藏"登录"入口，只保留粘贴 API Key。
+      const loginAvailable = ACCOUNT_LOGIN_ENABLED && isLoopback(host);
       const status = () => ({ ...app.account.status(), loginAvailable });
       if (sub === "" && m === "GET") return send(res, 200, status());
       if (sub === "refresh" && m === "POST") {
@@ -437,7 +442,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, status());
       }
       if (sub === "usage" && m === "GET") {
-        // Modelflare 一次最多给 30 天的用量
+        // zdzui 一次最多给 30 天的用量
         const days = Math.min(30, Math.max(1, Math.floor(Number(url.searchParams.get("days") || 7)) || 7));
         return send(res, 200, await accountCall(() => app.account.usage(days)));
       }

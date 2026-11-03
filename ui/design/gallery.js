@@ -529,7 +529,7 @@ function Gallery() {
       <//>
 
       <${Section} id="type" title="文字" lead="9 级字号；新界面优先用文字角色类（.t-*），不再挑字号。">
-        ${prim && html`<${ScaleRows} tokens=${group(prim, "字号")} sample=${(t) => html`<span style=${{ fontSize: `var(${t.name})` }}>模型网关 Modelflare 0123</span>`} />`}
+        ${prim && html`<${ScaleRows} tokens=${group(prim, "字号")} sample=${(t) => html`<span style=${{ fontSize: `var(${t.name})` }}>模型网关 zdzui 0123</span>`} />`}
         <h3 class="t-label">文字角色</h3>
         <${Demo} col code=${`<div class="t-heading">…</div>  <p class="t-meta">…</p>`}>
           ${() => html`${[["t-display", "引导页标题"], ["t-heading", "对话框 / 页面标题"], ["t-title", "列表标题"], ["t-prose", "对话正文：15px，行高 1.5"], ["t-body", "界面正文：13px"], ["t-control", "控件文字：12.5px"], ["t-meta", "次要说明：11.5px，muted"], ["t-label", "分组标题、菜单分组：11px semibold，不加字距"]].map(
@@ -643,7 +643,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
             <div class="row"><div class="who"><div class="name">外观</div><div class="sub">跟随系统、浅色或深色</div></div><div class="ctl"><${SegDemo} /></div></div>
             <div class="row"><div class="who"><div class="name">长期记忆</div><div class="sub">开 / 关用 Switch</div></div><div class="ctl"><${Switch} label="长期记忆" value=${true} onChange=${() => {}} /></div></div>
             <div class="row"><div class="who"><div class="name">默认模型</div><div class="sub">新对话使用的模型</div></div><div class="ctl"><${MenuButtonDemo} /></div></div>
-            <div class="row"><div class="who"><div class="name">Modelflare</div><div class="sub">已连接 ••••x9Qa</div></div><div class="ctl"><${Badge} s="connected" /><button type="button" class="text">更换密钥</button></div></div>
+            <div class="row"><div class="who"><div class="name">zdzui</div><div class="sub">已连接 ••••x9Qa</div></div><div class="ctl"><${Badge} s="connected" /><button type="button" class="text">更换密钥</button></div></div>
             <div class="row compact clickable"><div class="who"><div class="name">.row.compact.clickable</div><div class="sub">信息面板里的紧凑行</div></div><span class="hint num">3 分钟前</span></div>
             <div class="row-edit"><label>展开编辑区 .row-edit<input class="field" placeholder="App ID" /></label><div class="actions"><${Button} variant="primary">保存<//><${Button}>取消<//></div></div>
           </div>`}

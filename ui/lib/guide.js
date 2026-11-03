@@ -71,7 +71,7 @@ function apply(d, quiet) {
   if (!quiet) celebrate(fresh, next);
 }
 
-/** 先读进度把清单显示出来；有没有可用的图片模型要问 Modelflare（可能要好几秒），在后台慢慢问，问不到就当没有 */
+/** 先读进度把清单显示出来；有没有可用的图片模型要问 zdzui（可能要好几秒），在后台慢慢问，问不到就当没有 */
 export async function loadGuide() {
   const d = await api("/guide").catch(() => null);
   if (d) apply(d, true);

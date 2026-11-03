@@ -21,7 +21,7 @@ export default {
   closeCoach: "Close guide",
   doneTitle: "Nice work!",
   fill: "Fill in",
-  openConsole: "Enable image models in the Modelflare console ↗",
+  openConsole: "Enable image models in the zdzui console ↗",
   later: "Maybe later",
   stopHere: "Done for now",
   next: "Next: {title}",

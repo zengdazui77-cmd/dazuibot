@@ -22,7 +22,7 @@ export default {
   },
   budget: {
     name: "Budget",
-    signedOut: "Sign in to Modelflare to set a separate spending limit for this bot",
+    signedOut: "Sign in to zdzui to set a separate spending limit for this bot",
     signIn: "Sign in",
     off: "Shares this device's key with other bots, with no separate limit",
     on: "Uses this bot's own key and stops at the limit",

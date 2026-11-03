@@ -82,6 +82,14 @@ const privatePwsh = flag("private-pwsh");
 const pwshHeal = flag("pwsh-heal");
 const pwshHome = path.join(out, "pwsh-home");
 const managed = flag("managed");
+// 白标构建不读环境变量（src/modelflare.ts 里地址是字面量），所以 --managed 没法把应用指向本地 mock。
+// 这时候硬跑会把带 mock key 的请求发到**真站点**——比跑不起来更糟，直接拒绝。
+// 要跑 managed 流程：临时把 RELAY_GLOBAL 改成 mock 地址重新构建，或者用 __setRelayTestEndpoints 的测试。
+if (managed) {
+  console.error("--managed 在本仓库不可用：白标构建不读 AMB_MODELFLARE_BASE_URL（地址是编译期字面量），");
+  console.error("跑下去请求会打到生产站点，因此拒绝执行。请改用集成测试，或临时改 RELAY_GLOBAL 后重新构建。");
+  process.exit(2);
+}
 const reasoning = flag("reasoning");
 const observeMs = Number(opt("observe-ms", 0));
 const maxConsoles = opt("max-console-windows");

@@ -9,6 +9,7 @@ import path from "node:path";
 import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
+import { __setRelayTestEndpoints } from "../src/modelflare.js";
 import { FakeFeishu, mockOpenAI, until } from "./helpers.js";
 
 const d = resolveMagpieBinary() ? describe : describe.skip;
@@ -23,7 +24,8 @@ d("Modelflare 模型很多时全部启用", () => {
 
   beforeAll(async () => {
     llm = await mockOpenAI({ key: "mf-many-key", models: [...chat, "jev-decide", "img-gen"], kinds });
-    process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
+    // 仅测试：指向本地 mock（白标构建不读环境变量，走进程内注入点）
+    __setRelayTestEndpoints({ base: llm.url + "/v1" });
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-picks-"));
     app = new App(loadConfig({ dataDir, env: { AMB_UI_PORT: "0", AMB_WEIXIN_API_BASE: "http://127.0.0.1:9", AMB_AGENT: "off" } }), {
       feishuTransport: () => new FakeFeishu(),
@@ -34,7 +36,7 @@ d("Modelflare 模型很多时全部启用", () => {
   }, 60_000);
 
   afterAll(async () => {
-    delete process.env.AMB_MODELFLARE_BASE_URL;
+    __setRelayTestEndpoints(undefined);
     await app?.stop();
     await llm?.close();
   });

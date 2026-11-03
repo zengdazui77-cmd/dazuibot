@@ -25,7 +25,7 @@
  * - 花费（3e，设计第 8 节）：会话里每次模型请求的用量按参考价估算（cost.ts），记在 run 上、累加到任务上，规则按月汇总。
  *   任务的预算（默认 $1）用完时取消这一轮（指令通道，之后还能接着用），问用户「已用约 $1.00，再给 $1 继续？」（一个提问：
  *   推给会话、在「需要你」里，回答「继续」加预算接着做，「停止」停掉）；规则每次运行 $0.10（这次以 budget 结束，算一次失败），
- *   每月 $3（暂停，「需要你」里一行，下个月自动恢复）。机器人有 Modelflare 预算 Key 时，剩下的不到 20% 就停后台工作，留给聊天。
+ *   每月 $3（暂停，「需要你」里一行，下个月自动恢复）。机器人有 zdzui 预算 Key 时，剩下的不到 20% 就停后台工作，留给聊天。
  *   任务每次运行最多 4 小时（等人批准的时间不算），到了算失败。
  *
  * - 保留与清理（3f，决定 9，见 retention.ts）：30 天没动过的任务归档、运行记录只留 30 天；任务文件夹 30 天没动过就清理，
@@ -174,9 +174,9 @@ export interface TaskServiceOptions {
   taskRunCapMs?: number;
   /** 多久看一次任务的时间上限（默认 1 分钟） */
   capCheckMs?: number;
-  /** 估算花费的单价（模型 → 美元 / 百万 tokens；同步，取应用缓存的 Modelflare 目录）；没有就不估算 */
+  /** 估算花费的单价（模型 → 美元 / 百万 tokens；同步，取应用缓存的 zdzui 目录）；没有就不估算 */
   rates?: (model: string) => Rates | undefined;
-  /** 机器人的 Modelflare 预算 Key（总额、还剩多少、什么时候读的）；没开预算就是 undefined */
+  /** 机器人的 zdzui 预算 Key（总额、还剩多少、什么时候读的）；没开预算就是 undefined */
   botBudget?: (botId: string) => { limitUsd: number; remainUsd: number; at: number } | undefined;
 }
 
@@ -1001,7 +1001,7 @@ export class TaskService {
   }
 
   /**
-   * 机器人的 Modelflare 预算 Key 快用完了：剩下的（上次读到的余额减去之后估算花掉的）不到总额的 20%，就返回还剩多少、总额。
+   * 机器人的 zdzui 预算 Key 快用完了：剩下的（上次读到的余额减去之后估算花掉的）不到总额的 20%，就返回还剩多少、总额。
    * 没开预算（或没登录）是 undefined。
    */
   reserve(botId: string): { remainUsd: number; limitUsd: number } | undefined {
@@ -1308,7 +1308,7 @@ export class TaskService {
         const low = this.reserve(botId);
         if (low)
           return {
-            error: `This bot's Modelflare budget is almost used up (about ${usdText(low.remainUsd)} of ${stepText(low.limitUsd)} left) and the rest is kept for chat, so no background task can start. Tell the user in one sentence; they can raise the bot's budget in its settings.`,
+            error: `This bot's zdzui budget is almost used up (about ${usdText(low.remainUsd)} of ${stepText(low.limitUsd)} left) and the rest is kept for chat, so no background task can start. Tell the user in one sentence; they can raise the bot's budget in its settings.`,
           };
         const r = this.create({ botId, conversationId: conv.id, title: String(a.title ?? ""), brief: String(a.brief ?? ""), budgetUsd: Number(a.budget_usd) || undefined, anytime: a.anytime === true });
         if (!r.task) return { error: r.error };

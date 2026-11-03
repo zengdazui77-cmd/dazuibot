@@ -30,7 +30,7 @@ export interface BotSettings {
     enabled: boolean;
     /** cua = 随附的 Cua Driver（默认，三个平台）；codex = macOS 上的 Codex Computer Use 桥（kimi-computer-use） */
     backend: CuBackend;
-    /** auto = 所有操作自动执行（默认）；ask-input = 点击/输入等改变界面的操作先问用户，读取界面仍自动 */
+    /** auto = 所有操作自动执行；ask-input = 点击/输入等改变界面的操作先问用户，读取界面仍自动（默认） */
     approval: CuApproval;
   };
   /** 生图 / 生视频 */
@@ -43,7 +43,7 @@ export interface BotSettings {
   /** 头像角色；空 = 由机器人 id 决定 */
   avatar: BotAvatarKey | "";
   /**
-   * 预算（需要登录 Modelflare 账户）：开启后机器人用自己的 API Key，最多花 limitUsd 美元
+   * 预算（需要登录 zdzui 账户）：开启后机器人用自己的 API Key，最多花 limitUsd 美元
    * （包括这把 Key 已经花掉的）；关闭时与其他机器人共用本机的 Key。
    */
   budget: { enabled: boolean; limitUsd: number };
@@ -64,7 +64,9 @@ export const DEFAULT_SETTINGS: BotSettings = {
   permission: "workspace",
   memory: { enabled: true, review: true, teamWrite: false },
   steward: { enabled: true },
-  computerUse: { enabled: true, backend: "cua", approval: "auto" },
+  // 电脑操作默认关闭：屏幕内容会作为模型请求的一部分经过中转站，客户必须主动开启并知情。
+  // approval 默认 ask-input：即使开启，改变界面的操作也要先问（读取界面仍自动）。
+  computerUse: { enabled: false, backend: "cua", approval: "ask-input" },
   media: { confirm: "auto" },
   utilityModel: "",
   avatar: "",
@@ -97,8 +99,10 @@ export function normalizeSettings(raw: unknown): BotSettings {
     computerUse: {
       enabled: b(cu.enabled, DEFAULT_SETTINGS.computerUse.enabled),
       backend: cu.backend === "codex" ? "codex" : "cua",
-      // 旧值（always / readonly-free）一律迁移为自动执行
-      approval: cu.approval === "ask-input" ? "ask-input" : "auto",
+      // 白标：兜底也取最保守的一档。旧值（always / readonly-free）和缺失值都落到 ask-input。
+      // 默认值改成"先问我"而兜底仍写 auto，就等于"默认关闭 + 任何异常配置反而自动执行"，自相矛盾；
+      // 客户主动开的自动执行（明确写着 auto）仍然保留。
+      approval: cu.approval === "auto" ? "auto" : "ask-input",
     },
     // 以前每次都问；升级后默认只在花费高时问
     media: { confirm: md.confirm === "always" ? "always" : "auto" },

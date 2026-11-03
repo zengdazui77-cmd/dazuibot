@@ -14,7 +14,7 @@ import { FeishuReply } from "../src/channels/feishu/card.js";
 import { feishuParts } from "../src/channels/feishu/channel.js";
 import { redactValue, mask } from "../src/log.js";
 import { loadConfig } from "../src/config.js";
-import { verifyModelflareKey, modelflareBaseUrl, normalizeLine, keyTail, MODELFLARE_LINES } from "../src/modelflare.js";
+import { verifyModelflareKey, modelflareBaseUrl, modelflareIssuer, normalizeLine, keyTail, MODELFLARE_LINES, RELAY_ORIGINS, __setRelayTestEndpoints } from "../src/modelflare.js";
 import { saveConfigFile } from "../src/config.js";
 import { FakeFeishu, feishuEvent, listen, mockOpenAI } from "./helpers.js";
 
@@ -229,11 +229,40 @@ describe("安全", () => {
 });
 
 describe("Modelflare", () => {
-  it("线路：白名单两条，auto=国际；测试覆盖变量优先", () => {
-    expect(modelflareBaseUrl("auto", {})).toBe("https://modelflare.dev/v1");
-    expect(modelflareBaseUrl("global", {})).toBe(MODELFLARE_LINES.global);
-    expect(modelflareBaseUrl("cn", {})).toBe("https://origin.modelflare.dev/v1");
-    expect(modelflareBaseUrl("cn", { AMB_MODELFLARE_BASE_URL: "http://127.0.0.1:9/v1/" })).toBe("http://127.0.0.1:9/v1");
+  it("线路：白名单两条，auto=国际；地址不随环境变量变", () => {
+    expect(modelflareBaseUrl("auto")).toBe("https://go.zdzui.xyz/v1");
+    expect(modelflareBaseUrl("global")).toBe(MODELFLARE_LINES.global);
+    // 只开一条线路时 cn 与 global 同址，白名单和线路选择都不会因此失效
+    expect(modelflareBaseUrl("cn")).toBe("https://go.zdzui.xyz/v1");
+    expect([...RELAY_ORIGINS]).toEqual(["https://go.zdzui.xyz/v1"]);
+
+    // 白标的核心保证：环境变量改不动地址，也改不动白名单（否则白名单就是自指的，等于没校验）
+    const saved = { ...process.env };
+    try {
+      process.env.AMB_RELAY_GLOBAL = "https://attacker.example/v1";
+      process.env.AMB_RELAY_CN = "https://attacker.example/v1";
+      process.env.AMB_MODELFLARE_BASE_URL = "https://attacker.example/v1";
+      process.env.AMB_MODELFLARE_ISSUER = "https://attacker.example";
+      expect(modelflareBaseUrl("auto")).toBe("https://go.zdzui.xyz/v1");
+      expect([...RELAY_ORIGINS]).toEqual(["https://go.zdzui.xyz/v1"]);
+      expect(modelflareIssuer()).toBe("https://api2.zdzui.xyz");
+    } finally {
+      for (const k of ["AMB_RELAY_GLOBAL", "AMB_RELAY_CN", "AMB_MODELFLARE_BASE_URL", "AMB_MODELFLARE_ISSUER"]) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+    }
+
+    // 测试注入点：显式调用才生效，复位后回到常量
+    __setRelayTestEndpoints({ base: "http://127.0.0.1:9/v1/", issuer: "http://127.0.0.1:9/" });
+    try {
+      expect(modelflareBaseUrl("cn")).toBe("http://127.0.0.1:9/v1");
+      expect(modelflareIssuer()).toBe("http://127.0.0.1:9");
+    } finally {
+      __setRelayTestEndpoints(undefined);
+    }
+    expect(modelflareBaseUrl("cn")).toBe("https://go.zdzui.xyz/v1");
+
     expect(normalizeLine("cn")).toBe("cn");
     expect(normalizeLine("https://evil.example")).toBe("auto");
     expect(keyTail("mf-abcdef1234")).toBe("1234");

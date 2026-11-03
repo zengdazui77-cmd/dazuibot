@@ -2,7 +2,7 @@
 import type { Catalog } from "../types.js";
 
 export const zh = {
-  external_mode: "外部模型端点模式下不管理 Modelflare 连接",
+  external_mode: "外部模型端点模式下不管理 zdzui 连接",
   bot_not_found: "机器人不存在",
   magpie_failed: "magpie 启动失败：{message}",
   // 第一次启动时建的机器人（按当时的语言）
@@ -31,7 +31,7 @@ export const zh = {
 } satisfies Catalog;
 
 export const en: Catalog<typeof zh> = {
-  external_mode: "Modelflare connections aren't managed when using an external model endpoint",
+  external_mode: "zdzui connections aren't managed when using an external model endpoint",
   bot_not_found: "Bot not found",
   magpie_failed: "magpie failed to start: {message}",
   default_bot_name: "My Assistant",

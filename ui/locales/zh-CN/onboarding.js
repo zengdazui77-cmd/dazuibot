@@ -3,9 +3,15 @@ export default {
   slogan: "任意模型，一个助手",
   gatewayFailed: "内置模型网关没有启动：{error}。修复后重启应用再连接。",
   unknownReason: "未知原因",
-  keyOnly: "Docker 或远程部署无法用浏览器登录，请填写 API Key",
-  createKey: "在 Modelflare 控制台创建 Key ↗",
-  /** Modelflare 线路（"自动"用 common.auto） */
+  keyOnly: "请填写站点后台创建的 API Key",
+  createKey: "在 zdzui 控制台创建 Key ↗",
+  /** 首启必须讲清楚：Key 存在哪、怎么止损（白标后没有 OIDC 可撤销授权，只能手工删 Key） */
+  keyStorage: "这把 API Key 只保存在本机（内置网关的配置里，靠文件权限保护，不加密）。若怀疑泄漏，请到控制台删除该 Key 后重新签发。",
+  computer: {
+    title: "启用电脑操作（可选）",
+    hint: "开启后助手可以读取屏幕并操作这台电脑；改变界面的操作会先征求你的同意。屏幕内容会作为模型请求的一部分经过本站。默认关闭，随时可在机器人设置里更改。",
+  },
+  /** zdzui 线路（"自动"用 common.auto） */
   line: {
     label: "线路",
     sub: "中国大陆访问可选优化线路",
@@ -14,7 +20,7 @@ export default {
   },
   key: {
     label: "API Key",
-    placeholder: "粘贴你的 Modelflare API Key",
+    placeholder: "粘贴你的 zdzui API Key",
     paste: "从剪贴板粘贴",
     show: "显示",
     hide: "隐藏",
@@ -25,13 +31,13 @@ export default {
     useCn: "改用大陆优化线路并重试",
     note: "密钥只保存在本机，不会写入日志或命令行参数。",
     connecting: "正在连接…",
-    submit: "连接 Modelflare",
+    submit: "连接 zdzui",
     slow: "网络较慢。",
     slowLine: "网络较慢，可在「高级」里切换线路。",
     advanced: "高级",
   },
   login: {
-    label: "登录 / 注册 Modelflare",
+    label: "登录 / 注册 zdzui",
     waiting: "在浏览器里完成登录后，会自动回到这里",
     reopen: "重新打开登录页 ↗",
     copyLink: "复制链接",

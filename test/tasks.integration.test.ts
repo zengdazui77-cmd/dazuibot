@@ -19,6 +19,7 @@ import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { locateDshRuntime } from "../src/agent/host.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
+import { __setRelayTestEndpoints } from "../src/modelflare.js";
 import { listen, mockIlink } from "./helpers.js";
 
 const runtime = locateDshRuntime(findAppRoot());
@@ -159,8 +160,8 @@ describe.skipIf(!runtime || !hasBwrap || process.platform !== "linux")("backgrou
       res.end("data: [DONE]\n\n");
     });
     ilink = await mockIlink();
-    // 价格目录（估算花费）从 mock 读
-    process.env.AMB_MODELFLARE_ISSUER = llm.url;
+    // 价格目录（估算花费）从 mock 读；白标构建不读环境变量，走进程内注入点
+    __setRelayTestEndpoints({ issuer: llm.url });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-tasks-"));
     app = makeApp();
     // 主人已经扫码登录；渠道连到 mock iLink
@@ -175,7 +176,7 @@ describe.skipIf(!runtime || !hasBwrap || process.platform !== "linux")("backgrou
     await app?.stop();
     await llm?.close();
     await ilink?.close();
-    delete process.env.AMB_MODELFLARE_ISSUER;
+    __setRelayTestEndpoints(undefined);
     fs.rmSync(dataDir, { recursive: true, force: true });
   });
 

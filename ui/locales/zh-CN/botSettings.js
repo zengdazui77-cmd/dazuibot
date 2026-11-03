@@ -22,7 +22,7 @@ export default {
   },
   budget: {
     name: "预算",
-    signedOut: "登录 Modelflare 账户后，可以给这个机器人单独设花费上限",
+    signedOut: "登录 zdzui 账户后，可以给这个机器人单独设花费上限",
     signIn: "去登录",
     off: "与其他机器人共用本机的 Key，不单独限额",
     on: "用这个机器人自己的 Key，花到上限就停",

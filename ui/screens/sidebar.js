@@ -10,21 +10,24 @@ import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
 import { confirmSheet, failed, toast } from "../lib/store.js";
 import { fmtAgo } from "../lib/format.js";
-import { MF_TOPUP, usd } from "../lib/links.js";
+import { MF_TOPUP, balanceText, usd } from "../lib/links.js";
 import { t } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
 import { GroupAvatars } from "./group.js";
 
 /**
- * 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名），旁边是设置齿轮。
+ * 左下角账户：头像字母 + 名称（登录后是 zdzui 账户名），旁边是设置齿轮。
  * 余额不常驻：用户反馈一直看到它，会觉得一直在花钱。点头像才弹出来；余额低于提醒线时另有 LowBalance 提示。
- * 没有余额可看时（没登录、不是 Modelflare 托管），点头像和点齿轮一样打开设置。
+ * 没有余额可看时（没登录、不是 zdzui 托管），点头像和点齿轮一样打开设置。
  */
 export function AccountButton({ username, account, settingsOn, onSettings, onModelflare }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const me = ((account && account.state === "signed_in" && account.name) || username || t("sidebar.localUser")).trim();
-  const bal = account && account.balanceUsd !== null && account.balanceUsd !== undefined ? usd(account.balanceUsd) : "";
+  // 账户弹层的开合看的是"有没有值得展示的账户信息"，不是"有没有余额数字"：
+  // 拉取失败也要能点开看到失败原因（balanceText 会给出「余额暂不可用」/「网络未响应」）
+  const hasBal = !!(account && ((account.balanceUsd !== null && account.balanceUsd !== undefined) || account.error));
+  const bal = hasBal ? balanceText(account, t) : "";
   return html`<button type="button" class=${`account${open ? " on" : ""}`} ref=${ref}
       aria-label=${bal ? t("sidebar.account") : t("sidebar.openSettings")} aria-haspopup=${bal ? "dialog" : undefined} aria-expanded=${bal ? open : undefined}
       onClick=${bal ? () => setOpen((v) => !v) : onSettings}>

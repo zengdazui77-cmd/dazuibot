@@ -1,7 +1,7 @@
 // account · zh-CN（screens/account.js）
 export default {
   login: {
-    title: "登录 Modelflare 账户",
+    title: "登录 zdzui 账户",
     hint: "登录后会替换现在填的 API Key。",
   },
   usage: {
@@ -16,7 +16,7 @@ export default {
     empty: "这段时间没有用量",
   },
   notifications: {
-    title: "Modelflare 通知",
+    title: "zdzui 通知",
     empty: "没有通知",
     details: "查看详情 ↗",
   },

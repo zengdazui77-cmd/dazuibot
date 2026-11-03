@@ -1,6 +1,6 @@
 /**
  * 首次设置向导（终端版；界面里也能完成同样的设置）：
- * 1. 连接 Modelflare：登录账户（打印登录链接，在这台电脑的浏览器里完成），或粘贴 API Key
+ * 1. 连接 zdzui：登录账户（打印登录链接，在这台电脑的浏览器里完成），或粘贴 API Key
  *    （先校验 GET /v1/models，再写入内置网关的隔离配置；key 不进命令行参数）
  * 2. 飞书 App ID / App Secret → 写入本程序数据库
  */
@@ -10,6 +10,7 @@ import { stdin, stdout } from "node:process";
 import { loadConfig } from "../config.js";
 import { App } from "../app.js";
 import { t as tr } from "../i18n/index.js";
+import { ACCOUNT_LOGIN_ENABLED } from "../modelflare.js";
 
 /** 行队列：兼容交互终端与管道输入（管道时所有行会一次性到达） */
 function lineReader() {
@@ -74,8 +75,10 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
       const how = (await rl.ask(tr("cli.askHow"))).toLowerCase();
       if (how !== "skip") {
         const line = (await rl.ask(tr("cli.askLine"))).trim() === "cn" ? "cn" : "auto";
-        if (how === "key") {
-          const key = await rl.ask("Modelflare API Key：", true);
+        // 白标关闭了 OIDC 登录，所以除 key / skip 外的任何输入都走粘贴 Key，
+        // 不能让空回车掉进必然失败的登录分支。
+        if (how === "key" || !ACCOUNT_LOGIN_ENABLED) {
+          const key = await rl.ask("zdzui API Key：", true);
           const r = await app.connectModelflare(key, line);
           if (!r.ok) throw new Error(r.message + (r.suggestLine === "cn" ? tr("cli.tryCn") : ""));
           console.log(tr("cli.connected", { count: r.models.length }));
@@ -107,7 +110,7 @@ async function loginInBrowser(app: App): Promise<void> {
     const s = account.status();
     if (s.state === "signed_in") {
       const models = await app.runtime.listModels(true).catch(() => []);
-      console.log(tr("cli.signedInConnected", { name: s.name || "Modelflare", count: models.length }));
+      console.log(tr("cli.signedInConnected", { name: s.name || "zdzui", count: models.length }));
       return;
     }
     if (s.state !== "signing_in") throw new Error(s.error || tr("cli.loginIncomplete"));

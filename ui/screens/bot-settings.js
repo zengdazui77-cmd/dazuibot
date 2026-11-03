@@ -36,8 +36,8 @@ function ModelButton({ value, models, modelsError, reloadModels, resetLabel, onC
 }
 
 /**
- * 预算：开启后机器人用自己的 Modelflare API Key，最多花设定的美元数（包括这把 Key 已经花掉的）；
- * 用完后它的请求会被拒绝，其他机器人不受影响。需要登录 Modelflare 账户。
+ * 预算：开启后机器人用自己的 zdzui API Key，最多花设定的美元数（包括这把 Key 已经花掉的）；
+ * 用完后它的请求会被拒绝，其他机器人不受影响。需要登录 zdzui 账户。
  */
 function BudgetRows({ bot, budget, account, onSaved, onOpenSettings }) {
   const [limit, setLimit] = useState(String(budget.limitUsd));

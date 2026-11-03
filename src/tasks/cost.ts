@@ -2,7 +2,7 @@
  * 花费与预算（设计文档第 8 节，3e）：估算一次运行花了多少、各级预算的默认值。
  *
  * - 估算：任务、规则会话的订阅已经看到的 assistant/message 事件带着这次模型请求的用量（DSH 的 inputTokens 不含缓存命中和写入，
- *   它们另算 cacheReadTokens、cacheWriteTokens），乘上 Modelflare 的参考价（account/model-info.ts 的 rates，美元 / 百万 tokens）。
+ *   它们另算 cacheReadTokens、cacheWriteTokens），乘上 zdzui 的参考价（account/model-info.ts 的 rates，美元 / 百万 tokens）。
  *   存在 runs.cost_usd 上，任务累加到 tasks.spent_usd，规则按月从 runs 汇总。界面上写「约」：账单为准。
  * - 拿不到价格（外部端点、目录里没有这个模型、离线）就不算，预算也就不起作用；时间上限照常。
  */
@@ -20,7 +20,7 @@ export const TASK_BUDGET_MAX_USD = 1000;
 export const RULE_RUN_BUDGET_USD = 0.1;
 /** 规则每月的预算；用完暂停，「再给 $3」每次加多少 */
 export const RULE_MONTH_BUDGET_USD = 3;
-/** 机器人有 Modelflare 预算 Key 时：剩下的不到总额的这一份就停后台工作，留给聊天 */
+/** 机器人有 zdzui 预算 Key 时：剩下的不到总额的这一份就停后台工作，留给聊天 */
 export const RESERVE_SHARE = 0.2;
 /** 任务每次运行最多跑多久（不算等人批准的时间） */
 export const TASK_RUN_CAP_MS = 4 * 3600_000;

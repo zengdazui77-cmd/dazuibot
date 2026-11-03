@@ -9,9 +9,15 @@ import path from "node:path";
 import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
+import { ACCOUNT_LOGIN_ENABLED, __setRelayTestEndpoints } from "../src/modelflare.js";
 import { FakeFeishu, approveInBrowser, mockModelflare, mockOpenAI, until } from "./helpers.js";
 
-const d = resolveMagpieBinary() ? describe : describe.skip;
+/**
+ * 白标关闭了账户登录（站点用 new-api，不提供 OIDC Provider，这条路必然失败）。
+ * 登录关闭时这些用例自动跳过；哪天站点补上 OIDC，把 ACCOUNT_LOGIN_ENABLED 改回 true，
+ * 用例和功能一起恢复，不需要改这里。
+ */
+const d = resolveMagpieBinary() && ACCOUNT_LOGIN_ENABLED ? describe : describe.skip;
 
 d("账户登录（经管理接口，真实内置网关）", () => {
   let mf: Awaited<ReturnType<typeof mockModelflare>>;
@@ -24,8 +30,8 @@ d("账户登录（经管理接口，真实内置网关）", () => {
     mf = await mockModelflare();
     // 设备 Key 与机器人预算 Key 由 mock 依次签发为 sk-key-1、sk-key-2
     llm = await mockOpenAI({ key: ["sk-key-1", "sk-key-2"], models: ["up-model"] });
-    process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
-    process.env.AMB_MODELFLARE_ISSUER = mf.url;
+    // 仅测试：把中转站基址与 issuer 指向本地 mock。白标构建不读环境变量，所以走进程内注入点。
+    __setRelayTestEndpoints({ base: llm.url + "/v1", issuer: mf.url });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-acct-int-"));
     app = new App(loadConfig({ dataDir, env: { AMB_UI_PORT: "0", AMB_WEIXIN_API_BASE: "http://127.0.0.1:9", AMB_AGENT: "off" } }), {
       feishuTransport: () => new FakeFeishu(),
@@ -36,8 +42,7 @@ d("账户登录（经管理接口，真实内置网关）", () => {
   }, 60_000);
 
   afterAll(async () => {
-    delete process.env.AMB_MODELFLARE_BASE_URL;
-    delete process.env.AMB_MODELFLARE_ISSUER;
+    __setRelayTestEndpoints(undefined);
     await app?.stop();
     await llm?.close();
     await mf?.close();

@@ -104,7 +104,7 @@ export interface RuntimeOptions {
   /** 谁能和机器人对话（主人 + 允许名单）；缺省不限制 */
   access?: AccessControl;
   /**
-   * 模型请求失败后调用：核对 Key 是否已失效（例如在 Modelflare 控制台被删）并重新签发。
+   * 模型请求失败后调用：核对 Key 是否已失效（例如在 zdzui 控制台被删）并重新签发。
    * 返回 true = 换了 Key，这条消息自动再试一次（只在还没有任何输出时）。缺省不重试。
    */
   recoverKey?: () => Promise<boolean>;

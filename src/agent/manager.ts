@@ -58,9 +58,9 @@ export interface AgentManagerOptions {
   connections?: ConnectionService;
   /** 需要让用户看到的提示（代理进程起不来等） */
   onNotice?: (text: string) => void;
-  /** 模型的上下文长度（Modelflare 模型资料），写进 DSH 补丁 */
+  /** 模型的上下文长度（zdzui 模型资料），写进 DSH 补丁 */
   contextWindow?: (model: string) => Promise<number | undefined>;
-  /** 模型支持的接口与是否推理（Modelflare 模型资料），DSH 按它选对话接口 */
+  /** 模型支持的接口与是否推理（zdzui 模型资料），DSH 按它选对话接口 */
   apiInfo?: (model: string) => Promise<ModelApiInfo | undefined>;
   /** 桌面版：系统给这个地址用的代理（PAC 写法）；代理进程的环境里没设代理时用它 */
   systemProxy?: (url: string) => Promise<string | undefined>;
@@ -700,7 +700,7 @@ export class AgentManager {
     if (/^(task|rule)-/.test(String(b?.sessionId ?? ""))) return { error: "生成图片和视频暂时只能在聊天里用，后台任务里不行；需要的话在结果里告诉用户。" };
     if (!this.hosts.has(botId) || !this.activeConvs.get(botId)?.size) return { error: "unknown bot" };
     const media = this.o.media;
-    if (!media) return { error: "生成图片和视频需要连接 Modelflare" };
+    if (!media) return { error: "生成图片和视频需要连接 zdzui" };
     const op = String(b?.op ?? "");
     const args = (b?.args ?? {}) as Record<string, unknown>;
     try {

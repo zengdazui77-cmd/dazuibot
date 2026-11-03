@@ -3,8 +3,14 @@ export default {
   slogan: "Any model, one assistant",
   gatewayFailed: "The built-in model gateway didn't start: {error}. Fix it, then restart the app and connect again.",
   unknownReason: "unknown reason",
-  keyOnly: "Docker and remote deployments can't sign in through the browser. Enter an API key instead.",
-  createKey: "Create a key in the Modelflare console ↗",
+  keyOnly: "Enter an API key created in the site console",
+  createKey: "Create a key in the zdzui console ↗",
+  /** Must be stated up front: where the key lives and how to revoke it (no OIDC grant to revoke in this build) */
+  keyStorage: "This API key is stored only on this computer (in the built-in gateway's config, protected by file permissions — not encrypted). If you suspect it leaked, delete it in the console and issue a new one.",
+  computer: {
+    title: "Enable computer use (optional)",
+    hint: "When on, the assistant can read the screen and operate this computer; actions that change the interface ask you first. Screen content travels with model requests through this site. Off by default; change it anytime in bot settings.",
+  },
   line: {
     label: "Route",
     sub: "Use the optimized route when connecting from mainland China",
@@ -13,7 +19,7 @@ export default {
   },
   key: {
     label: "API key",
-    placeholder: "Paste your Modelflare API key",
+    placeholder: "Paste your zdzui API key",
     paste: "Paste from clipboard",
     show: "Show",
     hide: "Hide",
@@ -24,13 +30,13 @@ export default {
     useCn: "Switch to the China-optimized route and retry",
     note: "Your key stays on this device and is never written to logs or command-line arguments.",
     connecting: "Connecting…",
-    submit: "Connect Modelflare",
+    submit: "Connect zdzui",
     slow: "The network is slow.",
     slowLine: "The network is slow. You can switch routes under Advanced.",
     advanced: "Advanced",
   },
   login: {
-    label: "Sign in or sign up with Modelflare",
+    label: "Sign in or sign up with zdzui",
     waiting: "Finish signing in in your browser — you'll come back here automatically",
     reopen: "Reopen sign-in page ↗",
     copyLink: "Copy link",

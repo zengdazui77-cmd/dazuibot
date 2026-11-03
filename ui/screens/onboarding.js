@@ -2,7 +2,7 @@
 // 回来后自动签发本机 Key 并连接）。只有 Docker / 远程部署（浏览器登录的回调回不到这台机器）才显示粘贴 API Key。
 // 不是向导路由。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Icon, Menu, Notice, Seg, Spinner, CopyButton } from "../components/ui.js";
+import { html, Icon, Menu, Notice, Seg, Spinner, Switch, CopyButton } from "../components/ui.js";
 import { BotAvatar, MAIN_CHAR } from "../components/avatar.js";
 import { FamilyHead, PickModel, familyName, groupModels, useFamilies } from "../components/model-picker.js";
 import { api } from "../lib/api.js";
@@ -11,7 +11,7 @@ import { LANG_NAMES, changeLang, getLangPref, t, useLang } from "../lib/i18n.js"
 import { MF_CONSOLE, MF_DOCS, MF_KEYS } from "../lib/links.js";
 
 export { MF_CONSOLE, MF_DOCS };
-/** Modelflare 线路的选项 [值, 显示名]（引导页"高级"和设置页共用；按当前语言，渲染时再调） */
+/** zdzui 线路的选项 [值, 显示名]（引导页"高级"和设置页共用；按当前语言，渲染时再调） */
 export const lineOptions = () => [
   ["auto", t("common.auto")],
   ["global", t("onboarding.line.global")],
@@ -107,7 +107,7 @@ export function KeyForm({ line: initialLine = "auto", onConnected, onFace, showL
 }
 
 /**
- * 登录 / 注册 Modelflare：桌面版由主进程在系统浏览器里打开授权页；浏览器版在新标签页打开（被拦截时
+ * 登录 / 注册 zdzui：桌面版由主进程在系统浏览器里打开授权页；浏览器版在新标签页打开（被拦截时
  * 用下面的链接）。等待期间每秒读一次账户状态，登录完成（本机 Key 已接上）后 onSignedIn(status)。
  */
 export function AccountLogin({ onSignedIn, onFace, label = t("onboarding.login.label") }) {
@@ -190,6 +190,16 @@ function ModelStep({ models, initial, onDone }) {
       .catch(() => setMedia({ image: [], video: [] }));
   }, []);
   const hasMedia = media && (media.image.length > 0 || media.video.length > 0);
+  // 电脑操作默认关闭（src/agent/settings.ts 的 DEFAULT_SETTINGS.computerUse.enabled=false）。
+  // 这里是"可选开启"的唯一入口：客户主动打开才写入，不打开就保持关闭，避免默认把屏幕内容上行。
+  const [cuOn, setCuOn] = useState(false);
+  const [botId, setBotId] = useState("");
+  useEffect(() => {
+    // 首启时 app 已经建好默认机器人（src/app.ts 的 ensureDefaultBot），所以这里一定拿得到
+    api("/bots")
+      .then((d) => setBotId(d?.bots?.[0]?.id || ""))
+      .catch(() => {});
+  }, []);
   const start = async () => {
     setBusy(true);
     try {
@@ -197,6 +207,8 @@ function ModelStep({ models, initial, onDone }) {
         method: "PUT",
         body: { defaultModel: cur, ...(media && media.image.length ? { imageModel: img } : {}), ...(media && media.video.length ? { videoModel: vid } : {}) },
       });
+      // 只在客户主动开启时写：失败不阻塞引导（默认值本来就是关闭）
+      if (cuOn && botId) await api(`/bots/${botId}/settings`, { method: "PUT", body: { computerUse: { enabled: true } } }).catch(() => {});
       onDone();
     } catch (e) {
       setErr(e.message);
@@ -232,6 +244,14 @@ function ModelStep({ models, initial, onDone }) {
           </div>`}
         </div>`}`
       : html`<${Notice} tone="amber" action=${html`<a class="btn" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">${t("onboarding.model.console")}</a>`}>${t("onboarding.model.empty")}<//>`}
+    <div class="media-pick">
+      <p class="hint">${t("onboarding.computer.hint")}</p>
+      <div class="row compact">
+        <div class="who"><div class="name">${t("onboarding.computer.title")}</div></div>
+        <${Switch} label=${t("onboarding.computer.title")} value=${cuOn} onChange=${setCuOn} />
+      </div>
+    </div>
+    <${Notice}>${t("onboarding.keyStorage")}<//>
     ${err && html`<div class="err-text" role="alert">${err}</div>`}
     <button type="button" class="btn primary lg block" disabled=${busy} onClick=${start}>${busy ? html`<${Spinner} /> ${t("onboarding.model.saving")}` : models.length ? t("onboarding.model.start") : t("onboarding.model.startAnyway")}</button>
   </div>`;

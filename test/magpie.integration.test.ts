@@ -8,6 +8,7 @@ import path from "node:path";
 import { App, appVersion } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
+import { __setRelayTestEndpoints, modelflareBaseUrl } from "../src/modelflare.js";
 import { FakeFeishu, mockOpenAI, until } from "./helpers.js";
 
 const bin = resolveMagpieBinary();
@@ -21,8 +22,8 @@ d("内置 magpie 集成", () => {
 
   beforeAll(async () => {
     llm = await mockOpenAI({ key: ["mf-upstream-key-a1b2", "mf-bot-key-c3d4"], models: ["up-model"] });
-    // 仅测试：把 Modelflare 基址指向本地 mock（界面无法设置这个变量）
-    process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
+    // 仅测试：把中转站基址指向本地 mock（白标构建不读环境变量，走进程内注入点）
+    __setRelayTestEndpoints({ base: llm.url + "/v1" });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-int-"));
     app = new App(loadConfig({ dataDir, env: { AMB_UI_PORT: "0", AMB_WEIXIN_API_BASE: "http://127.0.0.1:9", AMB_AGENT: "off" } }), {
       feishuTransport: () => new FakeFeishu(),
@@ -33,7 +34,7 @@ d("内置 magpie 集成", () => {
   }, 60_000);
 
   afterAll(async () => {
-    delete process.env.AMB_MODELFLARE_BASE_URL;
+    __setRelayTestEndpoints(undefined);
     await app?.stop();
     await llm?.close();
   });
@@ -87,7 +88,7 @@ d("内置 magpie 集成", () => {
   }, 30_000);
 
   it("开了预算的机器人走它自己的 Key；模型列表不重复；关掉后回到共用 Key", async () => {
-    const baseUrl = process.env.AMB_MODELFLARE_BASE_URL!;
+    const baseUrl = modelflareBaseUrl("auto");
     await app.magpie!.setBotProvider("default", "mf-bot-key-c3d4", baseUrl, [baseUrl], app.requestHeaders());
     expect(app.routeModel("default", "up-model")).toBe("mfb-default/up-model");
     await until(async () => {

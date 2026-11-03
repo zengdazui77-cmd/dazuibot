@@ -3,7 +3,7 @@ export default {
   tabs: {
     general: "General",
     appearance: "Appearance",
-    modelflare: "Modelflare",
+    modelflare: "zdzui",
     computer: "Computer use",
     connections: "Connections",
     privacy: "Privacy & security",
@@ -89,19 +89,19 @@ export default {
     reply: "Sure, and error handling gets clearer too. With {b} on, the line below wraps:",
   },
   rekey: {
-    title: "Change Modelflare key",
+    title: "Change zdzui key",
     submit: "Verify and save",
   },
   disconnect: {
-    title: "Disconnect Modelflare?",
+    title: "Disconnect zdzui?",
     body: "This deletes the API key from this computer. Your bots and conversations stay, ready for when you reconnect.",
     confirm: "Disconnect",
   },
   logout: {
-    title: "Sign out of Modelflare?",
+    title: "Sign out of zdzui?",
     body: "This revokes this computer's access and deletes the API keys issued to it and your bots at sign-in. Your bots and conversations stay.",
     confirm: "Sign out",
-    notRevoked: "The server didn't confirm the revocation. You're signed out here — you can revoke access again under Authorized apps on the Modelflare website",
+    notRevoked: "The server didn't confirm the revocation. You're signed out here — you can revoke access again under Authorized apps on the zdzui website",
   },
   notifyDenied: "Notifications aren't allowed. Allow them for this page in your system or browser site settings",
   rows: {
@@ -206,7 +206,7 @@ export default {
       button: "Reset",
     },
     account: {
-      name: "Modelflare account",
+      name: "zdzui account",
       signedIn: "Signed in",
       enterprise: "{name}'s usage is billed to your organization's wallet",
       signedOut: "Sign in to see usage, notifications and your invite link, and to set budgets for individual bots",
@@ -233,6 +233,8 @@ export default {
       keys: "balance top up wallet credit",
       refresh: "Refresh balance",
       topUp: "Top up ↗",
+      manageKeys: "Manage keys ↗",
+      manageKeysHint: "When the balance can't be read, check this key's quota and status on the site",
     },
     lowBalance: {
       name: "Low balance alert",
@@ -253,7 +255,7 @@ export default {
     notifications: {
       name: "Notifications",
       unread: "{count} unread",
-      sub: "Notifications and announcements from Modelflare",
+      sub: "Notifications and announcements from zdzui",
       keys: "notification announcement message",
     },
     invite: {
@@ -297,7 +299,7 @@ export default {
       count: { one: "{count} model", other: "{count} models" },
     },
     console: {
-      name: "Modelflare console",
+      name: "zdzui console",
       sub: "Billing, invoices and API key management",
       keys: "console dashboard billing invoice",
     },
@@ -317,12 +319,12 @@ export default {
     },
     keyStorage: {
       name: "Key storage",
-      sub: "Your Modelflare key lives only in the built-in gateway's isolated config on this computer, never in logs or command-line arguments",
+      sub: "Your zdzui key lives only in the built-in gateway's isolated config on this computer, never in logs or command-line arguments",
       keys: "security key storage",
     },
     accountStorage: {
       name: "Account credentials",
-      sub: "Modelflare sign-in credentials are stored only in the data folder, encrypted with the system keychain on desktop. The interface only sees your account name",
+      sub: "zdzui sign-in credentials are stored only in the data folder, encrypted with the system keychain on desktop. The interface only sees your account name",
       keys: "security sign in keychain credentials",
     },
     token: {

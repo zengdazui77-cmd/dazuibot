@@ -1,6 +1,6 @@
 /**
  * 模型的智能与每次任务的花费（模型选择器的「模型智能」滑块用）。数据是仓库里的 Artificial Analysis 快照
- * assets/model-quality.json（scripts/update-model-quality.mjs 生成，已经按 Modelflare 的模型 ID 对应好）。
+ * assets/model-quality.json（scripts/update-model-quality.mjs 生成，已经按 zdzui 的模型 ID 对应好）。
  *
  * 每个模型取哪一档：应用实际用的推理强度。代理走 Responses 接口、模型推理时默认发 medium（agent/host.ts 的
  * providerProfiles），就取 AA 的 medium 那一行；走 Chat / Anthropic 接口不发推理强度，模型用自己的默认，

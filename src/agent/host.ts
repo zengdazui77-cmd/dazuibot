@@ -205,13 +205,13 @@ export interface AgentHostOptions {
   turnTimeoutMs?: number;
   /** 需要让用户看到的提示（界面通知） */
   onNotice?: (text: string) => void;
-  /** 能生图 / 生视频（已连接 Modelflare）：写入 media 技能说明 */
+  /** 能生图 / 生视频（已连接 zdzui）：写入 media 技能说明 */
   media?: boolean;
   /** 哪些服务有已授权账号（全局，设置 › 连接）；加上第一个或删掉最后一个时，空闲的代理进程重启才有变化 */
   connections?: () => Partial<Record<AccountService, boolean>>;
-  /** 模型的上下文长度（Modelflare 模型资料）；不知道时 undefined，用内置兜底表 */
+  /** 模型的上下文长度（zdzui 模型资料）；不知道时 undefined，用内置兜底表 */
   contextWindow?: (model: string) => Promise<number | undefined>;
-  /** 模型支持的接口与是否推理（Modelflare 模型资料），用来选对话接口；不知道时 undefined，走 Chat Completions */
+  /** 模型支持的接口与是否推理（zdzui 模型资料），用来选对话接口；不知道时 undefined，走 Chat Completions */
   apiInfo?: (model: string) => Promise<ModelApiInfo | undefined>;
   /** 被上游拒绝过的模型 → 改走 Chat Completions（所有机器人共用，存在数据目录）；不给时只在本进程内记 */
   apiFallbacks?: ApiFallbacks;
@@ -264,7 +264,7 @@ export type HostEvent =
   /** recycled：空闲时为了放掉开过的会话换的（上面没有在跑的东西，不用恢复） */
   | { type: "exit"; pid: number | undefined; code: number | null; signal: string | null; recycled?: boolean };
 
-/** 拿不到 Modelflare 的模型资料时的兜底（上下文窗口、最大输出） */
+/** 拿不到 zdzui 的模型资料时的兜底（上下文窗口、最大输出） */
 const MODEL_LIMITS: Array<[RegExp, number, number]> = [
   [/-terra\b/i, 1_050_000, 32_000],
   [/grok-4/i, 256_000, 32_000],
@@ -276,7 +276,7 @@ const MODEL_LIMITS: Array<[RegExp, number, number]> = [
 
 /**
  * 模型的上下文窗口与最大输出（写进 DSH 补丁，上下文管家也按它算检查线）。
- * known：Modelflare 模型资料里的上下文长度，有就用它；窗口写小了，DSH 和管家会过早、反复地压缩上下文。
+ * known：zdzui 模型资料里的上下文长度，有就用它；窗口写小了，DSH 和管家会过早、反复地压缩上下文。
  */
 export function modelLimits(model: string, known?: number): { window: number; maxTokens: number } {
   const lim = MODEL_LIMITS.find(([re]) => re.test(model)) ?? [/./, 128_000, 16_000];
@@ -288,7 +288,7 @@ export function modelLimits(model: string, known?: number): { window: number; ma
 /** DSH 跟模型说话用的接口（DSH 补丁里 provider 的 api） */
 export type AgentApi = "openai-completions" | "openai-responses" | "anthropic-messages";
 
-/** 选接口用的模型资料：endpoints 是 Modelflare 目录里的 supported_endpoint_types，reasoning 来自 model-profiles */
+/** 选接口用的模型资料：endpoints 是 zdzui 目录里的 supported_endpoint_types，reasoning 来自 model-profiles */
 export interface ModelApiInfo {
   endpoints?: string[];
   reasoning?: boolean;
@@ -752,7 +752,7 @@ export class AgentHost {
       `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-permission.mjs"))}`,
       "    - id: amb-memory",
       `      name: ${yamlStr(memory)}`,
-      // 生图 / 生视频：宿主带着本机器人的 Key 调 Modelflare，文件存进工作区 media/；技能说明在 skills/media
+      // 生图 / 生视频：宿主带着本机器人的 Key 调 zdzui，文件存进工作区 media/；技能说明在 skills/media
       "    - id: amb-media",
       `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-media.mjs"))}`,
       // 联网搜索：默认免费（Exa MCP、必应、DuckDuckGo），设置里可换成带 Key 的接口（search.ts）
@@ -804,7 +804,7 @@ export class AgentHost {
     ];
   }
 
-  /** media 技能：怎么挑模型、读文档、写请求体、交付结果。没有连接 Modelflare 时删掉。 */
+  /** media 技能：怎么挑模型、读文档、写请求体、交付结果。没有连接 zdzui 时删掉。 */
   private writeMediaSkill(): void {
     const dir = path.join(this.home, "skills", "media");
     try {
@@ -1078,7 +1078,7 @@ exec "$REAL" "$@"
   }
 
   /**
-   * 模型的路线：按 Modelflare 模型资料选接口（agentApi）、定上下文窗口；在该接口上被拒过（24 小时内）就走 Chat。
+   * 模型的路线：按 zdzui 模型资料选接口（agentApi）、定上下文窗口；在该接口上被拒过（24 小时内）就走 Chat。
    * 模型资料在一个子进程的生命期内只查一次（和以前一样：接口在拉起进程时选定）。
    */
   async routeFor(model: string): Promise<ModelRoute> {

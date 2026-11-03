@@ -82,7 +82,7 @@ function factorOf(entry: PricingEntry, catalog: PricingCatalog): number | undefi
 
 /**
  * 三种性价比下的价格倍率（相对官方定价）：这个模型可用的公开分组的倍率 × 模型售价倍率。
- * 低价优先取最低的分组，稳定优先取最高的，均衡取居中的那个（偶数个时取居中两个里贵的那个：Modelflare 的均衡
+ * 低价优先取最低的分组，稳定优先取最高的，均衡取居中的那个（偶数个时取居中两个里贵的那个：zdzui 的均衡
  * 从价格居中的分组开始，先往贵的试）。企业专用的分组（名字带 enterprise）普通账户用不了，不算。
  */
 export function strategyFactors(entry: PricingEntry, catalog: PricingCatalog): Record<RoutingStrategy, number> | undefined {
@@ -148,6 +148,16 @@ export function estimateRates(entry: PricingEntry, catalog: PricingCatalog): Rat
   };
 }
 
+/**
+ * 能力表与价格目录的状态。
+ * pricing=false 表示公开价格目录没拿到——这时价格区是空的，界面必须明说而不是留白：
+ * 这个端点每台客户机开机都会打、而且无鉴权，失败静默等于没有任何信号。
+ */
+export interface ModelInfoResult {
+  models: Record<string, ModelInfo>;
+  pricing: boolean;
+}
+
 export async function loadModelInfo(o: {
   baseUrl: string;
   apiKey: string;
@@ -157,6 +167,18 @@ export async function loadModelInfo(o: {
   quality?: QualitySnapshot;
   fetchImpl?: typeof fetch;
 }): Promise<Record<string, ModelInfo>> {
+  return (await loadModelInfoWithStatus(o)).models;
+}
+
+export async function loadModelInfoWithStatus(o: {
+  baseUrl: string;
+  apiKey: string;
+  headers: Record<string, string>;
+  pricingUrl: string;
+  /** Artificial Analysis 快照（assets/model-quality.json） */
+  quality?: QualitySnapshot;
+  fetchImpl?: typeof fetch;
+}): Promise<ModelInfoResult> {
   const f = o.fetchImpl ?? fetch;
   const get = async <T>(url: string, headers: Record<string, string>): Promise<T | undefined> => {
     try {
@@ -195,5 +217,6 @@ export async function loadModelInfo(o: {
     const q = out[id]?.factors ? qualityFor(entry, out[id]) : undefined;
     if (q) out[id] = { ...out[id], quality: q };
   }
-  return out;
+  // 价格目录是公开无鉴权的，拿不到就是拿不到——把这件事如实报给界面，别让它渲染成一片空白
+  return { models: out, pricing: !!catalog };
 }

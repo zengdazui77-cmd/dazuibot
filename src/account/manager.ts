@@ -1,5 +1,5 @@
 /**
- * Modelflare 账户：登录 / 退出、本机设备 Key、余额与低余额提醒、每个机器人的预算 Key、
+ * zdzui 账户：登录 / 退出、本机设备 Key、余额与低余额提醒、每个机器人的预算 Key、
  * 用量 / 通知 / 邀请、Key 的性价比（路由策略）。只用 API Key 连接（没有登录账户）时，余额改从 credit_grants 读，
  * 依赖账户授权的功能（用量、通知、邀请、机器人预算、性价比）不可用。
  */
@@ -17,7 +17,7 @@ const log = logger("account");
 export interface AccountHooks {
   /** 把签发的 Key 接到内置网关（先校验再写入） */
   connectKey(key: string): Promise<void>;
-  /** 从内置网关删除 Modelflare 连接与全部机器人 provider */
+  /** 从内置网关删除 zdzui 连接与全部机器人 provider */
   disconnect(): Promise<void>;
   setBotKey(botId: string, key: string): Promise<void>;
   removeBotKey(botId: string): Promise<void>;
@@ -25,7 +25,7 @@ export interface AccountHooks {
   keyBalance(): Promise<KeyBalance | undefined>;
   /** 内置网关共用连接当前那把 Key 的最后 4 位；没连接时为空 */
   sharedKeyTail(): string;
-  /** 共用连接的 Key 已经不能用：没连接，或 Modelflare 说这把 Key 无效 */
+  /** 共用连接的 Key 已经不能用：没连接，或 zdzui 说这把 Key 无效 */
   sharedKeyRejected(): Promise<boolean>;
   /** 提醒：写入应用通知；push = 同时经机器人发到你的微信 / 飞书 */
   alert(text: string, push: boolean): void;
@@ -59,14 +59,14 @@ export interface AccountStatus {
   loginUrl: string;
   alerts: AlertSettings;
   lowBalance: boolean;
-  /** Key 的性价比：supported = Modelflare 认这个设置（回显过 routing_strategy），否则界面不显示这个控件 */
+  /** Key 的性价比：supported = zdzui 认这个设置（回显过 routing_strategy），否则界面不显示这个控件 */
   keyQuality: { strategy: RoutingStrategy; supported: boolean };
 }
 
 /**
  * 性价比（路由策略）的本机记录，存在 KV 的 account.routing 里：
- * chosen：现在的策略（在应用里选的，或从 Modelflare 上本机 Key 读回来的；都没有时按 DEFAULT_ROUTING）；
- * support：Modelflare 认不认这个字段（yes = 回显了，no = 拒绝或忽略），checkedAt：上次判断的时间（no 隔一天再试一次）；
+ * chosen：现在的策略（在应用里选的，或从 zdzui 上本机 Key 读回来的；都没有时按 DEFAULT_ROUTING）；
+ * support：zdzui 认不认这个字段（yes = 回显了，no = 拒绝或忽略），checkedAt：上次判断的时间（no 隔一天再试一次）；
  * applied：已经应用到本机全部 Key 的策略；migrated：老 Key 的一次性迁移做过了。
  */
 interface RoutingState {
@@ -78,11 +78,11 @@ interface RoutingState {
 }
 
 export const DEFAULT_ROUTING: RoutingStrategy = "balanced";
-/** Modelflare 不认这个字段时，隔多久再试一次（服务端可能已经加上了） */
+/** zdzui 不认这个字段时，隔多久再试一次（服务端可能已经加上了） */
 const ROUTING_RETRY_MS = 24 * 3600_000;
 /**
- * 老 Key 的一次性迁移：Modelflare 加上这个字段之前签发的 Key 默认是稳定优先。只把「稳定优先、而且签发于这之前」的
- * 本机 Key 改成均衡；之后的 stable 是用户自己选的，别的值也是后来改的，都不动（Modelflare 后端的约定）。
+ * 老 Key 的一次性迁移：zdzui 加上这个字段之前签发的 Key 默认是稳定优先。只把「稳定优先、而且签发于这之前」的
+ * 本机 Key 改成均衡；之后的 stable 是用户自己选的，别的值也是后来改的，都不动（zdzui 后端的约定）。
  */
 const LEGACY_ROUTING_BEFORE = Date.parse("2026-10-31T00:00:00+08:00") / 1000;
 /** created_at 一般是秒；万一是毫秒也认 */
@@ -233,7 +233,7 @@ export class AccountManager {
       this.session = session;
       this.state = "signed_in";
       this.applyAccount(account);
-      log.info("signed in to Modelflare", { name: account.display_name || account.username });
+      log.info("signed in to zdzui", { name: account.display_name || account.username });
       this.checkLowBalance();
       // 给开着预算、还没有 Key 的机器人补签（换设备或重新登录后）。走核对，和刷新余额时的核对合并，不会重复签发
       void this.repairKeys();
@@ -278,7 +278,7 @@ export class AccountManager {
 
   /** 授权在别处被撤销：断开并回到登录页 */
   private async onRevoked(): Promise<void> {
-    log.warn("Modelflare authorization revoked");
+    log.warn("zdzui authorization revoked");
     await this.forget();
     this.snapshot.error = t("account.revoked_elsewhere");
     this.o.hooks.alert(this.snapshot.error, false);
@@ -445,7 +445,7 @@ export class AccountManager {
   }
 
   /**
-   * 核对本机 Key 和各机器人的预算 Key 还在不在（用户可能在 Modelflare 控制台把它们删了），
+   * 核对本机 Key 和各机器人的预算 Key 还在不在（用户可能在 zdzui 控制台把它们删了），
    * 不在就重新签发并接到内置网关。返回 true = 换了 Key，刚才失败的请求可以再试一次。
    * 并发调用合并成一次；maxAgeMs 内刚核对过就沿用那次的结果。不抛错。
    */
@@ -475,7 +475,7 @@ export class AccountManager {
 
     if (!alive.has(session.record.deviceKeyId) && !this.adoptDeviceKey(session, keys, botKeys) && (await this.o.hooks.sharedKeyRejected())) {
       if (this.session !== session) return false;
-      log.warn("device key is gone on Modelflare, issuing a new one", { id: session.record.deviceKeyId });
+      log.warn("device key is gone on zdzui, issuing a new one", { id: session.record.deviceKeyId });
       const key = await this.issueKey((routing) => this.call((s) => s.createKey(this.deviceKeyName(), undefined, routing)));
       if (!key.key) throw new Error(t("account.no_new_key"));
       try {
@@ -548,14 +548,14 @@ export class AccountManager {
     return c && ROUTING_STRATEGIES.includes(c) ? c : DEFAULT_ROUTING;
   }
 
-  /** 记下 Modelflare 认不认这个字段；不认时写日志（只在状态变了时） */
+  /** 记下 zdzui 认不认这个字段；不认时写日志（只在状态变了时） */
   private noteRouting(supported: boolean, why: string): void {
     const before = this.routing().support;
     this.saveRouting({ support: supported ? "yes" : "no", checkedAt: Date.now() });
-    if (!supported && before !== "no") log.warn("Modelflare doesn't accept a routing strategy on app keys", { why });
+    if (!supported && before !== "no") log.warn("zdzui doesn't accept a routing strategy on app keys", { why });
   }
 
-  /** 签发 Key 时要带的策略：Modelflare 最近说过不认就不带（隔一天再试） */
+  /** 签发 Key 时要带的策略：zdzui 最近说过不认就不带（隔一天再试） */
   private routingToSend(): RoutingStrategy | undefined {
     const st = this.routing();
     if (st.support === "no" && Date.now() - (st.checkedAt ?? 0) < ROUTING_RETRY_MS) return undefined;
@@ -584,7 +584,7 @@ export class AccountManager {
 
   /**
    * 把策略应用到本机签发的全部 Key（本机 Key + 各机器人的预算 Key）。
-   * 返回 ok；unsupported = Modelflare 拒绝或忽略了这个字段；网络等其他错误照常抛出。已被删除的 Key 跳过（核对时会重签）。
+   * 返回 ok；unsupported = zdzui 拒绝或忽略了这个字段；网络等其他错误照常抛出。已被删除的 Key 跳过（核对时会重签）。
    */
   private applyRouting(strategy: RoutingStrategy, ids: number[]): Promise<"ok" | "unsupported"> {
     const run = async (): Promise<"ok" | "unsupported"> => {
@@ -617,7 +617,7 @@ export class AccountManager {
   }
 
   /**
-   * 改性价比：先改 Modelflare 上本机签发的全部 Key，成功了才算改好。Modelflare 不认这个字段时不改，返回 409，
+   * 改性价比：先改 zdzui 上本机签发的全部 Key，成功了才算改好。zdzui 不认这个字段时不改，返回 409，
    * 状态里 supported 变成 false（界面随之收起这个控件）。
    */
   async setRoutingStrategy(strategy: RoutingStrategy): Promise<AccountStatus> {
@@ -642,10 +642,10 @@ export class AccountManager {
 
   /**
    * 核对 Key 时顺带（keys 是这次核对拿到的 Key 列表），不抛错：
-   * 1. 列表里的 Key 不带 routing_strategy：Modelflare 不认，隔一天再看。
+   * 1. 列表里的 Key 不带 routing_strategy：zdzui 不认，隔一天再看。
    * 2. 老 Key 迁移，只做一次：稳定优先、签发于 LEGACY_ROUTING_BEFORE 之前的本机 Key 改成均衡，别的不动。
    * 3. 在应用里改过、还没改到全部 Key 上的（上次没改完），补上。
-   * 4. 否则以 Modelflare 上本机 Key 的为准：在控制台里改过的，应用跟着显示，不盖掉。
+   * 4. 否则以 zdzui 上本机 Key 的为准：在控制台里改过的，应用跟着显示，不盖掉。
    */
   private async syncRouting(session: AccountSession, keys: AppKey[]): Promise<void> {
     const st = this.routing();
@@ -676,7 +676,7 @@ export class AccountManager {
       const now = ROUTING_STRATEGIES.find((x) => x === device.routing_strategy)!;
       if (now !== cur.chosen || cur.applied !== now) {
         this.saveRouting({ chosen: now, applied: now });
-        if (cur.chosen && now !== cur.chosen) log.info("key routing strategy was changed on Modelflare, following it", { strategy: now });
+        if (cur.chosen && now !== cur.chosen) log.info("key routing strategy was changed on zdzui, following it", { strategy: now });
       }
     } catch (e) {
       log.warn("applying key routing strategy failed", { message: (e as Error).message });

@@ -28,7 +28,7 @@ import { locateDshRuntime } from "./agent/host.js";
 import { pwshProbe } from "./agent/pwsh.js";
 import { findAppRoot } from "./magpie/supervisor.js";
 import {
-  MODELFLARE_LINES,
+  allowedRelayUrls,
   MODELFLARE_PROVIDER,
   bareModel,
   botProviderId,
@@ -43,7 +43,7 @@ import {
 } from "./modelflare.js";
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
-import { loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
+import { loadModelInfoWithStatus, type ModelInfo, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
@@ -72,7 +72,7 @@ export interface DesktopHooks {
   /** 在系统的文件管理器里显示一个文件（选中它） */
   showItemInFolder?(p: string): void;
   openInBrowser(): void;
-  /** 在系统浏览器里打开外部链接（Modelflare 登录、充值） */
+  /** 在系统浏览器里打开外部链接（zdzui 登录、充值） */
   openExternal(url: string): void;
   /** 系统钥匙串加密（Electron safeStorage）；不可用时缺省，账户凭据改靠文件权限保护 */
   secretBox?: SecretBox;
@@ -83,7 +83,7 @@ export interface DesktopHooks {
 }
 
 export interface ModelflareStatus {
-  /** managed：经内置网关连接 Modelflare；external：使用环境变量指定的端点（开发/测试），界面不做连接管理 */
+  /** managed：经内置网关连接 zdzui；external：使用环境变量指定的端点（开发/测试），界面不做连接管理 */
   mode: "managed" | "external";
   connected: boolean;
   keyTail: string;
@@ -167,7 +167,7 @@ export class App {
   readonly connections: ConnectionService;
   web: WebServer | undefined;
   desktop: DesktopHooks | undefined;
-  /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
+  /** zdzui 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
   account!: AccountManager;
   /** 故障排查页最近一次"测试模型 / 测试代理"的结果（复制诊断信息时带上） */
   lastDiagnostics: { model?: import("./diagnostics.js").ModelTestResult; agent?: import("./diagnostics.js").AgentTestResult } = {};
@@ -175,8 +175,8 @@ export class App {
   private offPwsh: (() => void) | undefined;
   private accountTimer: NodeJS.Timeout | undefined;
   private picksTimer: NodeJS.Timeout | undefined;
-  private modelInfoCache: { at: number; data: Record<string, ModelInfo> } | undefined;
-  private modelInfoLoading: Promise<Record<string, ModelInfo>> | undefined;
+  private modelInfoCache: { at: number; models: Record<string, ModelInfo>; pricing: boolean } | undefined;
+  private modelInfoLoading: Promise<{ at: number; models: Record<string, ModelInfo>; pricing: boolean }> | undefined;
   /** 各机器人预算 Key 的总额与余额（每 5 分钟随余额一起读；后台工作在剩下不到 20% 时停下，3e） */
   private botBudgetCache: { at: number; data: Record<string, { limitUsd: number; remainUsd: number }> } | undefined;
   /** 数据目录锁（命令行、Docker：同一个数据目录只能一个宿主，调度器开始之前拿） */
@@ -232,11 +232,11 @@ export class App {
       turnTimeoutMs: config.agent.turnTimeoutMs,
       idleTimeoutMs: config.agent.idleTimeoutMs,
       approvalTtlMs: config.agent.approvalTtlMs,
-      // 上下文长度来自 Modelflare 的模型资料（和模型选择器里显示的一致）；内置兜底表跟不上新模型
+      // 上下文长度来自 zdzui 的模型资料（和模型选择器里显示的一致）；内置兜底表跟不上新模型
       contextWindow: async (model) => (await this.infoOf(model))?.context,
       // 桌面版：代理执行的命令用系统代理（环境里没设代理时）；命令行、Docker 只认环境变量
       systemProxy: async (url) => this.desktop?.resolveProxy?.(url),
-      // 代理的对话接口按 Modelflare 目录选（Responses / Anthropic Messages / Chat）；外部端点只当它会 Chat
+      // 代理的对话接口按 zdzui 目录选（Responses / Anthropic Messages / Chat）；外部端点只当它会 Chat
       apiInfo: async (model) => {
         if (!this.magpie) return undefined;
         const info = await this.infoOf(model);
@@ -287,7 +287,7 @@ export class App {
           () => {},
         ),
       timeZone: opts.timeZone,
-      // 花费按 Modelflare 目录的参考价估算（缓存的那份；没读过就先不算，顺手去读）
+      // 花费按 zdzui 目录的参考价估算（缓存的那份；没读过就先不算，顺手去读）
       rates: (model) => this.ratesOf(model),
       botBudget: (botId) => {
         const c = this.botBudgetCache;
@@ -315,7 +315,7 @@ export class App {
       contextChars: config.llm.contextChars,
       route: (botId, model) => this.routeModel(botId, model),
       access: this.access,
-      // Key 可能在 Modelflare 控制台被删了：核对一下，重新签发了就让失败的那条消息再试一次
+      // Key 可能在 zdzui 控制台被删了：核对一下，重新签发了就让失败的那条消息再试一次
       recoverKey: () => (this.account?.signedIn ? this.account.repairKeys(15_000) : Promise.resolve(false)),
     });
   }
@@ -362,7 +362,7 @@ export class App {
   }
 
   /**
-   * 服务端压缩直连的端点：内置网关不转发 /v1/responses/compact（回 404），压缩请求直接发给模型所在的 Modelflare 连接
+   * 服务端压缩直连的端点：内置网关不转发 /v1/responses/compact（回 404），压缩请求直接发给模型所在的 zdzui 连接
    * （同一把 Key）。压缩后的请求仍经网关；网关要先开启 nativeCompaction，带压缩项的请求被拒时才会原样报错，
    * 而不是悄悄删掉压缩项重试（那样会丢掉之前的上下文）。外部端点模式下代理只走 Chat（见 apiInfo），不做。
    */
@@ -380,7 +380,7 @@ export class App {
     return { baseUrl: up.baseUrl, apiKey: up.apiKey, model: model.slice(i + 1), headers: this.requestHeaders() };
   }
 
-  /** 每个经 Modelflare 的请求都带的请求头（调用归因） */
+  /** 每个经 zdzui 的请求都带的请求头（调用归因） */
   requestHeaders(): Record<string, string> {
     return skillHeader(appVersion());
   }
@@ -396,7 +396,7 @@ export class App {
   }
 
   /**
-   * 让每个 Modelflare 连接启用的模型等于 Modelflare 当前列出的全部对话模型（见 setModelPicks）：
+   * 让每个 zdzui 连接启用的模型等于 zdzui 当前列出的全部对话模型（见 setModelPicks）：
    * 0.1.8 及以前连接的补上，新上架的加入，下架的移出。读不到列表时什么都不改，下次再试。
    * 顺带给 0.1.8 及以前的连接补上 Responses 和 Messages 地址（ensureModelflareApis）。
    */
@@ -419,7 +419,7 @@ export class App {
     }
   }
 
-  /** 该机器人请求 Modelflare 用的 Key（只在本进程内使用） */
+  /** 该机器人请求 zdzui 用的 Key（只在本进程内使用） */
   private botKey(botId: string): string {
     if (!this.magpie) return "";
     return this.magpie.providerKey(botProviderId(botId)) || this.magpie.providerKey(this.magpie.modelflareProviderId ?? MODELFLARE_PROVIDER);
@@ -498,7 +498,7 @@ export class App {
     return false;
   }
 
-  /** 开启 / 调整 / 关闭机器人预算：先改 Modelflare 上的 Key，成功后才保存设置 */
+  /** 开启 / 调整 / 关闭机器人预算：先改 zdzui 上的 Key，成功后才保存设置 */
   async setBotBudget(botId: string, budget: BotSettings["budget"]): Promise<Bot> {
     const bot = this.store.getBot(botId);
     if (!bot) throw new Error(t("app.bot_not_found"));
@@ -535,13 +535,13 @@ export class App {
     }
   }
 
-  /** 估算花费用的单价：缓存的 Modelflare 目录里这个模型的（去掉内置网关的 provider 前缀，再试最后一段）；没读过就去读，这次先没有 */
+  /** 估算花费用的单价：缓存的 zdzui 目录里这个模型的（去掉内置网关的 provider 前缀，再试最后一段）；没读过就去读，这次先没有 */
   private ratesOf(model: string): Rates | undefined {
     const c = this.modelInfoCache;
     if (!c || Date.now() - c.at > 3600_000) void this.modelInfo().catch(() => undefined);
     if (!c) return undefined;
     const bare = bareModel(model);
-    return (c.data[bare] ?? c.data[bare.split("/").pop() ?? bare])?.rates;
+    return (c.models[bare] ?? c.models[bare.split("/").pop() ?? bare])?.rates;
   }
 
   /** 删除机器人时一并删掉它的预算 Key */
@@ -556,23 +556,28 @@ export class App {
     this.store.deleteBot(botId);
   }
 
-  /** 模型选择器里的能力与参考价（缓存一小时） */
-  async modelInfo(force = false): Promise<Record<string, ModelInfo>> {
-    if (!force && this.modelInfoCache && Date.now() - this.modelInfoCache.at < 3600_000) return this.modelInfoCache.data;
+  /** 模型选择器里的能力与参考价（缓存一小时）。pricing=false：价格目录没拿到，界面要明说 */
+  async modelInfoState(force = false): Promise<{ models: Record<string, ModelInfo>; pricing: boolean }> {
+    if (!force && this.modelInfoCache && Date.now() - this.modelInfoCache.at < 3600_000) return this.modelInfoCache;
     // 同时来的几次（代理启动时上下文长度和接口一起问）共用一次加载
     this.modelInfoLoading ??= (async () => {
       const key = this.magpie?.providerKey(this.magpie.modelflareProviderId ?? MODELFLARE_PROVIDER) ?? "";
-      const data = await loadModelInfo({
+      const r = await loadModelInfoWithStatus({
         baseUrl: modelflareBaseUrl(this.config.modelflare.line),
         apiKey: key,
         headers: this.requestHeaders(),
         pricingUrl: `${modelflareIssuer()}/api/pricing`,
         quality: loadQualitySnapshot(),
       });
-      this.modelInfoCache = { at: Date.now(), data };
-      return data;
+      this.modelInfoCache = { at: Date.now(), models: r.models, pricing: r.pricing };
+      return this.modelInfoCache;
     })().finally(() => (this.modelInfoLoading = undefined));
     return this.modelInfoLoading;
+  }
+
+  /** 只要模型资料（内部调用方用这个） */
+  async modelInfo(force = false): Promise<Record<string, ModelInfo>> {
+    return (await this.modelInfoState(force)).models;
   }
 
   /** 某个模型的资料：去掉内置网关的 provider 前缀，再试最后一段（openai/x → x） */
@@ -704,9 +709,13 @@ export class App {
     }
   }
 
-  // ---------- Modelflare ----------
+  // ---------- zdzui ----------
+  /**
+   * 允许出网的地址。白标后就是 RELAY_ORIGINS 那两个常量（外加测试注入期的 mock），
+   * 不再由 modelflareBaseUrl() 现算——后者会跟着当前基址走，等于白名单自己批自己。
+   */
   private allowedModelflareUrls(): string[] {
-    return [...new Set([...Object.values(MODELFLARE_LINES), modelflareBaseUrl("auto"), modelflareBaseUrl("cn")])];
+    return allowedRelayUrls();
   }
 
   modelflareStatus(): ModelflareStatus {

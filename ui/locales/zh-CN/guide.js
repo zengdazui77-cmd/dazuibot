@@ -25,7 +25,7 @@ export default {
   closeCoach: "关闭引导",
   doneTitle: "做好了",
   fill: "填入",
-  openConsole: "去 Modelflare 控制台开通图片模型 ↗",
+  openConsole: "去 zdzui 控制台开通图片模型 ↗",
   later: "稍后再说",
   stopHere: "先到这里",
   next: "下一步：{title}",

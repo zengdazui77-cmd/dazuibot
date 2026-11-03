@@ -4,6 +4,23 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 1.0.0-zdzui.1 - 2026-11-03
+
+Custom build for this site, based on upstream AnyModelBot (MIT).
+
+### New
+
+- **See every model if you want to:** Models that obviously can't chat (image generation, embeddings, speech-to-text, moderation) are tucked away by default, so they no longer crowd the list. A "Show all models" switch at the top of the list brings them back with a "may not support chat" marker, so you can decide for yourself. That switch is remembered on this computer.
+- **Pricing failures speak up:** When pricing can't be fetched you see "Pricing is unavailable right now" with a retry button instead of a blank area.
+
+### Changed
+
+- **Connect with an API key only:** Account sign-in is gone. Paste the API key your site issued in Settings and you're set. The key lives only on this computer; if you suspect it leaked, delete it in the site dashboard and issue a new one.
+- **Computer use is off by default:** First-time setup asks once whether to turn it on. Once on, actions that change the screen (clicking, typing) ask you first; just reading the screen doesn't interrupt.
+- **No guessing numbers:** If the balance can't be fetched you see "Balance unavailable" with retry and a link to key management; a dead network says "Network not responding". No more dash that looks like zero.
+- **Prices are indicative:** They come from the site's public pricing catalog and are for reference only — your bill is what counts.
+- **Every link points at this site:** Sign-up, top-up, key management, pricing and docs all go to this site, not the upstream project.
+
 ## 0.1.16 - 2026-11-02
 
 ### New

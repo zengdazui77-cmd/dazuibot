@@ -9,7 +9,7 @@ import { PickModel, shortModel, showsStrategy, strategyOptions } from "../compon
 import { KeyForm, lineOptions } from "./onboarding.js";
 import { LoginSheet, NotificationsSheet, UsageSheet } from "./account.js";
 import { api } from "../lib/api.js";
-import { MF_CONSOLE, MF_DOCS_LINK, MF_TOPUP, usd } from "../lib/links.js";
+import { MF_CONSOLE, MF_DOCS_LINK, MF_KEYS, MF_TOPUP, balanceText, usd } from "../lib/links.js";
 import { useStore, confirmSheet, failed, saved, toast } from "../lib/store.js";
 import { guide, resetGuide, visibleSteps } from "../lib/guide.js";
 import { themeMode, setThemeMode } from "../lib/theme.js";
@@ -186,7 +186,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
   const [langPref, setLangPrefView] = useState(getLangPref);
   useEffect(() => onLangChange(() => setLangPrefView(getLangPref())), []);
 
-  // 图片 / 视频模型（共用 Key 能用的，按推荐顺序）：连上 Modelflare 后取
+  // 图片 / 视频模型（共用 Key 能用的，按推荐顺序）：连上 zdzui 后取
   const [media, setMedia] = useState(null);
   const loadMedia = () =>
     api("/media/models")
@@ -257,7 +257,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
     api("/account/refresh", { method: "POST", body: {} })
       .then(onAccount)
       .catch(failed);
-  // 性价比（Key 的路由策略）：Modelflare 不支持时状态里 supported 变成 false，这一行随之消失
+  // 性价比（Key 的路由策略）：zdzui 不支持时状态里 supported 变成 false，这一行随之消失
   const putKeyQuality = (strategy) =>
     api("/account/key-quality", { method: "PUT", body: { strategy } })
       .then((r) => {
@@ -297,7 +297,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
   };
   const managed = mf && mf.mode === "managed";
   const signedIn = !!(acct && acct.state === "signed_in");
-  // 登录后才有邀请码和通知；进入 Modelflare 分页时读一次
+  // 登录后才有邀请码和通知；进入 zdzui 分页时读一次
   useEffect(() => {
     if (!signedIn || tab !== "modelflare") return;
     api("/account/invite").then(setInvite).catch(() => setInvite(null));
@@ -371,9 +371,10 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
           : html`<span class="val" title=${mf && mf.baseUrl}>${mf && mf.baseUrl}</span>` },
       managed && acct && mf.connected && { tab: "modelflare", id: "balance", name: t("settings.rows.balance.name"),
         sub: acct.error ? t("settings.rows.balance.error", { error: acct.error }) : acct.source === "key" ? t("settings.rows.balance.fromKey") : acct.updatedAt ? t("settings.rows.balance.updated", { time: fmtTimeOfDay(acct.updatedAt) }) : t("common.reading"), keys: t("settings.rows.balance.keys"),
-        ctl: html`<span class=${`balance${acct.lowBalance ? " low" : ""}`}>${usd(acct.balanceUsd)}</span>
+        ctl: html`<span class=${`balance${acct.lowBalance ? " low" : ""}`}>${balanceText(acct, t)}</span>
           <button type="button" class="icon-btn" title=${t("common.refresh")} aria-label=${t("settings.rows.balance.refresh")} onClick=${refreshBalance}><${Icon} name="refresh" size="sm" /></button>
-          <a class="btn" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("settings.rows.balance.topUp")}</a>` },
+          <a class="btn" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("settings.rows.balance.topUp")}</a>
+          ${acct.error && html`<a class="text" href=${MF_KEYS} target="_blank" rel="noopener noreferrer" title=${t("settings.rows.balance.manageKeysHint")}>${t("settings.rows.balance.manageKeys")}</a>`}` },
       managed && acct && mf.connected && { tab: "modelflare", id: "low-balance", name: t("settings.rows.lowBalance.name"), sub: t("settings.rows.lowBalance.sub"), keys: t("settings.rows.lowBalance.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.lowBalance.name")} value=${acct.alerts.lowBalanceUsd} onChange=${(v) => putAlerts({ lowBalanceUsd: v })}
           options=${alertLines.some(([v]) => v === acct.alerts.lowBalanceUsd) ? alertLines : [...alertLines, [acct.alerts.lowBalanceUsd, usd(acct.alerts.lowBalanceUsd)]]} />` },
@@ -447,8 +448,8 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       // 故障排查页是单独的面板（troubleshoot.js），这一行只给搜索用：搜"日志""测试模型"时能找到入口
       { tab: "troubleshoot", id: "troubleshoot", name: t("settings.tabs.troubleshoot"), sub: t("settings.rows.troubleshoot.sub"), keys: t("settings.rows.troubleshoot.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => { setQ(""); onTab?.("troubleshoot"); }}>${t("common.open")}</button>` },
-      { tab: "about", id: "links", name: "Modelflare", sub: t("settings.rows.links.sub"),
-        ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">modelflare.dev ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
+      { tab: "about", id: "links", name: t("common.appName"), sub: t("settings.rows.links.sub"),
+        ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">zdzui.xyz ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
     ].filter(Boolean);
   }, [s, mf, mode, p, models, modelsError, cu, status, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts]);
 

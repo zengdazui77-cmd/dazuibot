@@ -91,11 +91,15 @@ describe("settings", () => {
     const s = normalizeSettings({ permission: "root", memory: { review: false }, computerUse: { approval: "never" } });
     expect(s.permission).toBe("workspace");
     expect(s.memory).toEqual({ enabled: true, review: false, teamWrite: false });
-    expect(s.computerUse).toEqual({ enabled: true, backend: "cua", approval: "auto" });
-    // 旧的审批设置迁移为自动执行
-    expect(normalizeSettings({ computerUse: { approval: "always" } }).computerUse.approval).toBe("auto");
-    expect(normalizeSettings({ computerUse: { approval: "readonly-free" } }).computerUse.approval).toBe("auto");
-    expect(normalizeSettings({ computerUse: { approval: "ask-input", backend: "codex" } }).computerUse).toEqual({ enabled: true, backend: "codex", approval: "ask-input" });
+    expect(s.computerUse).toEqual({ enabled: false, backend: "cua", approval: "ask-input" });
+    // 白标：默认关闭、且改变界面的操作要先问；未知/旧值一律落到最保守的一档（不是 auto）
+    expect(DEFAULT_SETTINGS.computerUse).toEqual({ enabled: false, backend: "cua", approval: "ask-input" });
+    expect(normalizeSettings({ computerUse: { approval: "always" } }).computerUse.approval).toBe("ask-input");
+    expect(normalizeSettings({ computerUse: { approval: "readonly-free" } }).computerUse.approval).toBe("ask-input");
+    expect(normalizeSettings({ computerUse: {} }).computerUse.approval).toBe("ask-input");
+    // 客户明确选的自动执行要保留，否则每次升级都会把人家推翻
+    expect(normalizeSettings({ computerUse: { approval: "auto" } }).computerUse.approval).toBe("auto");
+    expect(normalizeSettings({ computerUse: { approval: "ask-input", backend: "codex" } }).computerUse).toEqual({ enabled: false, backend: "codex", approval: "ask-input" });
     // 生图确认：默认只在需要时问；没有这一项的旧设置也是
     expect(DEFAULT_SETTINGS.media.confirm).toBe("auto");
     expect(normalizeSettings({ media: { confirm: "always" } }).media).toEqual({ confirm: "always" });

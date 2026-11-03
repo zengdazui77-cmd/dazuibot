@@ -20,6 +20,7 @@ export const PREF_DEFAULTS = Object.freeze({
   notify: false, //     窗口不在前台时，回复完成 / 需要确认弹系统通知
   sideW: 0, //          侧栏宽度（px），拖分隔条调的；0 = 默认（tokens 的 --side-w，窄窗口时更窄）
   panelW: 0, //         信息面板宽度（px），同上
+  showAllModels: false, // 模型选择器里显示被判为"不能对话"的模型（默认隐藏，见 lib/models.js）
 });
 /** "恢复默认外观"重置的键（对话习惯不动） */
 export const APPEARANCE_KEYS = ["text", "font", "fontName", "codeFont", "width", "codeWrap", "motion", "glass"];
@@ -49,7 +50,7 @@ function sanitize(raw) {
   if (!raw || typeof raw !== "object") return p;
   for (const [k, list] of Object.entries(CHOICES)) if (list.includes(raw[k])) p[k] = raw[k];
   for (const k of ["fontName", "codeFont"]) if (typeof raw[k] === "string") p[k] = cleanFontName(raw[k]);
-  for (const k of ["codeWrap", "notify"]) if (typeof raw[k] === "boolean") p[k] = raw[k];
+  for (const k of ["codeWrap", "notify", "showAllModels"]) if (typeof raw[k] === "boolean") p[k] = raw[k];
   // 宽度只粗查一下是不是合理的像素数；精确的范围（最窄 / 最宽 / 窗口占比）由 CSS 的 clamp() 和 Splitter 管
   for (const k of ["sideW", "panelW"]) if (Number.isFinite(raw[k]) && raw[k] >= 120 && raw[k] <= 1200) p[k] = Math.round(raw[k]);
   return p;
@@ -73,10 +74,15 @@ function write(p) {
   }
 }
 
-const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const mqGlass = window.matchMedia("(prefers-reduced-transparency: reduce)");
+// 单元测试在 Node 里 import 组件（没有 window / document）：这里全部做存在性判断，
+// 让模块可以被安全地引入，读到的就是默认值。
+const hasWindow = typeof window !== "undefined" && typeof document !== "undefined";
+const noopMq = { matches: false, addEventListener() {} };
+const mqMotion = hasWindow ? window.matchMedia("(prefers-reduced-motion: reduce)") : noopMq;
+const mqGlass = hasWindow ? window.matchMedia("(prefers-reduced-transparency: reduce)") : noopMq;
 
 function apply(p) {
+  if (!hasWindow) return;
   const root = document.documentElement;
   const d = root.dataset;
   const custom = p.font === "custom" && fontStack(p.fontName);
@@ -116,7 +122,7 @@ export const appearanceChanged = (p) => APPEARANCE_KEYS.some((k) => p[k] !== PRE
 mqMotion.addEventListener?.("change", () => apply(prefs.get()));
 mqGlass.addEventListener?.("change", () => apply(prefs.get()));
 // 同一浏览器开了多个标签页：一处改了，其他标签页跟着变
-window.addEventListener("storage", (e) => {
+if (hasWindow) window.addEventListener("storage", (e) => {
   if (e.key !== KEY && e.key !== null) return;
   const next = read();
   prefs.set(next);

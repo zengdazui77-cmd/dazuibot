@@ -412,25 +412,25 @@ export class MagpieSupervisor {
     this.state = "stopped";
   }
 
-  // ---------- Modelflare（唯一的服务商；界面里不出现"服务商"概念） ----------
+  // ---------- zdzui（唯一的服务商；界面里不出现"服务商"概念） ----------
   /**
-   * 连接 Modelflare：没有就以占位 key 创建固定 id 的 provider，再经 /api/provider/save 写入地址与真实 key
+   * 连接 zdzui：没有就以占位 key 创建固定 id 的 provider，再经 /api/provider/save 写入地址与真实 key
    * （key 不出现在进程参数里）。重复连接 = 覆盖。baseUrl 必须是白名单里的地址。
-   * headers 是每个请求额外带给 Modelflare 的请求头（调用归因）。
+   * headers 是每个请求额外带给 zdzui 的请求头（调用归因）。
    */
   async connectModelflare(apiKey: string, baseUrl: string, allowed: string[], headers: Record<string, string> = {}, picks: string[] = []): Promise<void> {
-    await this.upsertProvider(this.modelflareId(), MODELFLARE_PROVIDER, "Modelflare", apiKey, baseUrl, allowed, headers, picks);
+    await this.upsertProvider(this.modelflareId(), MODELFLARE_PROVIDER, "zdzui", apiKey, baseUrl, allowed, headers, picks);
   }
 
   /** 机器人自己的 provider（预算 Key）：id 固定为 mfb-<botId>，机器人的请求都显式发到这个 provider */
   async setBotProvider(botId: string, apiKey: string, baseUrl: string, allowed: string[], headers: Record<string, string> = {}, picks: string[] = []): Promise<void> {
     const id = botProviderId(botId);
-    await this.upsertProvider(this.hasProvider(id) ? id : undefined, id, `Modelflare ${botId}`, apiKey, baseUrl, allowed, headers, picks);
+    await this.upsertProvider(this.hasProvider(id) ? id : undefined, id, `zdzui ${botId}`, apiKey, baseUrl, allowed, headers, picks);
   }
 
   /**
    * 启用的模型（picks）。内置网关对超过 24 个模型、又没有 picks 的服务商只放出列表前 24 个，没放出的
-   * 连 "provider/model" 也不服务，所以由我们写明全部对话模型。pickedFrom 由网关自己记录；Modelflare 的
+   * 连 "provider/model" 也不服务，所以由我们写明全部对话模型。pickedFrom 由网关自己记录；zdzui 的
    * 列表还有不能对话的决策模型不在 picks 里，网关因此不会自动加入新模型，由 App 定时核对（syncModelPicks）。
    */
   async setModelPicks(id: string, picks: string[]): Promise<void> {
@@ -499,7 +499,7 @@ export class MagpieSupervisor {
     await p;
   }
 
-  /** 断开 Modelflare：删除共用连接和所有机器人自己的 provider */
+  /** 断开 zdzui：删除共用连接和所有机器人自己的 provider */
   async disconnectModelflare(): Promise<void> {
     for (const id of [this.modelflareId(), ...this.botProviderIds()]) if (id) await this.deleteProvider(id);
   }
@@ -531,7 +531,7 @@ export class MagpieSupervisor {
   }
 
   /**
-   * provider 的明文 key：只在本进程内用于直连 Modelflare（余额、模型能力、生图），
+   * provider 的明文 key：只在本进程内用于直连 zdzui（余额、模型能力、生图），
    * 不经接口返回、不写日志。
    */
   providerKey(id: string): string {
@@ -543,7 +543,7 @@ export class MagpieSupervisor {
     return this.modelflareId();
   }
 
-  /** 当前 Modelflare 连接（只回传尾号，不外传 key） */
+  /** 当前 zdzui 连接（只回传尾号，不外传 key） */
   modelflareInfo(): { connected: boolean; keyTail: string; baseUrl: string } {
     const id = this.modelflareId();
     const p = id ? this.readProviderRaw(id) : undefined;

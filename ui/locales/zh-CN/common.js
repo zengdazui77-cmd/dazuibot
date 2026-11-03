@@ -1,5 +1,7 @@
 // common · zh-CN：多处共用的短词。只放意思完全相同、语气也通用的词；带上下文的文案放各自的命名空间。
 export default {
+  /** 产品名：窗口标题、关于页等处共用 */
+  appName: "zdzui 助手",
   ok: "好",
   cancel: "取消",
   close: "关闭",
@@ -49,5 +51,11 @@ export default {
   lang: {
     label: "语言",
     system: "跟随系统",
+  },
+  /** 余额的三种未知态要分开说，别都用「—」——客户会以为余额坏了 */
+  balance: {
+    pending: "读取中…",
+    unavailable: "余额暂不可用",
+    network: "网络未响应",
   },
 };

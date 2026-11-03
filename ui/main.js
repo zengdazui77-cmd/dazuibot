@@ -1,5 +1,5 @@
 // AnyModelBot 界面：Preact + htm，无构建步骤（原生 ES 模块）。
-// 未连接 Modelflare → 整页引导；已连接 → 侧栏 + 对话（信息面板按需），设置与机器人设置占满主区。
+// 未连接 zdzui → 整页引导；已连接 → 侧栏 + 对话（信息面板按需），设置与机器人设置占满主区。
 import { render } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, DialogHost, Notice, Toasts, Splitter, tokenPx } from "./components/ui.js";
@@ -143,7 +143,7 @@ function App() {
   const [groupsData, , reloadGroups] = useLoader(() => (connected ? api("/groups") : Promise.resolve(null)), [connected]);
   const [groupSheet, setGroupSheet] = useState(null); // 建群 / 改群的弹窗：{ group? }
   const [modelsData, , loadModels] = useLoader(() => (connected ? api("/models") : Promise.resolve(null)), [connected]);
-  // Modelflare 账户与余额：后端每 5 分钟读一次；界面每分钟取快照，切回窗口时请后端立刻刷新
+  // zdzui 账户与余额：后端每 5 分钟读一次；界面每分钟取快照，切回窗口时请后端立刻刷新
   const [account, , , setAccount] = useLoader(() => api("/account"), [connected]);
   const managed = !!(mf && mf.mode === "managed");
   const [previews, setPreviews] = useState({});
@@ -166,7 +166,7 @@ function App() {
   }, []);
 
   useInterval(() => api("/account").then(setAccount).catch(() => {}), 60_000, connected && managed);
-  // 上手清单：连上 Modelflare 之后读进度（新用户在对话空状态里看到清单，老用户已做过的步骤会自动打勾）
+  // 上手清单：连上 zdzui 之后读进度（新用户在对话空状态里看到清单，老用户已做过的步骤会自动打勾）
   useEffect(() => {
     if (connected) loadGuide();
   }, [connected]);

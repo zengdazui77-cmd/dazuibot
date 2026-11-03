@@ -55,7 +55,7 @@ export default {
   error: {
     stopFailed: "Couldn't stop: {error}",
     fixKey: "Update key",
-    authInvalid: "Your Modelflare key is invalid or has been revoked.",
+    authInvalid: "Your zdzui key is invalid or has been revoked.",
     loadHistory: "Couldn't load message history: {error}",
   },
   menu: {

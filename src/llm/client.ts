@@ -11,7 +11,7 @@ export interface ChatMessage {
 }
 
 /**
- * 能看图的模型。Modelflare 的模型目录不带输入模态，只能按名字判断；不在其中的模型
+ * 能看图的模型。zdzui 的模型目录不带输入模态，只能按名字判断；不在其中的模型
  * （DeepSeek、GLM 文本版等）收到图片时只拿到它在工作区里的路径。
  */
 const IMAGE_INPUT_MODELS = /claude|gpt-4o|gpt-4\.1|gpt-[5-9]|gemini|grok-4|kimi-k3|muse-spark|qvq|-vl\b|-omni\b|glm-[\d.]+v\b/i;

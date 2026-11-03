@@ -1,5 +1,5 @@
 /**
- * Modelflare connected-app 接口（/api/connected-app/*）的客户端。access token 只在内存里，
+ * zdzui connected-app 接口（/api/connected-app/*）的客户端。access token 只在内存里，
  * 过期前用 refresh token 换新；refresh token 每次都会轮换，新值立刻写回本机账户文件。
  */
 import { OAuthError, refreshTokens, type OidcEndpoints } from "./oauth.js";
@@ -20,7 +20,7 @@ export interface ConnectedAccount {
 }
 
 /**
- * Key 的路由策略（Modelflare 控制台 Smart API Key 的 routing_strategy）：low_cost = 低价优先，balanced = 均衡
+ * Key 的路由策略（zdzui 控制台 Smart API Key 的 routing_strategy）：low_cost = 低价优先，balanced = 均衡
  * （控制台的默认：从价格居中的分组开始，先往贵的试再往便宜的试），stable = 稳定优先（分组倍率最高的先试）。
  */
 export type RoutingStrategy = "low_cost" | "balanced" | "stable";

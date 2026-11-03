@@ -1,5 +1,7 @@
 // common · en
 export default {
+  /** Product name, shared by the window title and the About row */
+  appName: "zdzui Assistant",
   ok: "OK",
   cancel: "Cancel",
   close: "Close",
@@ -46,5 +48,11 @@ export default {
   lang: {
     label: "Language",
     system: "System",
+  },
+  /** Keep the three unknown states apart — a bare "—" reads as "the balance is broken" */
+  balance: {
+    pending: "Reading…",
+    unavailable: "Balance unavailable",
+    network: "Network not responding",
   },
 };

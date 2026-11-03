@@ -9,6 +9,7 @@ import path from "node:path";
 import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
+import { __setRelayTestEndpoints } from "../src/modelflare.js";
 import { FakeFeishu, mockOpenAI, until } from "./helpers.js";
 
 const d = resolveMagpieBinary() ? describe : describe.skip;
@@ -41,13 +42,14 @@ d("Modelflare 的三种对话接口", () => {
 
   beforeAll(async () => {
     llm = await mockOpenAI({ key: "mf-api-key", models, kinds: Object.fromEntries(models.map((m) => [m, "text"])) });
-    process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
+    // 仅测试：指向本地 mock（白标构建不读环境变量，走进程内注入点）
+    __setRelayTestEndpoints({ base: llm.url + "/v1" });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-apis-"));
     await boot();
   }, 60_000);
 
   afterAll(async () => {
-    delete process.env.AMB_MODELFLARE_BASE_URL;
+    __setRelayTestEndpoints(undefined);
     await app?.stop();
     await llm?.close();
   });

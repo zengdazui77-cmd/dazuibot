@@ -56,7 +56,7 @@ export default {
   error: {
     stopFailed: "停止失败：{error}",
     fixKey: "去更新",
-    authInvalid: "Modelflare 密钥失效或已被撤销。",
+    authInvalid: "zdzui 密钥失效或已被撤销。",
     loadHistory: "读取历史消息失败：{error}",
   },
   menu: {

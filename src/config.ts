@@ -26,7 +26,7 @@ export interface AppConfig {
     lang: LangPref;
   };
   /**
-   * Modelflare 线路；密钥本身只存在内置 magpie 的隔离配置里。
+   * zdzui 线路；密钥本身只存在内置 magpie 的隔离配置里。
    * lowBalanceUsd：余额低于它（美元）时提醒，0 = 不提醒；lowBalancePush：同时经机器人发到微信 / 飞书。
    */
   modelflare: { line: ModelflareLine; lowBalanceUsd: number; lowBalancePush: boolean };

@@ -505,7 +505,7 @@
 .avatar-opt.on, .avatar-opt.on:hover { background: var(--pill-press); color: var(--fg); font-weight: var(--fw-medium); }
 .avatar-opt:active { background: var(--sel-press); }
 
-/* 应用自己的标志（不是 Modelflare 或其他任何人的 logo） */
+/* 应用自己的标志（不是 zdzui 或其他任何人的 logo） */
 .app-mark {
   display: grid; place-items: center; flex: none; border-radius: 30%;
   background: var(--accent-solid); color: var(--on-accent); box-shadow: inset 0 0 0 1px var(--accent-line);   /* 描边：黄绿在白底上只有 1.15:1，要一道墨色细边 */

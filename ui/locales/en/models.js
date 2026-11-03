@@ -15,6 +15,12 @@ export default {
   useCustom: "Use “{id}”",
   customId: "Custom model ID",
   none: "No models available: this key's group doesn't have any models enabled yet",
+  /** Models that obviously can't chat are hidden by default; this switch lists them with a marker */
+  showAllCount: "Show all models ({count} hidden)",
+  showAllOn: "Show all models (on)",
+  maybeNonChat: "may not support chat",
+  /** Shown when the public pricing catalog can't be fetched — never leave the price area blank */
+  pricingUnavailable: "Pricing is unavailable right now. Reference prices come from the site's public catalog; they're indicative only — your bill is what counts",
   tiers: {
     value: "Value",
     strategy: {

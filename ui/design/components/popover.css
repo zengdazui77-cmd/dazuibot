@@ -145,6 +145,8 @@
 :is(.pop, .palette) li.sep { min-height: 0; height: 1px; margin: var(--space-1) var(--space-2); padding: 0; background: var(--line-2); pointer-events: none; }
 /* 两行的项（命令 + 说明、图标 + 标题 + 说明）：上下内边距相同，两行之间 2px，和列表行的标题 / 说明一致 */
 :is(.pop, .palette) li.explained { white-space: normal; padding: var(--space-1-5) var(--space-2); align-items: flex-start; flex-direction: column; gap: var(--space-0-5); }
+/* 说明项里的开关行（模型选择器的「显示全部模型」）：复选框和文字一行 */
+:is(.pop, .palette) li.explained label.switch-row { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; }
 /* Menu 的说明项：[图标] 标题 / 说明两行 [✓] */
 :is(.pop, .palette) li.rich { white-space: normal; padding: var(--space-1-5) var(--space-2); }
 :is(.pop, .palette) li .lead { flex: none; align-self: flex-start; margin-top: 2px; color: var(--ctl-fg); display: inline-flex; }   /* 微调：14px 图标和第一行文字（约 17.5px 行高）居中 */

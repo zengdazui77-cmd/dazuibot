@@ -1,6 +1,6 @@
 /**
  * 生图 / 生视频：代理的 media_models / media_docs / generate_image / generate_video 工具经内部 bridge 调到这里，
- * 由宿主带着该机器人用的 Key 直连 Modelflare（代理子进程拿不到任何密钥），结果存进机器人工作区的 media/，
+ * 由宿主带着该机器人用的 Key 直连 zdzui（代理子进程拿不到任何密钥），结果存进机器人工作区的 media/，
  * 再由代理用 present 交付到聊天。生成前要不要先问用户由 AgentManager 决定（manager.ts mediaAsk）：只在预计花费超过上限
  * 或机器人设成每次都问时问。
  * - 模型取自 GET /v1/models?scope=authorized&kind=image|video（这把 Key 真正能用的）；参数范围、是否必须带参考素材、
@@ -14,13 +14,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../log.js";
 import { t } from "../i18n/index.js";
+import { MODELFLARE_WEB } from "../modelflare.js";
 
 const log = logger("agent.media");
 
 export type MediaKind = "image" | "video";
 
 export interface MediaOptions {
-  /** Modelflare /v1 基址（随线路） */
+  /** zdzui /v1 基址（随线路） */
   baseUrl: () => string;
   /** 该机器人用的 Key：它自己的预算 Key，没有就用共用 Key；未连接时为空 */
   keyFor: (botId: string) => string;
@@ -104,7 +105,13 @@ const MAX_BYTES = 200 * 1024 * 1024;
 /** 参考素材按 data URL / Base64 嵌进请求，单个文件上限 */
 const MAX_REFERENCE_BYTES = 20 * 1024 * 1024;
 const CACHE_MS = 3600_000;
-const DOCS_URL = "https://docs.modelflare.dev";
+/**
+ * 模型文档站基址（media_docs 工具读它下面的 llms-full.txt）。
+ * 指向站点根：自有站点还没有文档站时 media_docs 会返回「读取文档失败（HTTP 404）」，
+ * 那是给代理看的一句可操作提示，不影响图片/视频生成（生成只依赖 /v1 的模型列表与调用接口）。
+ * 站主后续在该路径下发布一份 llms-full.txt 即可自动生效，不用改代码。
+ */
+const DOCS_URL = MODELFLARE_WEB;
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "video/mp4": "mp4", "video/webm": "webm" };
 const MIME: Record<string, string> = {
   ".png": "image/png",
@@ -272,7 +279,7 @@ export class MediaService {
 
   private key(botId: string): string {
     const key = this.o.keyFor(botId);
-    if (!key) throw new MediaError("还没有连接 Modelflare，无法生成图片或视频");
+    if (!key) throw new MediaError("还没有连接 zdzui，无法生成图片或视频");
     return key;
   }
 
@@ -286,7 +293,7 @@ export class MediaService {
     if (!res.ok) {
       const detail = (await res.json().catch(() => ({}))) as { error?: { message?: string; code?: string } };
       const msg = detail.error?.message || `HTTP ${res.status}`;
-      throw new MediaError(detail.error?.code === "model_not_found" ? `这把 Key 不能用这个模型：${msg}` : `Modelflare 返回错误：${msg}`);
+      throw new MediaError(detail.error?.code === "model_not_found" ? `这把 Key 不能用这个模型：${msg}` : `zdzui 返回错误：${msg}`);
     }
     return res;
   }
@@ -507,7 +514,7 @@ export class MediaService {
       : { model: model.id, prompt, ...(Number.isFinite(seconds) && seconds > 0 ? { seconds: String(Math.round(seconds)) } : {}), ...(size ? { size } : {}) };
     const created = (await (await this.call(key, "POST", "/videos", req)).json()) as { id?: string; task_id?: string };
     const id = created.id || created.task_id;
-    if (!id) throw new MediaError("Modelflare 没有返回视频任务编号");
+    if (!id) throw new MediaError("zdzui 没有返回视频任务编号");
     const deadline = Date.now() + (this.o.videoTimeoutMs ?? 20 * 60_000);
     for (;;) {
       const t = (await (await this.call(key, "GET", `/videos/${encodeURIComponent(id)}`, undefined, 30_000)).json()) as {

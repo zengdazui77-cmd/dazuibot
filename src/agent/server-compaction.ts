@@ -4,7 +4,7 @@
  * - DSH 的 Responses 客户端（pi-ai）是无状态的：store:false，每次请求都带上全部历史；它不发 context_management，
  *   也会丢掉回复里不认识的 compaction 输出项。所以这件事在 bridge 里做。
  * - 某个会话发往上游的输入过了压缩线，就在后台调一次 POST /responses/compact（内置网关不转发这个路径，直接发给该模型
- *   所在的 Modelflare 连接），记下"这段历史（逐项哈希）→ 压缩后的窗口"，按会话存盘。之后同一会话的请求只要开头逐项
+ *   所在的 zdzui 连接），记下"这段历史（逐项哈希）→ 压缩后的窗口"，按会话存盘。之后同一会话的请求只要开头逐项
  *   一致，就把这段换成压缩窗口再发（系统提示用当次请求的）；有任何不一致就原样发。压缩不阻塞当次请求。
  * - 价格目录列出 openai-response-compact 只是提示：每个模型（连同所用的 Key）先做一次很小的压缩 + 续接探测，通过了才用，
  *   结果缓存（内存 + 磁盘，会过期）。压缩调用要推理、要付费（实测 30–75 秒），所以目录没列出的不探测，同一模型 + Key
@@ -24,7 +24,7 @@ import { logger, redactText } from "../log.js";
 
 const log = logger("agent.compaction");
 
-/** Modelflare 价格目录 supported_endpoint_types 里表示 POST /v1/responses/compact 的值 */
+/** zdzui 价格目录 supported_endpoint_types 里表示 POST /v1/responses/compact 的值 */
 export const COMPACT_ENDPOINT = "openai-response-compact";
 
 const DAY = 24 * 3600_000;
@@ -238,7 +238,7 @@ export function splice(lead: unknown[], window: unknown[], tail: unknown[]): unk
 
 /**
  * /responses/compact 的回复是否可用：output 里至少有一个带密文的 compaction 项；不可用时 undefined。
- * object 按文档是 response.compaction；Modelflare（实测 grok）回的是 response，output 只有那一个 compaction 项
+ * object 按文档是 response.compaction；zdzui（实测 grok）回的是 response，output 只有那一个 compaction 项
  * （不保留用户消息）。两种都收，object 没有也收。
  */
 export function compactedWindow(j: any): unknown[] | undefined {
@@ -601,7 +601,7 @@ export class ServerCompaction {
       const { output, usage } = await this.callCompact(c.ep, { input: c.input, tools: c.tools, instructions: c.instructions });
       const window = withoutLead(output, c.lead);
       // 改写后的请求（系统提示 + 窗口 + 工具）要比这次请求小三成以上，两边都按估算比。窗口可能只有一个 compaction 项
-      // （Modelflare 不保留用户消息），一样算；没小多少就不用，半小时内这个会话不再压
+      // （zdzui 不保留用户消息），一样算；没小多少就不用，半小时内这个会话不再压
       const after = estimateTokens(splice(c.lead, window, [])) + estimateTokens(c.tools);
       if (after > c.est * 0.7) {
         quiet = QUIET_MS;
@@ -697,7 +697,7 @@ export class ServerCompaction {
 
   /**
    * 探测：① 直连 /responses/compact 压一段很小的对话，回复里要有带密文的 compaction 项；② 把压缩窗口按真实请求的拼法
-   * 经内置网关发一次 /v1/responses 续接，上游要接受。由 ② 定论：Modelflare 上 grok 的 ① 能过，② 带着 compaction 项
+   * 经内置网关发一次 /v1/responses 续接，上游要接受。由 ② 定论：zdzui 上 grok 的 ① 能过，② 带着 compaction 项
    * 就回 400。返回 undefined = 临时问题（网络、限流、5xx），过一会儿再试。回复报了用量和费用就记进日志。
    */
   async probe(model: string, ep: CompactEndpoint): Promise<Verdict | undefined> {

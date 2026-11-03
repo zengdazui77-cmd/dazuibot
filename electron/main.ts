@@ -309,8 +309,11 @@ process.on("unhandledRejection", (e) => log.warn(`unhandled rejection: ${(e as E
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  // 白标：产品名带中文，但数据目录固定用 ASCII。magpie / dsh / cua-driver / ripgrep 都是原生子进程，
+  // 让中文进入它们的启动路径只会引入一类难查的问题，而这里改一行就能规避。AMB_DATA_DIR 仍可覆盖。
+  app.setPath("userData", path.join(app.getPath("appData"), "zdzui-assistant"));
   // Windows 的系统通知（设置 › 常规 › 回复完成时通知）要求进程的 AppUserModelID 和安装器建的快捷方式一致（= build.appId）
-  if (process.platform === "win32") app.setAppUserModelId("dev.anymodel.bot");
+  if (process.platform === "win32") app.setAppUserModelId("xyz.zdzui.assistant");
   app.on("second-instance", () => showWindow());
   for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => app.quit());
   app.on("window-all-closed", () => {

@@ -426,9 +426,13 @@ describe("模型路由与归因", () => {
     expect(isBotProviderModel("modelflare/openai/gpt-x")).toBe(false);
   });
 
-  it("归因头只接受纯数字版本号", () => {
+  it("归因头接受 semver 预发布版本，但拒绝空白与引号", () => {
     expect(skillHeader("0.1.3")).toEqual({ "X-Modelflare-Skill": "anymodel-bot/0.1.3" });
-    expect(skillHeader("0.1.3-beta")).toEqual({});
+    // 白标版本号就是预发布格式：只认纯数字会把归因头整个丢掉，站后台就看不到客户端版本分布
+    expect(skillHeader("1.0.0-zdzui.1")).toEqual({ "X-Modelflare-Skill": "anymodel-bot/1.0.0-zdzui.1" });
+    expect(skillHeader("0.1.3 ")).toEqual({});
+    expect(skillHeader('0.1.3"x')).toEqual({});
+    expect(skillHeader("0.1.3\nX-Evil: 1")).toEqual({});
   });
 });
 

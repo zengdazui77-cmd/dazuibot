@@ -1,7 +1,7 @@
 // account · en
 export default {
   login: {
-    title: "Sign in to Modelflare",
+    title: "Sign in to zdzui",
     hint: "Signing in replaces the API key you entered.",
   },
   usage: {
@@ -16,7 +16,7 @@ export default {
     empty: "No usage in this period",
   },
   notifications: {
-    title: "Modelflare notifications",
+    title: "zdzui notifications",
     empty: "No notifications",
     details: "View details ↗",
   },
