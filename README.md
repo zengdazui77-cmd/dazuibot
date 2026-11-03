@@ -1,7 +1,5 @@
 <p align="center">
-  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">
-    <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot 的 Eyes 标志：两只竖向胶囊形的眼睛，会左右张望">
-  </a>
+  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot 的 Eyes 标志：两只竖向胶囊形的眼睛，会左右张望">
 </p>
 
 <h1 align="center">
@@ -14,40 +12,31 @@
 <p align="center"><b>跑在你自己电脑上的 AI 机器人。任意模型，按量付费。</b></p>
 
 <p align="center">
-  <a href="https://anymodel.bot/">官网</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">下载</a> |
+  <a href="https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme">站点首页</a> |
   简体中文 |
   <a href="./README_en.md">English</a> |
-  <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
-  <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">价格</a> |
-  <a href="./docs/development.md">开发文档</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/issues">问题反馈</a>
+  <a href="https://zdzui.xyz/pricing?utm_source=zdzui&utm_campaign=amb_readme">价格</a> |
+  <a href="./docs/development.md">开发文档</a>
 </p>
 
 <div align="center">
 
-[![Release][release-shield]][releases-link]
-[![Downloads][downloads-shield]][releases-link]
-[![Stars][stars-shield]][stars-link]
-[![License][license-shield]][license-link]
-[![CI][ci-shield]][ci-link]
+[![License][license-shield]](./LICENSE)
 
-[![Platform][platform-shield]][releases-link]
+[![Platform][platform-shield]]
 [![Pricing][pricing-shield]][pricing-link]
-[![Modelflare][modelflare-shield]][modelflare-link]
-[![X][x-shield]][x-link]
 
 </div>
 
 <p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot 演示：登录 Modelflare、选择模型、让机器人整理一个文件夹，并批准一次文件移动" width="100%">
+  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot 演示：首次启动粘贴 API Key、选择模型、让机器人整理一个文件夹，并批准一次文件移动" width="100%">
 </p>
 
 # 🤖 AnyModelBot
 
 AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
 
-对话、记忆、文件和 API Key 都留在你的设备上。模型来自 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：一个账户，任意模型，按 token 计费。AnyModelBot 本身没有订阅。
+对话、记忆、文件和 API Key 都留在你的设备上。模型来自本站的中转站（[zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)）：一个 API Key，任意模型，按 token 计费。AnyModelBot 本身没有订阅。
 
 和 xAI 的 Grok Bot、OpenAI 的 dots、Anthropic 的 Claude Duet 一样，它是一个常驻的个人 AI 智能体：在后台替你干活，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上，GPT、Claude、Gemini、Grok 等任意模型都能用，按量付费，不绑定某一家的订阅（[详细对比](#-对比-grok-bot--openai-dots--claude-duet)）。
 
@@ -55,50 +44,46 @@ AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS
 
 📥 [下载](#-下载) · 🌠 [截图](#-截图) · 🌟 [核心功能](#-核心功能) · 🆚 [对比](#-对比-grok-bot--openai-dots--claude-duet) · 🔐 [工作原理与隐私](#-工作原理与隐私)
 
-⭐ 喜欢 AnyModelBot？点个 Star，第一时间收到新版本。
-
 ---
 
-<a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-zh.webp" width="100%" alt="Modelflare 横幅：满血、稳定不掺水，低成本享受全球 SOTA 模型；GPT 特惠分组 0.015 倍、Claude 特惠分组 0.03 倍；OpenAI 分组缓存命中率保障 65% · 75% · 85%，未达标补偿差额">
-</a>
+## 本站中转站
 
-AnyModelBot 的模型全部来自 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**：满血、稳定不掺水，低成本享受全球 SOTA 模型。Modelflare 由美国公司 Havenbyte LLC 运营，已有 20 万+ 注册开发者。一个 API Key 就能调用 13 家供应商的 70+ 个文本、图片和视频模型，GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 都在里面，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。请求会在多个供应商之间路由并自动回退，每一次请求都记录用量和费用，价格表公开，按 token 计费。
+AnyModelBot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 API Key 就能调用 GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 68 个文本、图片和视频模型，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。按 token 计费，价格表公开。
 
-**缓存补偿**是一大亮点：OpenAI 的价格优先、稳定、高级三个分组，分别保证每天 65%、75%、85% 的缓存命中率；符合条件的请求没达到目标，Modelflare 会补偿差额。
+**注册、建 Key、粘回应用，三步**
 
-**特惠活动**：单笔充值达到指定金额，就能解锁 0.015 倍价格倍率的 GPT 特惠分组和 0.03 倍的 Claude 特惠分组，适合个人开发、功能验证和轻量使用。这是限时活动，门槛和规则以 Modelflare 页面为准，通过[专属链接](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)注册即可参与。
+1. **在站点注册。** 打开 [zdzui.xyz/sign-up](https://zdzui.xyz/sign-up?utm_source=zdzui&utm_campaign=amb_readme)，用邮箱注册并完成邮箱验证。
+2. **建一把 Key。** 登录后打开[令牌管理](https://zdzui.xyz/keys?utm_source=zdzui&utm_campaign=amb_readme)，新建一个令牌，复制出来（令牌只在创建时显示一次）。
+3. **粘回应用。** 首次启动的欢迎页选「粘贴 API Key」，粘进去。应用校验 `GET /v1/models` 通过后，模型自动列出。
 
-**[注册 Modelflare →](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)** ·
-[价格表](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[API 文档](https://docs.modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[X](https://x.com/modelflare_dev)
+充值在[账单页](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme)；用量、余额和令牌都在[控制台](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme)。
 
-**AnyModelBot 怎么用 Modelflare**
+**AnyModelBot 怎么用本站中转站**
 
-- **登录一次就行。** 首次启动会打开浏览器，登录（或注册）Modelflare。之后应用自己把这台设备连上，不用复制 Key。在 Docker 或服务器上运行？改为粘贴一个 API Key。
-- **所有模型，一个选择器。** 你的 Modelflare 模型会自动列出，每个模型旁边都有上下文长度、能力标记和参考价。
-- **用多少付多少。** 余额、低余额提醒和每日用量都在应用里看。选模型之前，先看公开价格表，和官方价格对比一下。
-- **一条诚实的边界。** 模型请求会经过 Modelflare 转发给你选定的供应商，Modelflare 会保留请求日志；保留什么、保留多久，见[信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)。除此之外的内容都留在你的设备上（[详情](#-工作原理与隐私)）。
+- **只要一把 Key。** 白标版不提供应用内账户登录：首次启动粘贴 API Key 即可，之后应用自己记住。Docker 或服务器上跑也一样。
+- **所有模型，一个选择器。** 你账户能用的模型会自动列出。参考价来自站点公开的价格表；上下文长度与能力标记来自站点的模型资料接口，站点目前没有提供这一项，所以这两项目前不显示。
+- **按量付费。** 每日用量在应用里看。钱包余额与充值在站点网页上——应用只持有 API Key，读不到账户余额。
+- **一条诚实的边界。** 模型请求会经过本站中转站转发给你选定的供应商，中转站会保留请求日志（保留范围与期限由站点说明）。除此之外的内容都留在你的设备上（[详情](#-工作原理与隐私)）。
 
 ---
 
 # 📥 下载
 
-选择你的平台。每个 Release 页面都列出全部安装包和 `SHA256SUMS` 校验文件。
+选择你的平台。每个版本都会附上全部安装包和 `SHA256SUMS` 校验文件。
 
-| 平台 | 架构 | 安装包 | |
-| :--- | :--- | :--- | :--- |
-| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` | [下载][releases-link] |
-| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` | [下载][releases-link] |
-| ![macOS][mac-badge] | Apple 芯片 | `anymodel-bot-<version>-mac-arm64.dmg` | [下载][releases-link] |
-| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` | [下载][releases-link] |
-| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` | [下载][releases-link] |
-| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` | [下载][releases-link] |
+> 安装包与 `SHA256SUMS` 由分发方提供；本仓库不发布构建产物。
+
+| 平台 | 架构 | 安装包 |
+| :--- | :--- | :--- |
+| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` |
+| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` |
+| ![macOS][mac-badge] | Apple 芯片 | `anymodel-bot-<version>-mac-arm64.dmg` |
+| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
+| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
+| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
 
 <p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="在 Windows 上安装 AnyModelBot：运行安装程序、打开应用，来到 Modelflare 登录页" width="100%">
+  <img src="docs/assets/download/install-windows.gif" alt="在 Windows 上安装 AnyModelBot：运行安装程序、打开应用，来到粘贴 API Key 的欢迎页" width="100%">
 </p>
 
 **首次打开。** 如果系统提示这是从网上下载的应用：Windows 点「更多信息 → 仍要运行」，macOS 在「系统设置 → 隐私与安全性」里点「仍要打开」。Linux 先给 AppImage 加可执行权限（`chmod +x`）再运行。关闭窗口会把 AnyModelBot 收到托盘，要退出请用托盘菜单或设置里的选项。
@@ -114,7 +99,8 @@ macOS 用 `shasum -a 256 <文件名>`，Windows PowerShell 用 `Get-FileHash <�
 **用 Docker 部署到 NAS 或服务器**（镜像同时支持 x64 和 arm64）
 
 ```bash
-docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot
+# 镜像地址由分发方提供（本仓库不发布镜像）；自建见下方「从源码运行」
+docker run -d --name amb -p 3600:3600 -v amb-data:/data <镜像地址>
 docker exec amb cat /data/ui-token   # 然后打开 http://<主机>:3600/?token=<令牌>
 ```
 
@@ -123,7 +109,7 @@ docker exec amb cat /data/ui-token   # 然后打开 http://<主机>:3600/?token=
 **从源码运行**
 
 ```bash
-git clone https://github.com/modelflare-ai/AnyModelBot.git
+git clone <本仓库地址>
 cd AnyModelBot
 npm install
 npm run setup      # 拉取并编译内置网关
@@ -152,10 +138,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
-  <img src="docs/assets/screenshots/models-light.webp" alt="模型选择器：可搜索的 Modelflare 模型列表，带上下文长度、能力标记和参考价" width="100%">
+  <img src="docs/assets/screenshots/models-light.webp" alt="模型选择器：可搜索的模型列表，带参考价" width="100%">
 </picture>
 
-<p align="center"><i>每个对话都能选任意 Modelflare 模型，上下文长度、能力和参考价就在旁边。</i></p>
+<p align="center"><i>每个对话都能选任意模型，参考价就在旁边。</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/memory-dark.webp">
@@ -163,13 +149,6 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 </picture>
 
 <p align="center"><i>每个机器人的记忆、渠道和会话，集中在一个面板里。</i></p>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/modelflare-dark.webp">
-  <img src="docs/assets/screenshots/modelflare-light.webp" alt="设置的 Modelflare 页打开了用量弹窗：近 7 天的每日用量，下面是默认模型，余额显示在左下角的账户按钮上" width="100%">
-</picture>
-
-<p align="center"><i>应用里的 Modelflare 账户：余额、用量和默认设置。</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/bots-dark.webp">
@@ -223,16 +202,16 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
   <img src="docs/assets/features/media-generation.gif" alt="机器人生图前先问用哪个模型，用户确认后，成图作为文件交付到聊天里，并在看图窗口中打开" width="100%">
 </p>
 
-## 🌐 任意模型，通过 Modelflare
+## 🌐 任意模型，通过本站中转站
 
-- **登录一次**，你的 Modelflare 模型就会自动出现。更想用 Key？直接粘贴也行。
-- **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，每个都标出上下文长度、能力和参考价。
+- **一把 Key 就够**，你账户能用的模型会自动出现。
+- **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，能算出参考价的都标出来。
 - **按对话切换**，也可以给每个机器人设默认模型；记忆整理、上下文交接这类后台小任务，还能单独指定一个模型。
-- **两条线路。** 国际线路和中国大陆优化线路，由你自己选，AnyModelBot 不会自动来回切换。
-- **按量付费。** 钱包余额、低余额提醒、每日用量、每个机器人的预算 Key 都内置。AnyModelBot 没有订阅。
+- **一条线路。** 白标版只指向一个中转站地址，不分国际/大陆两套，也不会自动切换。
+- **按量付费。** 每日用量和每个机器人的预算在应用里；钱包余额与充值在站点网页上。AnyModelBot 没有订阅。
 
 <p align="center">
-  <img src="docs/assets/features/first-run.gif" alt="首次启动：点「登录 Modelflare」，在浏览器里授权，回到应用后模型已列出，发出第一条消息" width="100%">
+  <img src="docs/assets/features/first-run.gif" alt="首次启动：粘贴 API Key，回到应用后模型已列出，发出第一条消息" width="100%">
 </p>
 
 <p align="center">
@@ -270,17 +249,17 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 </p>
 
 > [!NOTE]
-> 功能是否可用取决于你选择的模型、操作系统和授予的权限。电脑操作需要桌面会话，macOS 上的电脑操作为 Beta。模型请求会经过 Modelflare 转发给你选定的供应商，详见[工作原理与隐私](#-工作原理与隐私)。
+> 功能是否可用取决于你选择的模型、操作系统和授予的权限。电脑操作需要桌面会话，macOS 上的电脑操作为 Beta。模型请求会经过本站中转站转发给你选定的供应商，详见[工作原理与隐私](#-工作原理与隐私)。
 
 # 🆚 对比 Grok Bot / OpenAI dots / Claude Duet
 
 2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布，"常驻的个人 AI 智能体"成了热门：它替你盯着事情、在后台干活，需要你决定时再来找你。AnyModelBot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
-| :--- | :--- | :--- | :--- | :--- |
-| 开源 | ✅ MIT | — | — | — |
+| :--- | :--- | :--- | :--- |
+| 开源 | ✅ MIT | — | — |
 | 智能体跑在哪 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
-| 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 70+ 个（经 Modelflare） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
+| 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 68 个（经本站中转站） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
 | 费用 | 应用免费，模型按 token 计费 | 订阅 | ChatGPT Pro / Business Premium 订阅 | Claude Pro / Max 订阅 |
 | 在哪找它 | 桌面应用（Windows、macOS、Linux）、Docker、微信、飞书、Telegram、Slack、Discord | 桌面应用、iPhone | ChatGPT、Slack、Teams | iOS、Android、claude.ai |
 | 现在能用吗 | 直接下载 | 测试版 | 部分地区开放 | 研究预览，美国候补名单 |
@@ -294,22 +273,22 @@ AnyModelBot 同样能在后台干活：交代的任务可以在后台跑完，�
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/data-flow-dark.svg">
-  <img src="docs/assets/diagrams/data-flow-light.svg" alt="数据流向：对话、记忆、文件和密钥留在你的设备上；模型请求经 Modelflare 转发给模型供应商；聊天渠道的消息会经过对应的平台，机器人也会读写你授权的 Notion、飞书账号" width="100%">
+  <img src="docs/assets/diagrams/data-flow-light.svg" alt="数据流向：对话、记忆、文件和密钥留在你的设备上；模型请求经本站中转站转发给模型供应商；聊天渠道的消息会经过对应的平台，机器人也会读写你授权的 Notion、飞书账号" width="100%">
 </picture>
 
 | 留在你的设备上 | 会离开你的设备 |
 | :--- | :--- |
-| 对话与会话（本地 SQLite 数据库） | 模型回答所需的提示词、文件内容和工具结果，经 Modelflare 发给你选定的供应商 |
+| 对话与会话（本地 SQLite 数据库） | 模型回答所需的提示词、文件内容和工具结果，经本站中转站发给你选定的供应商 |
 | 记忆（Markdown 文件） | 你让机器人用电脑操作看屏幕时的屏幕截图 |
 | 每个机器人工作区里的文件 | 你通过聊天渠道收发的消息，会经过对应的平台 |
-| 你的 API Key 和登录令牌 | 你登录 Modelflare 的过程，发生在 modelflare.dev |
+| 你的 API Key | 你在 zdzui.xyz 上注册、建 Key 的过程，发生在该站点 |
 | 设置 | 你添加 Notion 或飞书账号后，机器人会读写这些账号的内容，读到的内容也会进入模型请求 |
 
-Modelflare 会保留请求日志；保留什么、保留多久，见它的[信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)。我们不声称能做到万无一失：凡是你发给模型的内容，都会离开你的设备。完整清单见 [docs/privacy.md](./docs/privacy.md)。
+本站中转站会保留请求日志；保留什么、保留多久由站点说明。我们不声称能做到万无一失：凡是你发给模型的内容，都会离开你的设备。完整清单见 [docs/privacy.md](./docs/privacy.md)。
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/architecture-dark.svg">
-  <img src="docs/assets/diagrams/architecture-light.svg" alt="架构：Electron 外壳、命令行或 Docker 启动 Node.js + TypeScript 后端，后端包含 Preact 界面、SQLite、DSH 智能体运行时和渠道适配，再调用内置的 magpie 网关，由它连到 Modelflare" width="100%">
+  <img src="docs/assets/diagrams/architecture-light.svg" alt="架构：Electron 外壳、命令行或 Docker 启动 Node.js + TypeScript 后端，后端包含 Preact 界面、SQLite、DSH 智能体运行时和渠道适配，再调用内置的 magpie 网关，由它连到本站中转站" width="100%">
 </picture>
 
 | 层 | 技术 |
@@ -340,30 +319,21 @@ Modelflare 会保留请求日志；保留什么、保留多久，见它的[信�
 - [ ] **语音消息转写**：Telegram 的语音消息目前听不到内容，微信靠平台自带的转写。
 - [ ] **独立的手机应用**：目前可以从微信、飞书、Telegram、Slack、Discord 找到你的机器人。
 
-有别的想法？欢迎提 [issue](https://github.com/modelflare-ai/AnyModelBot/issues) 或发起[讨论](https://github.com/modelflare-ai/AnyModelBot/discussions)。我们决定要做的事项，会用 [`roadmap`](https://github.com/modelflare-ai/AnyModelBot/labels/roadmap) 标签跟踪。
+有别的想法？欢迎向分发方反馈。
 
-# 🤝 参与贡献
+# 🛠️ 自己构建
 
-欢迎提交 bug 报告、修复、文档和想法。
+```bash
+npm install
+npm run setup          # 拉取并编译内置网关
+npm run electron:dev   # 开发模式运行桌面版
+npm run typecheck && npm test
+```
 
-1. 先看看已有的 [issue](https://github.com/modelflare-ai/AnyModelBot/issues) 和[讨论](https://github.com/modelflare-ai/AnyModelBot/discussions)。带 [`good first issue`](https://github.com/modelflare-ai/AnyModelBot/labels/good%20first%20issue) 标签的 issue 适合入门。
-2. Fork 仓库，从 `master` 新建分支。
-3. 本地运行并修改：
-
-   ```bash
-   npm install
-   npm run setup          # 拉取并编译内置网关
-   npm run electron:dev   # 开发模式运行桌面版
-   npm run typecheck && npm test
-   ```
-
-4. 向 `master` 提交 Pull Request，写清楚改了什么、为什么改。比小修复大的改动，请先开 issue，我们先对齐方案。
-
-完整说明见[贡献指南](./CONTRIBUTING.md)。如果要报告安全问题，请按 [SECURITY.md](./SECURITY.md) 处理，不要公开提 issue。
+改动说明见 [docs/development.md](./docs/development.md)。要报告安全问题，请按 [SECURITY.md](./SECURITY.md) 处理，不要公开提 issue。
 
 # 🔗 相关项目
 
-- [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：AnyModelBot 模型背后的 AI API 网关。
 - [magpie](https://github.com/yetone/magpie)：随应用打包的 Go 网关（MIT）。
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)：智能体运行时（MIT）。
 - [Cua](https://github.com/trycua/cua)：电脑操作驱动。
@@ -373,51 +343,16 @@ Modelflare 会保留请求日志；保留什么、保留多久，见它的[信�
 
 完整的许可证与声明见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
-# 💬 社区
-
-- **提问与想法：** [GitHub Discussions](https://github.com/modelflare-ai/AnyModelBot/discussions)
-- **Bug 与功能建议：** [GitHub Issues](https://github.com/modelflare-ai/AnyModelBot/issues)
-- **邮件联系：** [support@anymodel.bot](mailto:support@anymodel.bot)
-- **Modelflare 动态：** [X 上的 @modelflare_dev](https://x.com/modelflare_dev)
-
-# 🚀 贡献者
-
-<a href="https://github.com/modelflare-ai/AnyModelBot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=modelflare-ai/AnyModelBot" alt="AnyModelBot 的贡献者" />
-</a>
-
-# ⭐️ Star 趋势
-
-<a href="https://www.star-history.com/#modelflare-ai/AnyModelBot&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" />
-    <img alt="AnyModelBot 的 Star 趋势图" src="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" width="100%" />
-  </picture>
-</a>
-
 # 📜 许可证
 
 AnyModelBot 以 [MIT 许可证](./LICENSE)发布。随附的第三方软件保留各自的许可证，见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 和 [`LICENSES/`](./LICENSES) 目录。
 
 <!-- link & badge references -->
-[release-shield]: https://img.shields.io/github/v/release/modelflare-ai/AnyModelBot?include_prereleases&label=release&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iOTQiIGhlaWdodD0iODIiIHJ4PSIzNiIgZmlsbD0iI2Q3ZmYwMCIvPjxyZWN0IHg9IjI5IiB5PSIzNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjI4IiByeD0iNi41IiBmaWxsPSIjMTYxYTAwIi8+PHJlY3QgeD0iNTgiIHk9IjM2IiB3aWR0aD0iMTMiIGhlaWdodD0iMjgiIHJ4PSI2LjUiIGZpbGw9IiMxNjFhMDAiLz48L3N2Zz4=&style=flat-square&labelColor=161a00&color=d7ff00
-[downloads-shield]: https://img.shields.io/github/downloads/modelflare-ai/AnyModelBot/total?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[stars-shield]: https://img.shields.io/github/stars/modelflare-ai/AnyModelBot?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[license-shield]: https://img.shields.io/github/license/modelflare-ai/AnyModelBot?logo=opensourceinitiative&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/modelflare-ai/AnyModelBot/ci.yml?branch=master&label=CI&logo=githubactions&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[license-shield]: https://img.shields.io/badge/license-MIT-d7ff00?style=flat-square&labelColor=161a00
 [platform-shield]: https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-d7ff00?style=flat-square&labelColor=161a00
 [pricing-shield]: https://img.shields.io/badge/pricing-pay--as--you--go-d7ff00?style=flat-square&labelColor=161a00
-[modelflare-shield]: https://img.shields.io/badge/Modelflare-modelflare.dev-d7ff00?style=flat-square&labelColor=161a00
-[x-shield]: https://img.shields.io/badge/X-@modelflare__dev-d7ff00?style=flat-square&labelColor=161a00&logo=x&logoColor=d7ff00
 [win-badge]: https://img.shields.io/badge/Windows-161a00?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Q3ZmYwMCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48cmVjdCB4PSIxMi41IiB5PSIzIiB3aWR0aD0iOS41IiBoZWlnaHQ9IjguNSIvPjxyZWN0IHg9IjIiIHk9IjEyLjUiIHdpZHRoPSI5LjUiIGhlaWdodD0iOC41Ii8+PHJlY3QgeD0iMTIuNSIgeT0iMTIuNSIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48L3N2Zz4=
 [mac-badge]: https://img.shields.io/badge/macOS-161a00?style=for-the-badge&logo=apple&logoColor=d7ff00
 [linux-badge]: https://img.shields.io/badge/Linux-161a00?style=for-the-badge&logo=linux&logoColor=d7ff00
 
-[releases-link]: https://github.com/modelflare-ai/AnyModelBot/releases
-[stars-link]: https://github.com/modelflare-ai/AnyModelBot/stargazers
-[license-link]: https://github.com/modelflare-ai/AnyModelBot/blob/master/LICENSE
-[ci-link]: https://github.com/modelflare-ai/AnyModelBot/actions/workflows/ci.yml
-[pricing-link]: https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme
-[modelflare-link]: https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme
-[x-link]: https://x.com/modelflare_dev
+[pricing-link]: https://zdzui.xyz/pricing?utm_source=zdzui&utm_campaign=amb_readme

@@ -1,7 +1,5 @@
 <p align="center">
-  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">
-    <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot Eyes mark: two vertical pill-shaped eyes that glance left and right">
-  </a>
+  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot Eyes mark: two vertical pill-shaped eyes that glance left and right">
 </p>
 
 <h1 align="center">
@@ -14,40 +12,31 @@
 <p align="center"><b>Your own AI bot, on your own computer. Any model, pay per use.</b></p>
 
 <p align="center">
-  <a href="https://anymodel.bot/">Website</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">Download</a> |
+  <a href="https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme">Site</a> |
   <a href="./README.md">简体中文</a> |
   English |
-  <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
-  <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">Pricing</a> |
-  <a href="./docs/development_en.md">Development</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/issues">Feedback</a>
+  <a href="https://zdzui.xyz/pricing?utm_source=zdzui&utm_campaign=amb_readme">Pricing</a> |
+  <a href="./docs/development_en.md">Development</a>
 </p>
 
 <div align="center">
 
-[![Release][release-shield]][releases-link]
-[![Downloads][downloads-shield]][releases-link]
-[![Stars][stars-shield]][stars-link]
-[![License][license-shield]][license-link]
-[![CI][ci-shield]][ci-link]
+[![License][license-shield]](./LICENSE)
 
-[![Platform][platform-shield]][releases-link]
+[![Platform][platform-shield]]
 [![Pricing][pricing-shield]][pricing-link]
-[![Modelflare][modelflare-shield]][modelflare-link]
-[![X][x-shield]][x-link]
 
 </div>
 
 <p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot in action: sign in to Modelflare, pick a model, ask a bot to tidy a folder, and approve a file move" width="100%">
+  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot in action: paste an API key on first launch, pick a model, ask a bot to tidy a folder, and approve a file move" width="100%">
 </p>
 
 # 🤖 AnyModelBot
 
 AnyModelBot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
 
-Your conversations, memory, files and API keys live on your device. Models come from [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme): one account, any model, priced per token. AnyModelBot itself has no subscription.
+Your conversations, memory, files and API keys live on your device. Models come from this site's relay ([zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)): one API key, any model, priced per token. AnyModelBot itself has no subscription.
 
 Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: AnyModelBot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
 
@@ -55,50 +44,46 @@ It is a Super Agent out of the box: background tasks, scheduled rules and Needs 
 
 📥 [Download](#-download) · 🌠 [Screenshots](#-screenshots) · 🌟 [Features](#-key-features) · 🆚 [Compare](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet) · 🔐 [Privacy](#-how-it-works--privacy)
 
-⭐ Like AnyModelBot? Star the repo to follow new releases.
-
 ---
 
-<a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare banner: a stable, lower-cost LLM, image and video AI gateway; GPT discount group at 0.015x and Claude discount group at 0.03x; cache hit-rate guarantees of 65% · 75% · 85% on OpenAI groups, with shortfalls credited">
-</a>
+## This site's relay
 
-Every model in AnyModelBot comes from **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: full-strength, stable models with nothing watered down, and global SOTA models at a lower cost. Modelflare is run by Havenbyte LLC, a US company, and has 200,000+ registered developers. One API key opens 70+ text, image and video models from 13 providers, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Requests are routed across providers with automatic fallback, every request is recorded with its usage and cost, and the price list is public and billed per token.
+Every model in AnyModelBot comes from this site's relay: <https://zdzui.xyz>. One API key opens 68 text, image and video models, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Billing is per token and the price list is public.
 
-**Cache compensation** is a highlight: the price-first, stable and premium OpenAI groups guarantee daily cache hit rates of 65%, 75% and 85%. When eligible requests fall short, Modelflare credits the difference.
+**Sign up, create a key, paste it back — three steps**
 
-**Special offers**: a single top-up of a set amount unlocks the GPT discount group at a 0.015x price multiplier and the Claude discount group at 0.03x, made for personal projects, feature testing and light use. These are limited-time offers, with thresholds and rules on Modelflare's site. Sign up through [this link](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme) to join.
+1. **Sign up on the site.** Open [zdzui.xyz/sign-up](https://zdzui.xyz/sign-up?utm_source=zdzui&utm_campaign=amb_readme) and register with your email, then verify it.
+2. **Create a key.** Once signed in, open [Keys](https://zdzui.xyz/keys?utm_source=zdzui&utm_campaign=amb_readme), create a token and copy it (it is shown only once).
+3. **Paste it back.** On the first-launch welcome screen choose "Paste API key". The app validates `GET /v1/models` and lists your models.
 
-**[Sign up for Modelflare →](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)** ·
-[Price list](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[API docs](https://docs.modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) ·
-[X](https://x.com/modelflare_dev)
+Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme); usage, balance and keys live in the [console](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme).
 
-**How AnyModelBot uses Modelflare**
+**How AnyModelBot uses this relay**
 
-- **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy. Running in Docker or on a server? Paste an API key instead.
-- **Every model, one picker.** Your Modelflare models are listed automatically, with context length, capabilities and reference prices next to each one.
-- **Pay for what you use.** Balance, low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
-- **An honest boundary.** Model requests travel through Modelflare to the provider you pick, and Modelflare keeps request logs. See the [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. Everything else stays on your device ([details](#-how-it-works--privacy)).
+- **One key is all it takes.** The white-label build has no in-app account sign-in: paste an API key on first launch and the app remembers it. Same in Docker or on a server.
+- **Every model, one picker.** Models your key can use are listed automatically. Reference prices come from the site's public price list; context length and capability tags come from the site's model-profile endpoint, which the site does not currently serve, so those two are not shown yet.
+- **Pay for what you use.** Per-day usage shows up inside the app. Wallet balance and top-ups live on the site — the app only holds an API key and cannot read the account balance.
+- **An honest boundary.** Model requests travel through this relay to the provider you pick, and the relay keeps request logs (the site states what and for how long). Everything else stays on your device ([details](#-how-it-works--privacy)).
 
 ---
 
 # 📥 Download
 
-Pick your platform. Every release page lists all installers and a `SHA256SUMS` file.
+Pick your platform. Every version ships with all installers and a `SHA256SUMS` file.
 
-| Platform | Architecture | Installer | |
-| :--- | :--- | :--- | :--- |
-| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` | [Download][releases-link] |
-| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` | [Download][releases-link] |
-| ![macOS][mac-badge] | Apple silicon | `anymodel-bot-<version>-mac-arm64.dmg` | [Download][releases-link] |
-| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` | [Download][releases-link] |
-| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` | [Download][releases-link] |
-| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` | [Download][releases-link] |
+> Installers and `SHA256SUMS` are provided by the distributor; this repository does not publish build artifacts.
+
+| Platform | Architecture | Installer |
+| :--- | :--- | :--- |
+| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` |
+| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` |
+| ![macOS][mac-badge] | Apple silicon | `anymodel-bot-<version>-mac-arm64.dmg` |
+| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
+| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
+| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
 
 <p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="Installing AnyModelBot on Windows: run the installer, open the app, and land on the Modelflare sign-in screen" width="100%">
+  <img src="docs/assets/download/install-windows.gif" alt="Installing AnyModelBot on Windows: run the installer, open the app, and land on the paste-your-API-key welcome screen" width="100%">
 </p>
 
 **First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides AnyModelBot to the tray; quit from the tray menu or from Settings.
@@ -114,7 +99,8 @@ On macOS use `shasum -a 256 <file>`; in Windows PowerShell use `Get-FileHash <fi
 **Run it in Docker on a NAS or server** (the image covers both x64 and arm64)
 
 ```bash
-docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot
+# image address is provided by the distributor (this repository publishes none); to build your own see "Run from source" below
+docker run -d --name amb -p 3600:3600 -v amb-data:/data <image-address>
 docker exec amb cat /data/ui-token   # then open http://<host>:3600/?token=<token>
 ```
 
@@ -123,7 +109,7 @@ Don't expose port 3600 directly to the internet.
 **Run from source**
 
 ```bash
-git clone https://github.com/modelflare-ai/AnyModelBot.git
+git clone <this-repository-url>
 cd AnyModelBot
 npm install
 npm run setup      # fetches and builds the bundled gateway
@@ -152,10 +138,10 @@ These screenshots show the Simplified Chinese interface. The app also runs in En
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
-  <img src="docs/assets/screenshots/models-light.webp" alt="Model picker: searchable list of Modelflare models with context length, capability tags and reference prices" width="100%">
+  <img src="docs/assets/screenshots/models-light.webp" alt="Model picker: a searchable list of models with reference prices" width="100%">
 </picture>
 
-<p align="center"><i>Pick any Modelflare model per conversation. Context length, capabilities and reference prices sit next to each one.</i></p>
+<p align="center"><i>Pick any model per conversation. Reference prices sit next to each one.</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/memory-dark.webp">
@@ -163,13 +149,6 @@ These screenshots show the Simplified Chinese interface. The app also runs in En
 </picture>
 
 <p align="center"><i>Memory, channels and sessions for each bot, in one panel.</i></p>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/modelflare-dark.webp">
-  <img src="docs/assets/screenshots/modelflare-light.webp" alt="Settings, Modelflare tab with the usage dialog open: daily usage for the last 7 days, the default model row below, and the balance on the account button" width="100%">
-</picture>
-
-<p align="center"><i>Your Modelflare account inside the app: balance, usage and defaults.</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/bots-dark.webp">
@@ -223,16 +202,16 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
   <img src="docs/assets/features/media-generation.gif" alt="A bot asks which model to use for an image, the user confirms, and the finished image arrives in the chat as a file and opens in a viewer" width="100%">
 </p>
 
-## 🌐 Any model, through Modelflare
+## 🌐 Any model, through this relay
 
-- **Sign in once** and your Modelflare models appear automatically. Prefer a key? Paste one.
-- **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with context length, capability tags and a reference price.
+- **One key is enough** and the models your key can use appear automatically.
+- **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with a reference price whenever one can be computed.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
-- **Two routes.** Choose the international route or the one optimized for mainland China; AnyModelBot never switches between them on its own.
-- **Pay per use.** Wallet balance, low-balance reminders, daily usage and per-bot budget keys are built in. AnyModelBot has no subscription.
+- **One route.** The white-label build points at a single relay address: there is no international/mainland pair and no automatic switching.
+- **Pay per use.** Daily usage and per-bot budgets live in the app; wallet balance and top-ups live on the site. AnyModelBot has no subscription.
 
 <p align="center">
-  <img src="docs/assets/features/first-run.gif" alt="First launch: click Sign in to Modelflare, approve in the browser, return to the app with models listed, and send a first message" width="100%">
+  <img src="docs/assets/features/first-run.gif" alt="First launch: paste an API key, return to the app with models listed, and send a first message" width="100%">
 </p>
 
 <p align="center">
@@ -270,17 +249,17 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 </p>
 
 > [!NOTE]
-> Features depend on the model you choose, your operating system and the permissions you grant. Computer use requires a desktop session, and macOS computer use is in Beta. Model requests go through Modelflare to the provider you pick; see [How it works & privacy](#-how-it-works--privacy).
+> Features depend on the model you choose, your operating system and the permissions you grant. Computer use requires a desktop session, and macOS computer use is in Beta. Model requests go through this relay to the provider you pick; see [How it works & privacy](#-how-it-works--privacy).
 
 # 🆚 AnyModelBot vs Grok Bot, OpenAI dots and Claude Duet
 
 In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet made the always-on personal AI agent the thing to watch: it keeps an eye on things, works in the background and comes to you when a decision is yours. AnyModelBot does the same kind of job a different way: open source, on your own device, with any model.
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
-| :--- | :--- | :--- | :--- | :--- |
-| Open source | ✅ MIT | — | — | — |
+| :--- | :--- | :--- | :--- |
+| Open source | ✅ MIT | — | — |
 | Where the agent runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
-| Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and 70+ more (through Modelflare) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
+| Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, 68 in total (through this relay) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
 | Cost | Free app, models billed per token | Subscription | ChatGPT Pro / Business Premium subscription | Claude Pro / Max subscription |
 | Where you reach it | Desktop app (Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | Desktop app, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | Availability | Download it now | Beta | Select markets | Research preview, US waitlist |
@@ -294,22 +273,22 @@ AnyModelBot works in the background too: a task you hand over can finish in the 
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/data-flow-dark.svg">
-  <img src="docs/assets/diagrams/data-flow-light.svg" alt="Data flow: conversations, memory, files and keys stay on your device; model requests go through Modelflare to the model provider; chat channel messages pass through those platforms, and bots read and write the Notion and Feishu accounts you authorize" width="100%">
+  <img src="docs/assets/diagrams/data-flow-light.svg" alt="Data flow: conversations, memory, files and keys stay on your device; model requests go through this relay to the model provider; chat channel messages pass through those platforms, and bots read and write the Notion and Feishu accounts you authorize" width="100%">
 </picture>
 
 | Stays on your device | Leaves your device |
 | :--- | :--- |
-| Conversations and sessions (local SQLite database) | The prompts, files and tool results a model needs to answer, sent through Modelflare to the provider you chose |
+| Conversations and sessions (local SQLite database) | The prompts, files and tool results a model needs to answer, sent through this relay to the provider you chose |
 | Memory (Markdown files) | Screenshots, when you ask a bot to look at your screen with computer use |
 | Files in each bot's workspace | Messages you exchange over chat channels, which pass through those platforms |
-| Your API key and sign-in tokens | Your sign-in with Modelflare, which happens at modelflare.dev |
+| Your API key | Your sign-up and key creation on zdzui.xyz, which happens on that site |
 | Settings | If you add Notion or Feishu accounts, bots read and write in those accounts, and what they read also goes into model requests |
 
-Modelflare keeps request logs; its [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) explains what is kept and for how long. We do not claim your data is beyond all risk: anything you send to a model leaves your device. The full inventory is in [docs/privacy_en.md](./docs/privacy_en.md).
+This relay keeps request logs; what is kept and for how long is stated by the site. We do not claim your data is beyond all risk: anything you send to a model leaves your device. The full inventory is in [docs/privacy_en.md](./docs/privacy_en.md).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/architecture-dark.svg">
-  <img src="docs/assets/diagrams/architecture-light.svg" alt="Architecture: Electron shell, command line or Docker start a Node.js and TypeScript backend with a Preact UI, SQLite, the DSH agent runtime and channel adapters, which call the bundled magpie gateway, which calls Modelflare" width="100%">
+  <img src="docs/assets/diagrams/architecture-light.svg" alt="Architecture: Electron shell, command line or Docker start a Node.js and TypeScript backend with a Preact UI, SQLite, the DSH agent runtime and channel adapters, which call the bundled magpie gateway, which calls this relay" width="100%">
 </picture>
 
 | Layer | Technology |
@@ -340,30 +319,21 @@ Directions we are exploring. They are not promises, and the order is not a sched
 - [ ] **Voice message transcription**: bots can't hear Telegram voice messages today, and WeChat relies on the platform's own transcript.
 - [ ] **A standalone mobile app**: today you reach your bots from WeChat, Feishu, Telegram, Slack or Discord.
 
-Have a different idea? Open an [issue](https://github.com/modelflare-ai/AnyModelBot/issues) or start a [discussion](https://github.com/modelflare-ai/AnyModelBot/discussions). Items we pick up are tracked with the [`roadmap`](https://github.com/modelflare-ai/AnyModelBot/labels/roadmap) label.
+Have a different idea? Tell the distributor.
 
-# 🤝 Contributing
+# 🛠️ Building it yourself
 
-Bug reports, fixes, docs and ideas are all welcome.
+```bash
+npm install
+npm run setup          # fetches and builds the bundled gateway
+npm run electron:dev   # desktop app in development mode
+npm run typecheck && npm test
+```
 
-1. Check existing [issues](https://github.com/modelflare-ai/AnyModelBot/issues) and [discussions](https://github.com/modelflare-ai/AnyModelBot/discussions) first. Issues labeled [`good first issue`](https://github.com/modelflare-ai/AnyModelBot/labels/good%20first%20issue) are a good place to start.
-2. Fork the repo and create a branch from `master`.
-3. Run it locally and make your change:
-
-   ```bash
-   npm install
-   npm run setup          # fetches and builds the bundled gateway
-   npm run electron:dev   # desktop app in development mode
-   npm run typecheck && npm test
-   ```
-
-4. Open a pull request against `master` and describe what changed and why. For anything larger than a small fix, open an issue first so we can agree on the approach.
-
-Read the full [contributing guide](./CONTRIBUTING_en.md). To report a security problem, follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.
+Changes are described in [docs/development_en.md](./docs/development_en.md). To report a security problem, follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.
 
 # 🔗 Related Projects
 
-- [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme): the AI API gateway behind AnyModelBot's models.
 - [magpie](https://github.com/yetone/magpie): the Go gateway bundled with the app (MIT).
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): the agent runtime (MIT).
 - [Cua](https://github.com/trycua/cua): the computer-use driver.
@@ -373,51 +343,16 @@ Read the full [contributing guide](./CONTRIBUTING_en.md). To report a security p
 
 Full licenses and notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
-# 💬 Community
-
-- **Questions and ideas:** [GitHub Discussions](https://github.com/modelflare-ai/AnyModelBot/discussions)
-- **Bugs and feature requests:** [GitHub Issues](https://github.com/modelflare-ai/AnyModelBot/issues)
-- **Email:** [support@anymodel.bot](mailto:support@anymodel.bot)
-- **News from Modelflare:** [@modelflare_dev on X](https://x.com/modelflare_dev)
-
-# 🚀 Contributors
-
-<a href="https://github.com/modelflare-ai/AnyModelBot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=modelflare-ai/AnyModelBot" alt="Contributors to AnyModelBot" />
-</a>
-
-# ⭐️ Star History
-
-<a href="https://www.star-history.com/#modelflare-ai/AnyModelBot&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" />
-    <img alt="Star history chart for AnyModelBot" src="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" width="100%" />
-  </picture>
-</a>
-
 # 📜 License
 
 AnyModelBot is released under the [MIT License](./LICENSE). Bundled third-party software keeps its own licenses; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [`LICENSES/`](./LICENSES) folder.
 
 <!-- link & badge references -->
-[release-shield]: https://img.shields.io/github/v/release/modelflare-ai/AnyModelBot?include_prereleases&label=release&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iOTQiIGhlaWdodD0iODIiIHJ4PSIzNiIgZmlsbD0iI2Q3ZmYwMCIvPjxyZWN0IHg9IjI5IiB5PSIzNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjI4IiByeD0iNi41IiBmaWxsPSIjMTYxYTAwIi8+PHJlY3QgeD0iNTgiIHk9IjM2IiB3aWR0aD0iMTMiIGhlaWdodD0iMjgiIHJ4PSI2LjUiIGZpbGw9IiMxNjFhMDAiLz48L3N2Zz4=&style=flat-square&labelColor=161a00&color=d7ff00
-[downloads-shield]: https://img.shields.io/github/downloads/modelflare-ai/AnyModelBot/total?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[stars-shield]: https://img.shields.io/github/stars/modelflare-ai/AnyModelBot?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[license-shield]: https://img.shields.io/github/license/modelflare-ai/AnyModelBot?logo=opensourceinitiative&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/modelflare-ai/AnyModelBot/ci.yml?branch=master&label=CI&logo=githubactions&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[license-shield]: https://img.shields.io/badge/license-MIT-d7ff00?style=flat-square&labelColor=161a00
 [platform-shield]: https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-d7ff00?style=flat-square&labelColor=161a00
 [pricing-shield]: https://img.shields.io/badge/pricing-pay--as--you--go-d7ff00?style=flat-square&labelColor=161a00
-[modelflare-shield]: https://img.shields.io/badge/Modelflare-modelflare.dev-d7ff00?style=flat-square&labelColor=161a00
-[x-shield]: https://img.shields.io/badge/X-@modelflare__dev-d7ff00?style=flat-square&labelColor=161a00&logo=x&logoColor=d7ff00
 [win-badge]: https://img.shields.io/badge/Windows-161a00?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Q3ZmYwMCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48cmVjdCB4PSIxMi41IiB5PSIzIiB3aWR0aD0iOS41IiBoZWlnaHQ9IjguNSIvPjxyZWN0IHg9IjIiIHk9IjEyLjUiIHdpZHRoPSI5LjUiIGhlaWdodD0iOC41Ii8+PHJlY3QgeD0iMTIuNSIgeT0iMTIuNSIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48L3N2Zz4=
 [mac-badge]: https://img.shields.io/badge/macOS-161a00?style=for-the-badge&logo=apple&logoColor=d7ff00
 [linux-badge]: https://img.shields.io/badge/Linux-161a00?style=for-the-badge&logo=linux&logoColor=d7ff00
 
-[releases-link]: https://github.com/modelflare-ai/AnyModelBot/releases
-[stars-link]: https://github.com/modelflare-ai/AnyModelBot/stargazers
-[license-link]: https://github.com/modelflare-ai/AnyModelBot/blob/master/LICENSE
-[ci-link]: https://github.com/modelflare-ai/AnyModelBot/actions/workflows/ci.yml
-[pricing-link]: https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme
-[modelflare-link]: https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme
-[x-link]: https://x.com/modelflare_dev
+[pricing-link]: https://zdzui.xyz/pricing?utm_source=zdzui&utm_campaign=amb_readme
