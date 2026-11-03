@@ -1,36 +1,48 @@
 /**
- * Modelflare：本程序唯一的模型来源。
- * - 两条线路（文档《Which endpoint to call》）：国际 modelflare.dev、中国大陆优化 origin.modelflare.dev；
- *   飞行中的 POST 不跨主机重定向，所以线路由用户事先选定，不自动切换。
+ * 上游模型服务：本程序唯一的模型来源。
+ * - 两条线路：国际（global）、中国大陆优化（cn）。飞行中的 POST 不跨主机重定向，
+ *   所以线路由用户事先选定，不自动切换。
  * - 连接前用 GET {base}/models + Bearer 校验密钥；错误按状态码给出可操作的说明。
+ *
+ * 白标（改接自己的中转站）——全部走环境变量，不必改代码：
+ *   AMB_RELAY_GLOBAL   国际线路基址，形如 https://api.example.com/v1
+ *   AMB_RELAY_CN       大陆线路基址，同上；不设则退回 AMB_RELAY_GLOBAL
+ *   AMB_RELAY_WEB      站点主页（注册 / 充值 / 控制台链接的根）
+ *   AMB_RELAY_UTM      注册归因用的 utm_source
+ *   AMB_RELAY_CLIENT_ID  自带 OIDC 登录时的 client_id
  */
 import { t } from "./i18n/index.js";
 
 export type ModelflareLine = "auto" | "global" | "cn";
 
+const envTrim = (v: string | undefined): string => (v ?? "").trim().replace(/\/+$/, "");
+
+const FALLBACK_GLOBAL = "https://modelflare.dev/v1";
+const RELAY_GLOBAL = envTrim(process.env.AMB_RELAY_GLOBAL) || FALLBACK_GLOBAL;
+const RELAY_CN = envTrim(process.env.AMB_RELAY_CN) || (envTrim(process.env.AMB_RELAY_GLOBAL) ? RELAY_GLOBAL : "https://origin.modelflare.dev/v1");
+
 export const MODELFLARE_LINES: Record<Exclude<ModelflareLine, "auto">, string> = {
-  global: "https://modelflare.dev/v1",
-  cn: "https://origin.modelflare.dev/v1",
+  global: RELAY_GLOBAL,
+  cn: RELAY_CN,
 };
 
 export const MODELFLARE_PROVIDER = "modelflare";
 
-/** Modelflare 官网：登录、注册、充值、控制台都在这里（国内线路只开放 /v1，不提供网页） */
-export const MODELFLARE_WEB = "https://modelflare.dev";
+/** 站点主页：登录、注册、充值、控制台都在这里（大陆线路通常只开放 /v1，不提供网页） */
+export const MODELFLARE_WEB = envTrim(process.env.AMB_RELAY_WEB) || "https://modelflare.dev";
 
 /**
  * 账户登录（OIDC 授权码 + PKCE，RFC 8252 原生应用）。client_id 是公开值：本程序是公共客户端，
  * 没有也不需要客户端密钥；回调到本机 127.0.0.1 的临时端口。
  */
-export const MODELFLARE_CLIENT_ID = "anymodel-bot";
+export const MODELFLARE_CLIENT_ID = (process.env.AMB_RELAY_CLIENT_ID ?? "").trim() || "anymodel-bot";
 export const MODELFLARE_SCOPES = "openid profile offline_access account api_keys";
 
 /**
- * 注册来源（Modelflare 后台按 utm_source 统计从本程序来的注册与充值）。
- * 全项目统一：utm_source=anymodelbot&utm_campaign=amb_<位置>。应用内 amb_signup / amb_topup / amb_console …，
- * README 与仓库文档 amb_readme，官网 amb_homepage。
+ * 注册来源（后台按 utm_source 统计从本程序来的注册与充值）。
+ * 默认沿用上游项目的取值，自建中转站时用 AMB_RELAY_UTM 换成自己的标识。
  */
-export const UTM = { utm_source: "anymodelbot" } as const;
+export const UTM: Record<string, string> = { utm_source: (process.env.AMB_RELAY_UTM ?? "").trim() || "anymodelbot" };
 
 /** 开发/测试：AMB_MODELFLARE_ISSUER 把登录与账户接口指向本地 mock（界面无法设置） */
 export function modelflareIssuer(env: NodeJS.ProcessEnv = process.env): string {
