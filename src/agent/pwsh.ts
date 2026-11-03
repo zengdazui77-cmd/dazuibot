@@ -13,9 +13,10 @@
  * - 运行中代理拉不起所用的 pwsh（宿主把 pwsh 工具的结果转过来，observeToolResult）就把它标记为坏，退回下一个，空闲时重启 DSH，并告诉用户。
  * - 选择变了（装好了、坏了、改回系统默认）就通知订阅者：宿主的设置签名里带着路径，空闲的代理进程换用新的。
  * - 版本号：先读 pwsh.deps.json，读不到（Store 别名）再 `pwsh -Version`（20 秒超时）；试运行也会报版本。
- * - AMB_PWSH_FORCE=missing 在任何平台上模拟"未安装"（截图、测试；installing / installed / broken / failed 模拟内置副本的几种状态），
- *   不影响 DSH；AMB_PWSH_IGNORE_SYSTEM=1 不用系统里的 PowerShell
- *   （CI 用它验证内置副本）；AMB_PWSH_AUTO_INSTALL=0 不自动安装。
+ * - 排查开关（force / ignoreSystem / autoInstall / 安装根目录）都是构造参数或 config.json 的 agent.pwsh*，
+ *   **不来自环境变量**：force=missing 在任何平台上模拟"未安装"（截图、测试；installing / installed / broken /
+ *   failed 模拟内置副本的几种状态），不影响 DSH；ignoreSystem 不用系统里的 PowerShell（CI 验证内置副本）；
+ *   autoInstall=false 不自动安装。安装根目录能改就等于能连 state.json 一起伪造，所以这条路必须关掉。
  */
 import { execFile } from "node:child_process";
 import fs from "node:fs";
@@ -52,7 +53,7 @@ export interface PwshCandidate {
 }
 
 export interface PwshStatus {
-  /** 只在 Windows 上检测（或 AMB_PWSH_FORCE 模拟）；其他平台代理用 bash */
+  /** 只在 Windows 上检测（或 force 模拟）；其他平台代理用 bash */
   applicable: boolean;
   /** 第一次检测还没完成 */
   checking?: boolean;
@@ -64,7 +65,7 @@ export interface PwshStatus {
   source?: PwshSource;
   /** 例如 7.4.6；读不到时为空 */
   version?: string;
-  /** AMB_PWSH_FORCE=missing 模拟的结果 */
+  /** force 模拟的结果 */
   forced?: boolean;
   checkedAt: number;
   /** 写进 DSH 补丁的路径；空 = 交给 DSH 自己找 */
@@ -72,9 +73,9 @@ export interface PwshStatus {
   /** 应用内置的 PowerShell 7 */
   private?: PrivatePwshStatus;
   mode?: PwshMode;
-  /** 是否会自动安装内置副本（AMB_PWSH_AUTO_INSTALL=0 关掉；代理模式关着时也不装） */
+  /** 是否会自动安装内置副本（agent.pwshAutoInstall=false 关掉；代理模式关着时也不装） */
   autoInstall?: boolean;
-  /** AMB_PWSH_IGNORE_SYSTEM=1 */
+  /** 装作系统里没有 PowerShell 7（config agent.pwshIgnoreSystem，CI 用） */
   ignoreSystem?: boolean;
   /** 系统里找到的 PowerShell 7 用不了的原因（试运行没过、代理拉不起它） */
   systemIssue?: string;
@@ -560,7 +561,7 @@ export class PwshProbe {
 
 const FORCE_DEMO = ["missing", "installing", "installed", "broken", "failed"];
 
-/** AMB_PWSH_FORCE 模拟的状态（截图、界面测试；任何平台） */
+/** force 模拟的状态（截图、界面测试；任何平台） */
 function forcedStatus(kind: string, version: string): PwshStatus {
   const now = Date.now();
   const dir = "C:\\Users\\you\\AppData\\Local\\AnyModelBot\\pwsh\\" + `${version}-x64`;
@@ -673,7 +674,7 @@ export function pwshReportLine(st: PwshStatus): string | undefined {
     const inst = p.install.state !== "idle" ? t("pwsh.privateInstall", { progress: installProgressText(p.install) }) : "";
     const policy = st.mode === "system" ? t("pwsh.policySystem") : st.autoInstall ? t("pwsh.policyAuto") : t("pwsh.policyManual");
     lines.push(
-      t("pwsh.privateLine", { version: p.version, arch: p.arch ? ` ${p.arch}` : "", state, inst, dir: p.dir ? ` · ${p.dir}` : "", policy, ignore: st.ignoreSystem ? " · AMB_PWSH_IGNORE_SYSTEM=1" : "" }),
+      t("pwsh.privateLine", { version: p.version, arch: p.arch ? ` ${p.arch}` : "", state, inst, dir: p.dir ? ` · ${p.dir}` : "", policy, ignore: st.ignoreSystem ? t("pwsh.reportIgnoreSystem") : "" }),
     );
   }
   return lines.join("\n");

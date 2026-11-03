@@ -1,3 +1,7 @@
+> **本文件描述上游 AnyModelBot 的原貌，且为上游营销文。** 其中 `modelflare.dev` 相关表述、产品数字与仓库链接均不代表本分发。
+> 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
+> **若本文会随站点对外发布，必须升级为 A 级逐句核对（数字、链接、品牌），不得原样引用上游营销话术。**
+
 <p align="center">
   <a href="../../README.md">
     <img src="../assets/brand/logo-eyes.webp" width="96" height="96" alt="AnyModelBot 的 Eyes 标志：两只竖向胶囊形的眼睛">

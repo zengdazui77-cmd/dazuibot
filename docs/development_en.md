@@ -234,6 +234,30 @@ npm run docs:check  # README self-check: assets present and within size, zh/en s
 
 The README asset list and recording spec are in [docs/assets/README.md](./assets/README.md).
 
+### Capability landing points (required for white-label builds)
+
+One hard rule for the white-label build: **addresses, executable paths, the data directory and the choice of API must not come from the process environment.** Anyone who can change environment variables on their own machine could otherwise redirect the key and the conversation, swap the binary that gets executed, or forge the install state along with it.
+
+Enumerating `AMB_*` by name misses things — what it misses is whatever doesn't look dangerous by name (`AMB_DSH_TRACE` reads like logging but lands in the first argument of `appendFileSync`; `AMB_PWSH_HOME` reads like an install path but lands in the directory that holds the signature-check record). So review **by landing point** instead, and for every hit answer one question: what API does this value end up in?
+
+```bash
+# 1) execution landing points
+grep -rn "spawn(\|execFile(\|execFileSync(\|execSync(\|fork(" src/ electron/ --include=*.ts
+# 2) write landing points
+grep -rn "appendFileSync\|writeFileSync\|createWriteStream\|renameSync" src/ electron/ --include=*.ts
+# 3) path landing points
+grep -rn "path.join(process.env\|path.resolve(process.env\|path.join(.*\.AMB_\|path.resolve(.*\.AMB_" src/ electron/ --include=*.ts
+# 4) address landing points
+grep -rn "new URL(\|\${process.env\.AMB_\|= process\.env\.AMB_.*URL\|BASE" src/ electron/ --include=*.ts
+```
+
+The test is not "does the name contain log" but **where it lands**: feeding `console.*` / the logger is logging and may stay; feeding a file, a path, argv or a URL must go. `AMB_LOG_LEVEL` is safe, `AMB_DSH_TRACE` is not — same-looking names, different fates.
+
+Two positive assertions worth putting in the delivery notes (a customer's security team will credit these more than "we deleted N variables"):
+
+- All four child processes get a whitelisted env with no `process.env` pass-through: magpie (`keep` of 15 names in `supervisor.ts`, zero `AMB_*`), cua-driver (`CUA_PASS_ENV` plus a `KEY|PASSWORD|SECRET|TOKEN` filter), DSH (built item by item in `host.ts`), and the computer-use bridge (`HOME` + `CODEX_HOME` only).
+- Exactly two development-only switches: `AMB_ELECTRON_SMOKE` (unreachable when `app.isPackaged` is true) and `__setRelayTestEndpoints()` (defined but never called in the build).
+
 ## License
 
 MIT, see `LICENSE`. Third-party components (magpie MIT — including the adapted UI styles, Tencent openclaw-weixin MIT, and others) are listed in `THIRD_PARTY_NOTICES.md` and in Settings → About.

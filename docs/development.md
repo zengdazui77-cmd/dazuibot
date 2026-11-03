@@ -234,6 +234,30 @@ npm run docs:check  # README 自检：素材是否存在与体积、中英文结
 
 README 的素材清单与录制规范见 [docs/assets/README.md](./assets/README.md)。
 
+### 能力落点检查（白标必读）
+
+白标版的一条硬约束：**地址、可执行文件路径、数据目录、接口选择这四类能力，不能来自进程环境变量**。谁能改自己机器上的环境变量，谁就能把 Key 和对话改道、换掉要执行的二进制、或者把安装状态一起伪造。
+
+按变量名枚举 `AMB_*` 会漏——漏掉的都是名字看着不危险的（`AMB_DSH_TRACE` 名字像日志，落点却是 `appendFileSync` 的第一个参数；`AMB_PWSH_HOME` 名字像安装位置，落点却是签名核对记录所在目录）。所以 review 时要**按落点反查**，每条命中回答一个问题：这个值最终交给了什么 API？
+
+```bash
+# 1) 执行落点：spawn / execFile / execSync / fork
+grep -rn "spawn(\|execFile(\|execFileSync(\|execSync(\|fork(" src/ electron/ --include=*.ts
+# 2) 写入落点：appendFileSync / writeFileSync / createWriteStream / renameSync
+grep -rn "appendFileSync\|writeFileSync\|createWriteStream\|renameSync" src/ electron/ --include=*.ts
+# 3) 路径落点：谁把环境变量拼进了路径
+grep -rn "path.join(process.env\|path.resolve(process.env\|path.join(.*\.AMB_\|path.resolve(.*\.AMB_" src/ electron/ --include=*.ts
+# 4) 地址落点：谁把环境变量拼进了 URL
+grep -rn "new URL(\|\${process.env\.AMB_\|= process\.env\.AMB_.*URL\|BASE" src/ electron/ --include=*.ts
+```
+
+判据不是"名字里有没有 log"，而是**落点**：交给 `console.*` / logger 的才算日志，可以留；交给文件、路径、argv、URL 的必须消失。`AMB_LOG_LEVEL` 安全，`AMB_DSH_TRACE` 不安全——同名不同命。
+
+两条正向断言（可以写进交付说明给客户的安全团队看，比"我们删了 N 个变量"有说服力）：
+
+- 四个子进程的 env 全是白名单构建、没有一处 `process.env` 透传：magpie（`supervisor.ts` 的 `keep` 15 个名字，零 `AMB_*`）、cua-driver（`CUA_PASS_ENV` + 正则剔除 `KEY|PASSWORD|SECRET|TOKEN`）、DSH（`host.ts` 逐项显式构造）、computer-use 桥（只有 `HOME` + `CODEX_HOME`）。
+- 开发期开关两个：`AMB_ELECTRON_SMOKE`（`app.isPackaged` 为 true 时不可达）、`__setRelayTestEndpoints()`（产物里只有定义、没有调用方）。
+
 ## 许可
 
 MIT，见 `LICENSE`；第三方组件（magpie MIT——含界面样式改编、Tencent openclaw-weixin MIT 等）见 `THIRD_PARTY_NOTICES.md`，也可在 设置 → 关于 中查看。

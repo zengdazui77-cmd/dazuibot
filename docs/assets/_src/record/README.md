@@ -1,3 +1,7 @@
+> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
+> 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
+> 本文档为内部录制工具说明，不随安装包分发；本文提到的 `screenshots/modelflare-*` 是上游素材命名，需随素材一并替换。
+
 # 录制工具：README 的应用截图和功能 GIF
 
 `docs/assets/` 里的 10 张应用截图（`screenshots/{chat,agent,models,memory,modelflare}-{light,dark}.webp`）和 9 个功能 GIF（G1–G9）由这里的脚本生成：

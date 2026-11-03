@@ -1,3 +1,7 @@
+> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
+> 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
+> 本文档为内部设计记录，不随安装包分发。
+
 # Background tasks and proactive rules (Phase 3 design)
 
 Status: **3a–3f are built**, plus questions that don't block (a task asks right away and keeps working while a question with a default waits, see [Questions](#questions-ask-early-keep-working)): tasks, questions and needs-you, delivery, rules with an opt-in observe mode, cost controls, and the tasks view with retention, cleanup and Markdown export (`src/tasks/`, `src/core/delivery.ts`, `dsh-runtime/plugins/amb-tasks.mjs`, `ui/components/tasks.js`; tests in `test/tasks.*`, `test/delivery.*`, `test/rules.*`, `test/cost.*`, `test/retention.*`, `test/tasks-view.*`). Written 2026-10-31 against `master` df22385 and the pinned DSH `0.2.1-rc.4` in `dsh-runtime/`.

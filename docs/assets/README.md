@@ -1,3 +1,7 @@
+> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述与素材出处已被白标替换。
+> 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
+> 本文档为内部素材说明，不随安装包分发；其中标注为上游品牌素材的图片不得进入交付物。
+
 # README 素材
 
 [README.md](../../README.md)（中文）和 [README_en.md](../../README_en.md)（英文）共用这里的素材。应用界面目前只有简体中文，所以截图和录屏没有英文版。

@@ -456,7 +456,7 @@ function WinCase({ name, note, w = 1240, ...app }) {
 
 // 回复里先是模型在回合中间说的话，最后的回复接在后面（chat.js 的 shownText）
 const INTERIM_REPLY = "我先看看下载目录里有什么。\n\n找到 12 张截图，按日期分进了 3 个文件夹，顺手挑了一张做封面。\n\n整理好了：截图都在「截图/2026-10」下面，清单和封面在下面。";
-const MD = "支持 **粗体**、`行内代码`、[链接](https://modelflare.dev)：\n\n- 列表项\n- 第二项\n\n```js\nconst ok = true;\n```";
+const MD = "支持 **粗体**、`行内代码`、[链接](https://example.com)：\n\n- 列表项\n- 第二项\n\n```js\nconst ok = true;\n```";
 
 function Gallery() {
   const mode = useStore(themeMode);
