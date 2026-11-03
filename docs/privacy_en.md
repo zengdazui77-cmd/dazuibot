@@ -67,8 +67,8 @@ This document explains what dazuibot stores where, what leaves your device, and 
 
 Besides model requests, the app goes online to:
 
-- Read this site's relay service for the model catalog, your balance, usage and notifications (your account data).
-- Read a model's request format from the site's model documentation endpoint when generating images or video.
+- Read this site's relay service for the model catalog and usage; the account balance and notifications are available on the site (the app only holds an API key and cannot read either).
+- When generating images or video, try to read the site's model documentation. The site does not currently serve it; when unavailable the app only shows an actionable hint and generation is unaffected.
 - WeChat channel: talk to `ilinkai.weixin.qq.com` and download images and files you send from the WeChat CDN.
 - Feishu channel: keep a long connection to the Feishu Open Platform.
 - Telegram, Slack and Discord channels: once connected, talk to `api.telegram.org`, `slack.com`, `discord.com` and their file endpoints to exchange messages and the files you send.

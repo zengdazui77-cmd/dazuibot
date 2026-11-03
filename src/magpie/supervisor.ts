@@ -34,13 +34,25 @@ interface Keys {
   gatewayKeyRegistered?: boolean;
 }
 
+/**
+ * 应用根目录：从自己所在目录往上找第一个「像应用根」的目录。
+ *
+ * 不拿 package.json 的 name 当锚点 —— 产品名是会改的。以前这里比对
+ * `name === "anymodel-bot"`，改成 dazuibot 之后六层循环全部落空，函数静默
+ * 退化成 process.cwd()：开发期和测试因为 cwd 恰好是仓库根而全绿，但 Electron
+ * 打包后 cwd 不一定是资源目录，ui/ 静态资源根、DSH 运行时、magpie 二进制
+ * 就全找错了。
+ *
+ * 认这两个特征：有 package.json（带 main 入口）且旁边有 ui/index.html。
+ * 两者都是这个应用的固有结构，跟产品名叫什么无关。
+ */
 export function findAppRoot(start = path.dirname(fileURLToPath(import.meta.url))): string {
   let dir = start;
   for (let i = 0; i < 6; i++) {
     const pj = path.join(dir, "package.json");
-    if (fs.existsSync(pj)) {
+    if (fs.existsSync(pj) && fs.existsSync(path.join(dir, "ui", "index.html"))) {
       try {
-        if (JSON.parse(fs.readFileSync(pj, "utf8")).name === "anymodel-bot") return dir;
+        if (JSON.parse(fs.readFileSync(pj, "utf8")).main) return dir;
       } catch {
         /* ignore */
       }
