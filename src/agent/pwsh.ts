@@ -103,6 +103,15 @@ export interface PwshDeps {
   run?: Runner;
   /** 内置副本 */
   priv?: PrivatePwsh;
+  /**
+   * 下面这些是排查/测试开关，**不来自环境变量**（config.json 的 agent.pwsh*，测试直接传参）。
+   * 环境变量能改安装根目录 = 能连 state.json 一起伪造、跳过签名核对，所以这条路必须关掉。
+   */
+  force?: string;
+  ignoreSystem?: boolean;
+  privRoot?: string;
+  privMirror?: string;
+  autoInstall?: boolean;
 }
 
 const dirKey = (p: string) => W.normalize(p).replace(/\\+$/, "").toLowerCase();
@@ -239,7 +248,7 @@ export class PwshProbe {
   /** 代理拉不起来的系统 pwsh（本次运行内） */
   private sysBad = new Map<string, { reason: string; at: number }>();
   private fallback?: PwshStatus["fallback"];
-  private cfg: { agent: boolean; mode: PwshMode; fetch?: () => typeof fetch | undefined } = { agent: false, mode: "auto" };
+  private cfg: { agent: boolean; mode: PwshMode; fetch?: () => typeof fetch | undefined; root?: string; mirror?: string; autoInstall?: boolean; ignoreSystem?: boolean; force?: string } = { agent: false, mode: "auto" };
   private listeners = new Set<(e: PwshEvent) => void>();
   private lastPath: string | undefined | null = null;
   private lastInstall: InstallState = "idle";
@@ -248,7 +257,7 @@ export class PwshProbe {
   private quiet = false;
 
   constructor(private readonly d: PwshDeps = {}) {
-    this.priv = d.priv ?? new PrivatePwsh({ env: d.env, platform: d.platform, run: d.run, fetch: () => this.cfg.fetch?.() });
+    this.priv = d.priv ?? new PrivatePwsh({ env: d.env, platform: d.platform, run: d.run, fetch: () => this.cfg.fetch?.(), root: d.privRoot, mirror: d.privMirror, autoInstall: d.autoInstall, opts: () => this.cfg });
     this.priv.onChange(() => this.onPrivateChange());
   }
 
@@ -259,10 +268,10 @@ export class PwshProbe {
     return this.d.platform ?? process.platform;
   }
   private get forced(): boolean {
-    return FORCE_DEMO.includes(this.env.AMB_PWSH_FORCE ?? "");
+    return FORCE_DEMO.includes(this.d.force ?? this.cfg.force ?? "");
   }
   private get ignoreSystem(): boolean {
-    return this.env.AMB_PWSH_IGNORE_SYSTEM === "1";
+    return (this.d.ignoreSystem ?? this.cfg.ignoreSystem) === true;
   }
   get applicable(): boolean {
     return this.platform === "win32" || this.forced;
@@ -275,11 +284,16 @@ export class PwshProbe {
     return this.cfg.mode;
   }
 
-  /** 应用启动时：代理模式开没开（关着不自动装）、用户的选择、下载用的 fetch（桌面版走系统代理） */
-  configure(o: { agent?: boolean; mode?: PwshMode; fetch?: () => typeof fetch | undefined }): void {
+  /** 应用启动时：代理模式开没开（关着不自动装）、用户的选择、下载用的 fetch（桌面版走系统代理）、安装根目录/镜像（config.json） */
+  configure(o: { agent?: boolean; mode?: PwshMode; fetch?: () => typeof fetch | undefined; root?: string; mirror?: string; autoInstall?: boolean; ignoreSystem?: boolean; force?: string }): void {
     if (o.agent !== undefined) this.cfg.agent = o.agent;
     if (o.mode !== undefined) this.cfg.mode = o.mode;
     if (o.fetch !== undefined) this.cfg.fetch = o.fetch;
+    if (o.root !== undefined) this.cfg.root = o.root;
+    if (o.mirror !== undefined) this.cfg.mirror = o.mirror;
+    if (o.autoInstall !== undefined) this.cfg.autoInstall = o.autoInstall;
+    if (o.ignoreSystem !== undefined) this.cfg.ignoreSystem = o.ignoreSystem;
+    if (o.force !== undefined) this.cfg.force = o.force;
     this.update();
     this.maybeAutoInstall("configure");
   }
@@ -371,10 +385,10 @@ export class PwshProbe {
 
   private compose(): PwshStatus {
     if (!this.applicable) return { applicable: false, found: false, missing: false, checkedAt: this.checkedAt || Date.now() };
-    if (this.forced) return forcedStatus(this.env.AMB_PWSH_FORCE!, this.priv.pin.version);
+    if (this.forced) return forcedStatus(this.d.force!, this.priv.pin.version);
     const extra = {
       mode: this.cfg.mode,
-      autoInstall: this.cfg.agent && this.cfg.mode === "auto" && this.env.AMB_PWSH_AUTO_INSTALL !== "0",
+      autoInstall: this.cfg.agent && this.cfg.mode === "auto" && (this.d.autoInstall ?? this.cfg.autoInstall) !== false,
       ...(this.ignoreSystem ? { ignoreSystem: true } : {}),
       private: this.priv.status(),
       ...(this.fallback ? { fallback: this.fallback } : {}),

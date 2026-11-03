@@ -19,7 +19,7 @@ vi.mock("node:child_process", async (orig) => {
   return { ...real, default: { ...real, execFile }, execFile };
 });
 
-import { PwshProbe, findPwsh, parsePwshVersion, pwshPatchLines, pwshReportLine, pwshStatusLine, readPwshVersion, PWSH_WINGET, type PwshDeps } from "../src/agent/pwsh.js";
+import { PwshProbe, findPwsh, parsePwshVersion, pwshPatchLines, pwshProbe, pwshReportLine, pwshStatusLine, readPwshVersion, PWSH_WINGET, type PwshDeps } from "../src/agent/pwsh.js";
 import { PrivatePwsh, depsJsonVersion, type Runner } from "../src/agent/pwsh-private.js";
 import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
@@ -43,7 +43,8 @@ function fakeWin(o: { exes?: Record<string, "file" | "alias">; texts?: Record<st
   const runs: string[] = [];
   const tests: string[] = [];
   const enoent = (p: string) => Object.assign(new Error(`ENOENT: ${p}`), { code: "ENOENT" });
-  const env = { ...(o.env ?? ENV), AMB_PWSH_HOME: fs.mkdtempSync(path.join(os.tmpdir(), "amb-pwsh-home-")), PROCESSOR_IDENTIFIER: "Intel64 Family 6 Model 154" };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "amb-pwsh-home-"));
+  const env = { ...(o.env ?? ENV), PROCESSOR_IDENTIFIER: "Intel64 Family 6 Model 154" };
   const run: Runner = async (exe) => {
     tests.push(exe);
     return { code: 0, stdout: `AMB-PWSH-TEST ver=${o.testVersion ?? "7.4.6"} rw=rw-ok ext=ext-ok\r\n`, stderr: "" };
@@ -52,7 +53,8 @@ function fakeWin(o: { exes?: Record<string, "file" | "alias">; texts?: Record<st
     platform: "win32",
     env,
     run,
-    priv: new PrivatePwsh({ env, platform: "win32", osRelease: "10.0.22631", arch: "x64", run }),
+    privRoot: root,
+    priv: new PrivatePwsh({ env, platform: "win32", osRelease: "10.0.22631", arch: "x64", run, root }),
     lstat: async (p) => {
       lstats.push(p);
       const v = exes.get(k(p));
@@ -203,10 +205,10 @@ describe("PowerShell 7 检测", () => {
     expect(probe.snapshot()).toMatchObject({ found: true, missing: false });
   });
 
-  it("AMB_PWSH_FORCE=missing：任何平台都模拟“未安装”（截图、测试），不影响 DSH", async () => {
+  it("force=missing：任何平台都模拟“未安装”（截图、测试），不影响 DSH", async () => {
     const w = fakeWin({ exes: { [`${PF}\\PowerShell\\7\\pwsh.exe`]: "file" } });
     for (const platform of ["linux", "win32"] as const) {
-      const probe = new PwshProbe({ ...w.deps, platform, env: { ...ENV, AMB_PWSH_FORCE: "missing" } });
+      const probe = new PwshProbe({ ...w.deps, platform, force: "missing" });
       expect(probe.applicable).toBe(true);
       expect(await probe.check()).toMatchObject({ applicable: true, found: false, missing: true, forced: true });
       expect(await probe.dshPath()).toBeUndefined();
@@ -230,11 +232,10 @@ describe("PowerShell 7 检测", () => {
   });
 });
 
-describe("界面接口与诊断（AMB_PWSH_FORCE=missing）", () => {
+describe("界面接口与诊断（force=missing 模拟未安装）", () => {
   let app: App;
   let base = "";
   const TOKEN = "ui-token-pwsh-0123456789";
-  const prev = process.env.AMB_PWSH_FORCE;
   const api = async (p: string, init: { method?: string; body?: unknown } = {}) => {
     const res = await fetch(`${base}/amb/api${p}`, {
       method: init.method ?? "GET",
@@ -245,17 +246,18 @@ describe("界面接口与诊断（AMB_PWSH_FORCE=missing）", () => {
   };
 
   beforeAll(async () => {
-    process.env.AMB_PWSH_FORCE = "missing";
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-pwsh-"));
     const config = loadConfig({ dataDir, env: { AMB_MAGPIE_BASE_URL: "http://127.0.0.1:9/v1", AMB_UI_PORT: "0", AMB_UI_TOKEN: TOKEN, AMB_AGENT: "off", AMB_WEIXIN_API_BASE: "http://127.0.0.1:9" } });
     app = new App(config, { printQrToTerminal: false });
     await app.start();
     base = app.web!.url.replace(/\/$/, "");
+    // 不再有环境变量开关：直接改进程内单例的排查开关（App 只按 config.json 设置其余项）
+    pwshProbe.configure({ force: "missing" });
+    await pwshProbe.check();
   });
   afterAll(async () => {
     await app?.stop();
-    if (prev === undefined) delete process.env.AMB_PWSH_FORCE;
-    else process.env.AMB_PWSH_FORCE = prev;
+    pwshProbe.configure({ force: "" });
   });
 
   it("GET /pwsh、诊断状态与复制的报告都带 PowerShell 状态", async () => {

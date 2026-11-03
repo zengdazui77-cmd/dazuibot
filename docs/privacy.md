@@ -13,7 +13,7 @@
 | 桌面版 · Windows | `%APPDATA%\anymodel bot\data` |
 | 桌面版 · macOS | `~/Library/Application Support/anymodel bot/data` |
 | 桌面版 · Linux | `~/.config/anymodel bot/data` |
-| 命令行 `npm start` | `./data`（环境变量 `AMB_DATA_DIR` 可改） |
+| 命令行 `npm start` | `./data`（固定，不读环境变量） |
 | Docker | 容器内 `/data`（README 示例里挂载为卷 `amb-data`） |
 
 ## 数据清单
@@ -73,7 +73,7 @@
 - 微信渠道：与 `ilinkai.weixin.qq.com` 通信，并从微信 CDN 下载你发来的图片和文件。
 - 飞书渠道：与飞书开放平台保持长连接。
 - Telegram、Slack、Discord 渠道：接入后与 `api.telegram.org`、`slack.com`、`discord.com` 及其文件地址通信，用来收发消息和你发来的文件。
-- Windows 上开启代理模式且系统里没有可用的 PowerShell 7 时，从微软官方发布地址下载 PowerShell 7（可用 `AMB_PWSH_AUTO_INSTALL=0` 关闭，详见[开发文档](./development.md)）。
+- Windows 上开启代理模式且系统里没有可用的 PowerShell 7 时，从微软官方发布地址下载 PowerShell 7（可用 `config.json` 的 `agent.pwshAutoInstall: false` 关闭，详见[开发文档](./development.md)）。
 
 ## 电脑操作与截图
 

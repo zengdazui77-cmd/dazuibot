@@ -352,23 +352,32 @@ describe("agent API per model", () => {
   const gemini = ["gemini", "openai"];
 
   it("Responses when offered, else Anthropic Messages, else Chat Completions", () => {
-    expect(agentApi(gpt, {})).toBe("openai-responses");
-    expect(agentApi(["openai-response", "openai-response-compact", "openai"], {})).toBe("openai-responses");
-    expect(agentApi(deepseek, {})).toBe("openai-responses");
-    expect(agentApi(claude, {})).toBe("anthropic-messages");
-    expect(agentApi(gemini, {})).toBe("openai-completions");
-    expect(agentApi(["openai"], {})).toBe("openai-completions");
+    expect(agentApi(gpt)).toBe("openai-responses");
+    expect(agentApi(["openai-response", "openai-response-compact", "openai"])).toBe("openai-responses");
+    expect(agentApi(deepseek)).toBe("openai-responses");
+    expect(agentApi(claude)).toBe("anthropic-messages");
+    expect(agentApi(gemini)).toBe("openai-completions");
+    expect(agentApi(["openai"])).toBe("openai-completions");
   });
 
   it("unknown model or no catalog (offline, China line) stays on Chat Completions", () => {
-    expect(agentApi(undefined, {})).toBe("openai-completions");
-    expect(agentApi([], {})).toBe("openai-completions");
+    expect(agentApi(undefined)).toBe("openai-completions");
+    expect(agentApi([])).toBe("openai-completions");
   });
 
-  it("AMB_AGENT_API=chat forces Chat Completions", () => {
-    expect(agentApi(gpt, { AMB_AGENT_API: "chat" })).toBe("openai-completions");
-    expect(agentApi(claude, { AMB_AGENT_API: " Chat " })).toBe("openai-completions");
-    expect(agentApi(claude, { AMB_AGENT_API: "" })).toBe("anthropic-messages");
+  it("没有强制接口的开关：环境变量里放什么都不影响路由", () => {
+    // 白标版删掉了 AMB_AGENT_API 这类强制开关（它等于让外部改代理的计费与路由）。
+    // 这里把攻击者会写的那几个值塞进环境，确认路由只由模型目录决定。
+    const saved = { ...process.env };
+    try {
+      process.env.AMB_AGENT_API = "chat";
+      expect(agentApi(gpt)).toBe("openai-responses");
+      expect(agentApi(claude)).toBe("anthropic-messages");
+    } finally {
+      for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+      process.env.AMB_AGENT_API = saved.AMB_AGENT_API;
+      if (saved.AMB_AGENT_API === undefined) delete process.env.AMB_AGENT_API;
+    }
   });
 
   const route = (model: string, api: AgentApi, reasoning?: boolean): ModelRoute => ({ model, api, provider: providerFor(api, reasoning), reasoning, limits: modelLimits(model, 1_000_000) });

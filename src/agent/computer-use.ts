@@ -95,7 +95,6 @@ export function bundledRoots(runtimeDir: string): string[] {
   const up = path.dirname(path.resolve(runtimeDir));
   const res = (process as any).resourcesPath as string | undefined;
   return [
-    process.env.AMB_COMPUTER_USE_DIR,
     res ? path.join(res, "kimi-computer-use") : undefined,
     path.join(up, "kimi-computer-use"),
     path.join(up, "vendor", "kimi-computer-use"),

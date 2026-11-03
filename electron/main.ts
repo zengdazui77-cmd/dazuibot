@@ -1,6 +1,6 @@
 /**
  * Electron 桌面版主进程 = 启动器：
- *  - 单实例锁；数据目录 = <userData>/data（可用 AMB_DATA_DIR 覆盖）
+ *  - 单实例锁；数据目录 = <userData>/data（不读环境变量；冒烟测试时用截图路径所在目录）
  *  - 在进程内启动 App（机器人运行时 + 渠道 + 管理界面 + 受管 magpie 子进程）
  *  - 窗口加载本机管理界面（每次启动生成随机令牌，其他本机程序/浏览器无法直接访问）
  *  - 托盘：显示 / 开机自启 / 退出；关闭窗口=隐藏到托盘（可在设置 → 常规里改为退出）；退出时干净关闭 magpie
@@ -22,7 +22,9 @@ import { normalizeLang, onLangChange, setLangPref, setSystemLang, t } from "../s
 import { notificationOf, trayTitle, type AttentionItem } from "../src/tasks/attention.js";
 
 const log = logger("desktop");
-const SMOKE = process.env.AMB_ELECTRON_SMOKE; // 冒烟测试：截图到该路径后退出
+// 冒烟测试：截图到该路径后退出。只在不打包的运行里认（scripts/electron-smoke.mjs 用），
+// 打包后的产物里 app.isPackaged 为 true，这个分支永远走不到——不能成为"设置一个环境变量就改启动行为"的口子
+const SMOKE = app.isPackaged ? undefined : process.env.AMB_ELECTRON_SMOKE;
 
 let core: App | undefined;
 let win: BrowserWindow | undefined;
@@ -204,7 +206,8 @@ function setAutostart(on: boolean): void {
 }
 
 async function boot(): Promise<void> {
-  const dataDir = process.env.AMB_DATA_DIR ? path.resolve(process.env.AMB_DATA_DIR) : path.join(app.getPath("userData"), "data");
+  // 冒烟测试跑在自己的临时目录里（截图路径的父目录），别把开发机的真实数据搅进去；正式运行固定 <userData>/data
+  const dataDir = SMOKE ? path.dirname(path.resolve(SMOKE)) : path.join(app.getPath("userData"), "data");
   fs.mkdirSync(dataDir, { recursive: true });
   // 尽早打开日志文件：配置读取失败、启动失败也能留下记录
   initFileLog(path.join(dataDir, "logs"));
@@ -310,7 +313,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   // 白标：产品名带中文，但数据目录固定用 ASCII。magpie / dsh / cua-driver / ripgrep 都是原生子进程，
-  // 让中文进入它们的启动路径只会引入一类难查的问题，而这里改一行就能规避。AMB_DATA_DIR 仍可覆盖。
+  // 让中文进入它们的启动路径只会引入一类难查的问题，而这里改一行就能规避。数据目录不读环境变量。
   app.setPath("userData", path.join(app.getPath("appData"), "zdzui-assistant"));
   // Windows 的系统通知（设置 › 常规 › 回复完成时通知）要求进程的 AppUserModelID 和安装器建的快捷方式一致（= build.appId）
   if (process.platform === "win32") app.setAppUserModelId("xyz.zdzui.assistant");

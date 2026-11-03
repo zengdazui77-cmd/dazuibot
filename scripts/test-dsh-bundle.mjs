@@ -27,9 +27,11 @@ let status = 1;
 try {
   fs.cpSync(bundle, copy, { recursive: true });
   const electron = createRequire(import.meta.url)("electron");
-  const env = { ...process.env, ELECTRON_RUN_AS_NODE: "1", AMB_DSH_RUNTIME: path.join(copy, "dsh.asar") };
-  const probe = spawnSync(electron, ["-e", "process.exit(require('fs').existsSync(process.env.AMB_DSH_RUNTIME + '/node_modules/@deepseek-ai/dsh-sdk-client/package.json') ? 0 : 1)"], { env });
-  if (probe.status !== 0) throw new Error(`Electron cannot read ${env.AMB_DSH_RUNTIME}`);
+  const env = { ...process.env, ELECTRON_RUN_AS_NODE: "1" };
+  // 白标版删掉了 AMB_DSH_RUNTIME（可执行/可加载路径一律不来自环境变量），所以这里只保留
+  // "Electron 能不能读 dsh.asar"这一条探针；下面的集成测试跑的是仓库自带的 dsh-runtime/。
+  const probe = spawnSync(electron, ["-e", `process.exit(require('fs').existsSync(${JSON.stringify(path.join(copy, "dsh.asar"))} + '/node_modules/@deepseek-ai/dsh-sdk-client/package.json') ? 0 : 1)`], { env });
+  if (probe.status !== 0) throw new Error(`Electron cannot read ${path.join(copy, "dsh.asar")}`);
   const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
   const r = spawnSync(electron, [vitest, "run", "test/agent.integration.test.ts", ...process.argv.slice(3)], { cwd: root, env, stdio: "inherit" });
   status = r.status ?? 1;

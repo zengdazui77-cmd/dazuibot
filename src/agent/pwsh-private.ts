@@ -43,10 +43,10 @@ export type PwshArch = "x64" | "arm64";
 export const PWSH_RELEASES = "https://github.com/PowerShell/PowerShell/releases/download";
 export const zipName = (pin: PwshPin, arch: PwshArch) => `PowerShell-${pin.version}-win-${arch}.zip`;
 
-/** 下载地址：GitHub release；AMB_PWSH_MIRROR 可换成镜像前缀（照样核对哈希和签名） */
-export function zipUrl(pin: PwshPin, arch: PwshArch, env: NodeJS.ProcessEnv = process.env): string {
-  const mirror = env.AMB_PWSH_MIRROR?.trim();
-  return mirror ? `${mirror.replace(/\/+$/, "")}/${zipName(pin, arch)}` : `${PWSH_RELEASES}/v${pin.version}/${zipName(pin, arch)}`;
+/** 下载地址：GitHub release；mirror 可换成镜像前缀（照样核对哈希和签名）。镜像来自 config.json 的 agent.pwshMirror，不读环境变量 */
+export function zipUrl(pin: PwshPin, arch: PwshArch, mirror?: string): string {
+  const m = mirror?.trim();
+  return m ? `${m.replace(/\/+$/, "")}/${zipName(pin, arch)}` : `${PWSH_RELEASES}/v${pin.version}/${zipName(pin, arch)}`;
 }
 
 /** DSH（dsh-pwsh-local）拉起每条命令的方式：同样的参数、同样的 UTF-8 前缀 */
@@ -243,9 +243,13 @@ export async function resolveArch(o: { arch?: string; env?: NodeJS.ProcessEnv; r
   return /\bARM64\b/i.test(r.stdout) ? "arm64" : "x64";
 }
 
-/** 安装根目录：AMB_PWSH_HOME，否则 %LOCALAPPDATA%\AnyModelBot\pwsh */
-export function pwshRoot(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.AMB_PWSH_HOME) return path.resolve(env.AMB_PWSH_HOME);
+/**
+ * 安装根目录：root 优先（config.json 的 agent.pwshRoot），否则 %LOCALAPPDATA%\AnyModelBot\pwsh。
+ * root 同时也是 state.json 与安装标记文件的位置，落地前必须自己算，不能来自环境变量：
+ * 谁改得了安装根，谁就能连 state.json 一起伪造，签名校验会被指纹命中跳过。
+ */
+export function pwshRoot(env: NodeJS.ProcessEnv = process.env, root?: string): string {
+  if (root) return path.resolve(root);
   return path.join(env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "AnyModelBot", "pwsh");
 }
 
@@ -421,6 +425,14 @@ export interface PrivateDeps {
   lockPollMs?: number;
   /** 测试用：换掉固定的版本与哈希 */
   pin?: PwshPin;
+  /** 安装根目录（config.json 的 agent.pwshRoot）；不给就用 %LOCALAPPDATA%\AnyModelBot\pwsh */
+  root?: string;
+  /** 下载镜像前缀（config.json 的 agent.pwshMirror） */
+  mirror?: string;
+  /** false = 不自动安装（config.json 的 agent.pwshAutoInstall） */
+  autoInstall?: boolean;
+  /** 生产：实时配置（PwshProbe 在 App 启动后才拿到 config.json，构造时还读不到） */
+  opts?: () => { root?: string; mirror?: string; autoInstall?: boolean };
 }
 
 export class PrivatePwsh {
@@ -440,11 +452,15 @@ export class PrivatePwsh {
   private get env(): NodeJS.ProcessEnv {
     return this.d.env ?? process.env;
   }
+  private get opt(): { root?: string; mirror?: string; autoInstall?: boolean } {
+    const live = this.d.opts?.() ?? {};
+    return { root: this.d.root ?? live.root, mirror: this.d.mirror ?? live.mirror, autoInstall: this.d.autoInstall ?? live.autoInstall };
+  }
   private get run(): Runner {
     return this.d.run ?? runProcess;
   }
   get root(): string {
-    return pwshRoot(this.env);
+    return pwshRoot(this.env, this.opt.root);
   }
   get support(): { ok: boolean; build?: number; reason?: string } {
     if ((this.d.platform ?? process.platform) !== "win32") return { ok: false, reason: tr("pwsh.privWindowsOnly") };
@@ -667,7 +683,7 @@ export class PrivatePwsh {
    * 免得"装好 → 坏 → 再装"一直循环下载。
    */
   autoBlocked(): string | undefined {
-    if (this.env.AMB_PWSH_AUTO_INSTALL === "0") return "AMB_PWSH_AUTO_INSTALL=0";
+    if (this.opt.autoInstall === false) return tr("pwsh.privAutoOff");
     if (!this.support.ok) return this.support.reason;
     if (!this.arch) return tr("pwsh.privArchUnsupported");
     if (this.installing) return tr("pwsh.privInstalling");
@@ -744,7 +760,7 @@ export class PrivatePwsh {
     const stage = path.join(this.root, `.staging-${tag}`);
     const trash = path.join(this.root, `.trash-${tag}`);
     const dir = this.dir!;
-    const url = zipUrl(this.pin, arch, this.env);
+    const url = zipUrl(this.pin, arch, this.opt.mirror);
     log.info("installing the app-managed PowerShell 7", { version: this.pin.version, arch, url, dir, manual: !!o.manual, reinstall: !!o.reinstall });
     try {
       // 1. 下载（网络错误重试两次；哈希不对不重试）

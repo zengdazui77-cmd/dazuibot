@@ -61,7 +61,6 @@ function isDshRuntime(dir: string): boolean {
 export function locateDshRuntime(appRoot: string): string | undefined {
   const res = (process as any).resourcesPath as string | undefined;
   const cands = [
-    process.env.AMB_DSH_RUNTIME,
     path.join(appRoot, "dsh-runtime"), // dev checkout
     res ? path.join(res, "dsh", "dsh.asar") : undefined, // packaged: resources/dsh/dsh.asar (scripts/bundle-dsh.mjs)
     res ? path.join(res, "dsh") : undefined, // packaged: resources/dsh (pruned tree, ≤ 0.1.5)
@@ -296,10 +295,10 @@ export interface ModelApiInfo {
 
 /**
  * 代理用哪个接口：模型支持 Responses 就用 Responses，否则支持 Anthropic Messages 就用它（Claude），
- * 都没有或不知道（离线、目录拿不到）时用 Chat Completions。AMB_AGENT_API=chat 强制 Chat（排查用）。
+ * 都没有或不知道（离线、目录拿不到）时用 Chat Completions。
+ * 没有"强制走某个接口"的开关：这种开关等于让外部改代理的计费与路由，白标版不提供。
  */
-export function agentApi(endpoints: string[] | undefined, env: NodeJS.ProcessEnv = process.env): AgentApi {
-  if (env.AMB_AGENT_API?.trim().toLowerCase() === "chat") return "openai-completions";
+export function agentApi(endpoints: string[] | undefined): AgentApi {
   if (endpoints?.includes("openai-response")) return "openai-responses";
   if (endpoints?.includes("anthropic")) return "anthropic-messages";
   return "openai-completions";
@@ -1558,7 +1557,6 @@ exec "$REAL" "$@"
       turnError: undefined as string | undefined,
     };
     const onNotification = (n: SdkNotification) => {
-      if (process.env.AMB_DSH_TRACE) fs.appendFileSync(process.env.AMB_DSH_TRACE, JSON.stringify(n).slice(0, 2000) + "\n");
       if (n.method === "subagent.started" || n.method === "subagent.finished") return observer?.onEvent?.(n.method.replace(".", "/"), n.params, Date.now());
       if (n.method !== "session.event") return;
       // 子代理会话的事件（只送来本会话和它的子代理的通知）：不进本回合的用量和步骤，只说明子代理还在干活

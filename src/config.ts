@@ -5,8 +5,12 @@ import { normalizeGuide, type GuideState } from "./guide.js";
 import { normalizeLangPref, type LangPref } from "./i18n/index.js";
 
 /**
- * 配置：<dataDir>/config.json + 环境变量（环境变量优先）。
- * 机器人/渠道凭据存在 SQLite 中，由 UI 或 `npm run init` 写入。
+ * 配置：<dataDir>/config.json。
+ *
+ * **白标版不读进程环境变量。** `loadConfig({ env })` 的 env 只是一个测试注入口：
+ * 调用方显式传一个对象进来（集成测试就是这么用的），不传时是空对象 `{}`，
+ * 生产入口（src/main.ts / electron/main.ts / cli）都不传，所以环境里放什么都不会生效。
+ * 少一层"环境变量优先于文件"的覆盖，就少一条谁都能改自己机器上环境变量从而改道的路。
  */
 export interface AppConfig {
   dataDir: string;
@@ -46,13 +50,15 @@ export interface AppConfig {
   /**
    * 代理宿主：dsh = DeepSeek Harness（工具/沙箱/审批）；off = 纯对话。
    * pwsh（Windows）：auto = 系统里没有能用的 PowerShell 7 时用应用内置的（自动安装）；system = 改回系统默认，不用内置的。
+   * pwshRoot / pwshMirror / pwshAutoInstall：内置 PowerShell 的安装位置、下载镜像前缀、是否自动装（原来在环境变量里，改到这里）。
+   * pwshIgnoreSystem：调试用，装作系统里没有 PowerShell 7（外部脚本已无法设置，只有本文件与测试能）。
    */
   /** maxBackground：所有机器人加起来最多同时跑几个后台任务 */
-  agent: { mode: "dsh" | "off"; turnTimeoutMs: number; idleTimeoutMs: number; approvalTtlMs: number; pwsh: "auto" | "system"; maxBackground: number };
+  agent: { mode: "dsh" | "off"; turnTimeoutMs: number; idleTimeoutMs: number; approvalTtlMs: number; pwsh: "auto" | "system"; maxBackground: number; pwshRoot?: string; pwshMirror?: string; pwshAutoInstall?: boolean; pwshIgnoreSystem?: boolean };
 }
 
 export function defaultDataDir(): string {
-  return process.env.AMB_DATA_DIR ? path.resolve(process.env.AMB_DATA_DIR) : path.resolve(process.cwd(), "data");
+  return path.resolve(process.cwd(), "data");
 }
 
 export const ZOOMS = [1, 1.1, 1.25, 1.5];
@@ -69,8 +75,9 @@ export function normalizeLowBalance(v: unknown): number {
 }
 
 export function loadConfig(overrides: { dataDir?: string; env?: NodeJS.ProcessEnv } = {}): AppConfig {
-  const env = overrides.env ?? process.env;
-  const dataDir = overrides.dataDir ?? (env.AMB_DATA_DIR ? path.resolve(env.AMB_DATA_DIR) : defaultDataDir());
+  // 注意：默认是空对象，不是 process.env。env 只给测试注入用（见文件头）。
+  const env = overrides.env ?? {};
+  const dataDir = overrides.dataDir ?? defaultDataDir();
   let file: Partial<AppConfig> & Record<string, any> = {};
   const p = path.join(dataDir, "config.json");
   if (fs.existsSync(p)) file = JSON.parse(fs.readFileSync(p, "utf8"));
@@ -118,6 +125,10 @@ export function loadConfig(overrides: { dataDir?: string; env?: NodeJS.ProcessEn
       approvalTtlMs: num(env.AMB_APPROVAL_TTL_MS, file.agent?.approvalTtlMs ?? 10 * 60_000),
       pwsh: file.agent?.pwsh === "system" ? "system" : "auto",
       maxBackground: num(env.AMB_MAX_BACKGROUND, file.agent?.maxBackground ?? 4),
+      ...(typeof file.agent?.pwshRoot === "string" && file.agent.pwshRoot ? { pwshRoot: file.agent.pwshRoot } : {}),
+      ...(typeof file.agent?.pwshMirror === "string" && file.agent.pwshMirror ? { pwshMirror: file.agent.pwshMirror } : {}),
+      ...(typeof file.agent?.pwshAutoInstall === "boolean" ? { pwshAutoInstall: file.agent.pwshAutoInstall } : {}),
+      ...(file.agent?.pwshIgnoreSystem === true ? { pwshIgnoreSystem: true } : {}),
     },
   };
 }

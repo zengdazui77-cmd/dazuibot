@@ -50,7 +50,7 @@ npm run init         # 可选：终端里的首次设置（登录 Modelflare 账
 npm start            # 启动全部：内置网关 + 机器人 + 管理界面 http://127.0.0.1:3600/
 ```
 
-数据默认在 `./data`（`AMB_DATA_DIR` 可改）。其余环境变量见 `.env.example`。
+数据固定在 `./data`（不读环境变量；要换位置就换个工作目录）。配置全在 `./data/config.json`；仍然认环境变量的只有日志与时序，见 `.env.example`。
 
 ## 桌面版（Electron）
 
@@ -63,7 +63,7 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 ```
 
 - DSH 代理运行时：`scripts/prepare-dsh.mjs` 按目标平台安装 `dsh-runtime/`，`scripts/bundle-dsh.mjs` 把它打成 `resources/dsh/dsh.asar`（全部 JS，一个文件）加上 `resources/dsh/node_modules/`（只有原生包，约 55 个文件）。Electron 主进程和 `ELECTRON_RUN_AS_NODE` 子进程直接读 asar，无需首启解压；安装包因此只需解出几百个文件（Windows 上解压与杀毒逐个扫描是安装慢的主因）。开发时仍直接用 `dsh-runtime/`。
-- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\AnyModelBot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/agent/pwsh-private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）；`AMB_PWSH_MIRROR` 可换成镜像前缀（照样核对哈希和签名），`AMB_PWSH_AUTO_INSTALL=0` 关掉自动安装。
+- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\AnyModelBot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/agent/pwsh-private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。镜像前缀和"关掉自动安装"在 `config.json` 的 `agent.pwshMirror` / `agent.pwshAutoInstall` 里（照样核对哈希和签名）；**没有环境变量**能改这两项——安装根目录同时是 `state.json` 的位置，让它来自环境变量就能连签名核对的记录一起伪造。
 - 代理执行的命令能联网（沙箱只限制写文件），用的是你的代理：应用环境变量里的 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`（及小写）和证书、软件源变量（`SSL_CERT_FILE`、`REQUESTS_CA_BUNDLE`、`NODE_EXTRA_CA_CERTS`、`PIP_INDEX_URL`、`npm_config_registry`、`GOPROXY` 等）原样传下去；环境里没设代理时，桌面版每次拉起代理进程都问一次系统代理（系统设置和 PAC），按 `http://主机:端口` 传下去（见 `src/agent/proxy-env.ts`）。本机地址（`127.0.0.1`、`localhost`、`::1`）总是并进 `NO_PROXY`，永不走代理。
 - 数据目录：`<userData>/data`（macOS `~/Library/Application Support/anymodel bot/data`，Windows `%APPDATA%\anymodel bot\data`，Linux `~/.config/anymodel bot/data`）。日志在数据目录的 `logs/app.log`。
 - 单实例；关闭窗口默认隐藏到托盘（设置 → 常规 可改为退出）；托盘菜单：打开 / 在浏览器中打开 / 开机自启（macOS、Windows）/ 打开数据目录 / 退出。
@@ -117,10 +117,10 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 每个会话用自己的模型：同一个代理进程里各会话各走各的模型和接口（每种接口一个 provider，上下文窗口、最大输出按模型），换模型不重启代理进程；补丁里没列出的模型在运行中补上。
 - 换新的代理进程：DSH 的 SDK 关不掉会话，后台任务和每次规则运行的会话都留在代理进程里，直到它重启（实测一个跑完、空闲的会话多占约 0.25–0.45 MB）。一个代理进程开过 100 个以上这样的会话后，等它完全空闲（没有聊天回合、没有在跑或收尾的任务和规则、没有等批准的、没有在压缩的会话、进程里没有后台命令）就在后台换一个新的；会话照常接着用，不中断任何东西，用户看不到。故障排查的代理状态里有 `taskSessions` 和 `recycles`；`AMB_DSH_RECYCLE_SESSIONS` 可改门槛。
 - 重启后的提醒：应用退出或崩溃时还没处理完的消息（每个会话在数据库里留一个处理中的标记，处理完就删），下次启动时在原会话里说一次「上次的消息「…」因为应用重启没有处理完，请重新发送」，不会自动重发。网页对话记进会话历史；微信用存下的 context_token 发送、占用同一份回复配额，超过 24 小时窗口或配额用完时等你在那个会话里发下一条消息时先说；飞书发到原单聊。
-- 代理的对话接口：代理按 Modelflare 公开目录里该模型支持的接口选——有 Responses API 的（GPT-5.4 及以后、Grok 4.5 及以后、DeepSeek V4、GLM-5、Kimi K3 等）走 `/v1/responses`（推理模型默认推理强度 medium，加密推理随历史回放）；没有 Responses、有 Anthropic Messages 的（Claude）走 `/v1/messages`；其余模型、拿不到目录时（离线、中国大陆线路）以及外部端点走 Chat Completions。接口按模型在代理进程里第一次用到它时选定（故障排查的代理状态里显示最近一轮的 `api` 和进程里的模型）；`AMB_AGENT_API=chat` 强制全部走 Chat Completions（排查用）。纯对话（非代理）仍走 Chat Completions。安全网：某个模型在 Responses / Messages 上的请求被上游拒绝（HTTP 400/404/405/415/422 或“不支持的参数 / 接口”，限流、余额、权限、上游故障、上下文过长不算）时，这个模型 24 小时内改走 Chat Completions（记在数据目录的 `dsh/api-fallback.json`，日志有警告，代理状态显示 `openai-completions (fallback: 原因)`）；这一轮如果还没调用过工具，这个会话换到 Chat 上自动重做一遍（不重启代理进程），用户照常收到回复，已经调用过工具的则照常报错、下一轮起走 Chat。
+- 代理的对话接口：代理按 Modelflare 公开目录里该模型支持的接口选——有 Responses API 的（GPT-5.4 及以后、Grok 4.5 及以后、DeepSeek V4、GLM-5、Kimi K3 等）走 `/v1/responses`（推理模型默认推理强度 medium，加密推理随历史回放）；没有 Responses、有 Anthropic Messages 的（Claude）走 `/v1/messages`；其余模型、拿不到目录时（离线、中国大陆线路）以及外部端点走 Chat Completions。接口按模型在代理进程里第一次用到它时选定（故障排查的代理状态里显示最近一轮的 `api` 和进程里的模型）；没有"强制全部走某个接口"的开关（那种开关等于让外部改代理的计费和路由）。纯对话（非代理）仍走 Chat Completions。安全网：某个模型在 Responses / Messages 上的请求被上游拒绝（HTTP 400/404/405/415/422 或“不支持的参数 / 接口”，限流、余额、权限、上游故障、上下文过长不算）时，这个模型 24 小时内改走 Chat Completions（记在数据目录的 `dsh/api-fallback.json`，日志有警告，代理状态显示 `openai-completions (fallback: 原因)`）；这一轮如果还没调用过工具，这个会话换到 Chat 上自动重做一遍（不重启代理进程），用户照常收到回复，已经调用过工具的则照常报错、下一轮起走 Chat。
 - 内置网关：magpie 以 `--gateway` 模式运行，使用本程序数据目录内独立的 HOME/配置目录；**不读取**你电脑上已有的 Claude/Codex 等订阅凭据，**不改写**任何 agent 配置，关闭自动更新与账户发现。它只供本进程内部调用，界面不再反代它的页面或 `/v1`。
 - API Key 只保存在内置网关的隔离配置中，不经过命令行参数、不写日志，前端只拿到尾号。
-- 开发/测试：设置 `AMB_MAGPIE_BASE_URL` 可直接使用一个 OpenAI 兼容端点（不启动内置网关，界面视为已连接，账户功能不可用）；`AMB_MODELFLARE_BASE_URL` 可把 Modelflare 基址指向本地 mock，`AMB_MODELFLARE_ISSUER` 把登录与账户接口指向本地 mock。
+- 开发/测试：在 `<数据目录>/config.json` 里把 `magpie.mode` 设成 `"external"` 并填 `magpie.externalBaseUrl` / `magpie.externalApiKey`，可直接使用一个 OpenAI 兼容端点（不启动内置网关，界面视为已连接，账户功能不可用）。**没有环境变量可以做到这件事**：能指向别的端点就等于能把 Key 送出去。站点地址是编译期字面量，要指向本地 mock 用 `src/modelflare.ts` 的 `__setRelayTestEndpoints()`。
 
 ## 界面
 

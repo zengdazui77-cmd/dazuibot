@@ -91,12 +91,11 @@ export function platKey(platform: string, arch: string): string {
   return `${platform}-${arch}`;
 }
 
-/** 二进制所在目录候选：打包后是 resources/cua-driver，开发时是 build/cua-driver/<plat-arch> */
+/** 二进制所在目录候选：打包后是 resources/cua-driver，开发时是 build/cua-driver/<plat-arch>。不读环境变量。 */
 export function cuaRoots(runtimeDir: string, platform = process.platform, arch = process.arch): string[] {
   const up = path.dirname(path.resolve(runtimeDir));
   const res = (process as any).resourcesPath as string | undefined;
   return [
-    process.env.AMB_CUA_DRIVER_DIR,
     res ? path.join(res, "cua-driver") : undefined,
     path.join(up, "cua-driver"),
     path.join(up, "build", "cua-driver", platKey(platform, arch)),

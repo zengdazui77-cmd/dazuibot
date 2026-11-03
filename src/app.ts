@@ -633,7 +633,15 @@ export class App {
     // Windows：选代理用的 PowerShell（系统里能用的 7 → 应用内置的 → 5.1），没有 7 时在后台自动装内置的；
     // 选择变了（装好了、坏了退回）就告诉用户，空闲的代理进程在后台换用新的
     if (pwshProbe.applicable) {
-      pwshProbe.configure({ agent: this.agent.available, mode: this.config.agent.pwsh, fetch: () => this.desktop?.fetch });
+      pwshProbe.configure({
+        agent: this.agent.available,
+        mode: this.config.agent.pwsh,
+        fetch: () => this.desktop?.fetch,
+        root: this.config.agent.pwshRoot,
+        mirror: this.config.agent.pwshMirror,
+        autoInstall: this.config.agent.pwshAutoInstall,
+        ignoreSystem: this.config.agent.pwshIgnoreSystem,
+      });
       this.offPwsh = pwshProbe.onChange((e) => {
         if (e.notice) this.notice(e.notice.level, e.notice.text);
         if (e.kind === "path") void this.agent.refreshIdle();

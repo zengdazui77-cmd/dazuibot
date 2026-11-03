@@ -13,7 +13,7 @@ This document explains what AnyModelBot stores where, what leaves your device, a
 | Desktop · Windows | `%APPDATA%\anymodel bot\data` |
 | Desktop · macOS | `~/Library/Application Support/anymodel bot/data` |
 | Desktop · Linux | `~/.config/anymodel bot/data` |
-| Command line `npm start` | `./data` (change with `AMB_DATA_DIR`) |
+| Command line `npm start` | `./data` (fixed; no environment variable) |
 | Docker | `/data` in the container (mounted as the `amb-data` volume in the README example) |
 
 ## Data inventory
@@ -73,7 +73,7 @@ Besides model requests, the app goes online to:
 - WeChat channel: talk to `ilinkai.weixin.qq.com` and download images and files you send from the WeChat CDN.
 - Feishu channel: keep a long connection to the Feishu Open Platform.
 - Telegram, Slack and Discord channels: once connected, talk to `api.telegram.org`, `slack.com`, `discord.com` and their file hosts to send and receive messages and the files you send.
-- On Windows, with agent mode on and no working PowerShell 7 on the system, download PowerShell 7 from Microsoft's official release location (turn this off with `AMB_PWSH_AUTO_INSTALL=0`; see the [development guide](./development_en.md)).
+- On Windows, with agent mode on and no working PowerShell 7 on the system, download PowerShell 7 from Microsoft's official release location (turn this off with `agent.pwshAutoInstall: false` in `config.json`; see the [development guide](./development_en.md)).
 
 ## Computer use and screenshots
 

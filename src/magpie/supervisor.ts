@@ -54,12 +54,11 @@ export function magpieBinaryName(platform = process.platform, arch = process.arc
   return `magpie-${platform}-${arch}${platform === "win32" ? ".exe" : ""}`;
 }
 
-/** 查找 magpie 可执行文件：显式路径 → Electron resources → build/bin（按平台命名 / 通用名）。 */
+/** 查找 magpie 可执行文件：显式路径 → Electron resources → build/bin（按平台命名 / 通用名）。不读环境变量。 */
 export function resolveMagpieBinary(explicit?: string): string | undefined {
   const exe = process.platform === "win32" ? ".exe" : "";
   const candidates = [
     explicit,
-    process.env.AMB_MAGPIE_BIN,
     (process as any).resourcesPath ? path.join((process as any).resourcesPath, "magpie", `magpie${exe}`) : undefined,
     path.join(findAppRoot(), "build", "bin", magpieBinaryName()),
     path.join(findAppRoot(), "build", "bin", `magpie${exe}`),

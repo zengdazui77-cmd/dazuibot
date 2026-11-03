@@ -18,7 +18,9 @@ if (process.platform === "linux" && !process.env.DISPLAY) {
   args = ["-a", "-s", "-screen 0 1400x900x24", cmd, ...args, "--disable-gpu"];
   cmd = "xvfb-run";
 }
-const r = spawnSync(cmd, args, { env: { ...process.env, AMB_DATA_DIR: dataDir, AMB_UI_PORT: "0", AMB_ELECTRON_SMOKE: shot }, encoding: "utf8", timeout: 120_000 });
+// 白标版不读 AMB_DATA_DIR / AMB_UI_PORT：冒烟运行的数据目录就是截图路径的父目录（见 electron/main.ts），
+// 端口用 config.json 的默认值（3600，被占用时自动换随机端口）。
+const r = spawnSync(cmd, args, { env: { ...process.env, AMB_ELECTRON_SMOKE: shot }, encoding: "utf8", timeout: 120_000 });
 const out = (r.stdout || "") + (r.stderr || "");
 const line = out.split("\n").find((l) => l.startsWith("SMOKE "));
 if (!line) {

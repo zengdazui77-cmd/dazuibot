@@ -1,6 +1,6 @@
 /**
  * 一条命令启动全部：内置 magpie（受管）+ 机器人运行时 + 渠道 + 管理界面。
- *   npm start            （数据目录默认 ./data，可用 AMB_DATA_DIR 指定）
+ *   npm start            （数据目录固定 ./data；不读环境变量，要换目录改 <数据目录>/config.json 或换个工作目录）
  */
 import { loadConfig } from "./config.js";
 import { App } from "./app.js";

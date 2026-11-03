@@ -47,6 +47,9 @@ interface FakeOpts {
   osRelease?: string;
   env?: NodeJS.ProcessEnv;
   root?: string;
+  /** 原 AMB_PWSH_AUTO_INSTALL=0 / AMB_PWSH_IGNORE_SYSTEM=1 / AMB_PWSH_MIRROR（这些不再走环境变量） */
+  autoInstall?: boolean;
+  ignoreSystem?: boolean;
   pidAlive?: (pid: number) => boolean;
 }
 
@@ -59,7 +62,7 @@ function fake(o: FakeOpts = {}) {
   const calls: Array<{ exe: string; args: string[]; env?: NodeJS.ProcessEnv }> = [];
   const fetches: string[] = [];
   let fetchFails = o.fetchFails ?? 0;
-  const env: NodeJS.ProcessEnv = { SystemRoot: "C:\\Windows", LOCALAPPDATA: "C:\\Users\\li\\AppData\\Local", ProgramFiles: PF, PATH: "C:\\Windows\\system32", PROCESSOR_IDENTIFIER: "Intel64 Family 6", AMB_PWSH_HOME: root, ...o.env };
+  const env: NodeJS.ProcessEnv = { SystemRoot: "C:\\Windows", LOCALAPPDATA: "C:\\Users\\li\\AppData\\Local", ProgramFiles: PF, PATH: "C:\\Windows\\system32", PROCESSOR_IDENTIFIER: "Intel64 Family 6", ...o.env };
   const run: Runner = async (exe, args, opts) => {
     calls.push({ exe, args, env: opts.env });
     if (/tar\.exe$/i.test(exe) || (/powershell\.exe$/i.test(exe) && args.join(" ").includes("Expand-Archive"))) {
@@ -87,8 +90,8 @@ function fake(o: FakeOpts = {}) {
     if (fetchFails-- > 0) throw new Error("ECONNRESET");
     return new Response(new Uint8Array(o.body ?? ZIP), { headers: { "content-length": String((o.body ?? ZIP).length) } });
   }) as unknown as typeof fetch;
-  const priv = new PrivatePwsh({ env, platform: "win32", arch: "x64", osRelease: o.osRelease ?? "10.0.22631", run, fetch: () => fetchFn, pin: PIN, pidAlive: o.pidAlive ?? (() => false), retryDelayMs: 1, lockPollMs: 5 });
-  return { root, env, run, calls, fetches, priv, fetchFn, dir: path.join(root, `${PIN.version}-x64`) };
+  const priv = new PrivatePwsh({ env, platform: "win32", arch: "x64", osRelease: o.osRelease ?? "10.0.22631", run, fetch: () => fetchFn, pin: PIN, pidAlive: o.pidAlive ?? (() => false), retryDelayMs: 1, lockPollMs: 5, root, autoInstall: o.autoInstall });
+  return { root, env, run, calls, fetches, priv, fetchFn, opts: o, dir: path.join(root, `${PIN.version}-x64`) };
 }
 
 const leftovers = (root: string) => fs.readdirSync(root).filter((n) => n.startsWith("."));
@@ -268,7 +271,7 @@ describe("内置 PowerShell 7：安装", () => {
     expect(osSupport("weird").ok).toBe(true);
   });
 
-  it("自动安装失败后退避（1 小时、1 天、之后不再自动装）；AMB_PWSH_AUTO_INSTALL=0 关掉；手动点安装清零", async () => {
+  it("自动安装失败后退避（1 小时、1 天、之后不再自动装）；config.agent.pwshAutoInstall=false 关掉；手动点安装清零", async () => {
     const f = fake({ body: Buffer.from("x".repeat(ZIP.length)) });
     expect(f.priv.autoBlocked()).toBe("不支持的处理器架构"); // 还没看过这台电脑（prepare 之前）
     await f.priv.prepare();
@@ -279,7 +282,7 @@ describe("内置 PowerShell 7：安装", () => {
     expect(state().auto.attempts).toBe(1);
     await f.priv.install({ manual: true });
     expect(state().auto.attempts).toBe(0);
-    expect(fake({ env: { AMB_PWSH_AUTO_INSTALL: "0" } }).priv.autoBlocked()).toBe("AMB_PWSH_AUTO_INSTALL=0");
+    expect(fake({ autoInstall: false }).priv.autoBlocked()).toBe("已关闭自动安装");
   });
 
   it("架构：arm64 进程装 arm64；x64 进程在 ARM64 Windows 上（模拟运行）也装 arm64；32 位不装；镜像前缀", async () => {
@@ -291,8 +294,8 @@ describe("内置 PowerShell 7：安装", () => {
     const reg = vi.fn(async () => ({ code: 0, stdout: "    PROCESSOR_ARCHITECTURE    REG_SZ    ARM64\r\n", stderr: "" }));
     expect(await resolveArch({ arch: "x64", env: { SystemRoot: "C:\\Windows" }, run: reg })).toBe("arm64");
     expect((reg.mock.calls[0] as unknown as [string])[0]).toBe("C:\\Windows\\System32\\reg.exe");
-    expect(zipUrl(PRIVATE_PWSH, "arm64", {})).toBe(`https://github.com/PowerShell/PowerShell/releases/download/v${PRIVATE_PWSH.version}/PowerShell-${PRIVATE_PWSH.version}-win-arm64.zip`);
-    expect(zipUrl(PRIVATE_PWSH, "x64", { AMB_PWSH_MIRROR: "https://mirror.example/pwsh/" })).toBe(`https://mirror.example/pwsh/PowerShell-${PRIVATE_PWSH.version}-win-x64.zip`);
+    expect(zipUrl(PRIVATE_PWSH, "arm64")).toBe(`https://github.com/PowerShell/PowerShell/releases/download/v${PRIVATE_PWSH.version}/PowerShell-${PRIVATE_PWSH.version}-win-arm64.zip`);
+    expect(zipUrl(PRIVATE_PWSH, "x64", "https://mirror.example/pwsh/")).toBe(`https://mirror.example/pwsh/PowerShell-${PRIVATE_PWSH.version}-win-x64.zip`);
     // 固定的哈希是 64 位十六进制
     expect(PRIVATE_PWSH.sha256.x64).toMatch(/^[0-9a-f]{64}$/);
     expect(PRIVATE_PWSH.sha256.arm64).toMatch(/^[0-9a-f]{64}$/);
@@ -307,6 +310,7 @@ function probeWith(f: ReturnType<typeof fake>, o: { exes?: string[]; versions?: 
     env: f.env,
     run: f.run,
     priv: f.priv,
+    ...(f.opts.ignoreSystem ? { ignoreSystem: true } : {}),
     lstat: async (p) => {
       if (!exes.has(p.toLowerCase())) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
       return { isFile: () => true, isSymbolicLink: () => false };
@@ -364,24 +368,24 @@ describe("探测器：优先级、自动安装、自动退回", () => {
     expect(pwshReportLine(done)).toContain(`内置 PowerShell ${PIN.version} x64 · 已就绪 · 试运行通过`);
   });
 
-  it("代理模式没开、AMB_PWSH_AUTO_INSTALL=0、改回系统默认：都不自动装；手动安装照样可以", async () => {
-    for (const [cfg, env] of [
-      [{ agent: false, mode: "auto" as const }, {}],
-      [{ agent: true, mode: "auto" as const }, { AMB_PWSH_AUTO_INSTALL: "0" }],
-      [{ agent: true, mode: "system" as const }, {}],
+  it("代理模式没开、pwshAutoInstall=false、改回系统默认：都不自动装；手动安装照样可以", async () => {
+    for (const [cfg, autoInstall] of [
+      [{ agent: false, mode: "auto" as const }, undefined],
+      [{ agent: true, mode: "auto" as const }, false],
+      [{ agent: true, mode: "system" as const }, undefined],
     ] as const) {
-      const f = fake({ env });
+      const f = fake({ autoInstall });
       const { probe } = probeWith(f);
-      probe.configure(cfg);
+      probe.configure({ ...cfg, autoInstall });
       const st = await probe.check();
       await settle(f.priv);
       expect(f.fetches).toEqual([]);
       expect(st.missing).toBe(true);
       expect(pwshStatusLine(st)).toContain("Windows PowerShell 5.1");
     }
-    const f = fake({ env: { AMB_PWSH_AUTO_INSTALL: "0" } });
+    const f = fake({ autoInstall: false });
     const { probe } = probeWith(f);
-    probe.configure({ agent: true, mode: "auto" });
+    probe.configure({ agent: true, mode: "auto", autoInstall: false });
     await probe.check();
     probe.install();
     await settle(f.priv);
@@ -406,7 +410,7 @@ describe("探测器：优先级、自动安装、自动退回", () => {
   });
 
   it("AMB_PWSH_IGNORE_SYSTEM=1（CI）：不看系统里的；内置的装好前明确写 5.1（免得 DSH 自己找回系统的）", async () => {
-    const f = fake({ env: { AMB_PWSH_IGNORE_SYSTEM: "1" } });
+    const f = fake({ ignoreSystem: true });
     const { probe } = probeWith(f, { exes: [SYS_PWSH] });
     probe.configure({ agent: false });
     const st = await probe.check();
@@ -418,7 +422,7 @@ describe("探测器：优先级、自动安装、自动退回", () => {
   });
 
   it("运行中代理拉不起内置的 pwsh（被删、被拦）：立即标记为坏、退回、通知；重启后还记得；重新检测通过后恢复", async () => {
-    const f = fake({ env: { AMB_PWSH_IGNORE_SYSTEM: "1" } });
+    const f = fake({ ignoreSystem: true });
     const { probe, events } = probeWith(f);
     probe.configure({ agent: true, mode: "auto" });
     await probe.check();
@@ -447,7 +451,7 @@ describe("探测器：优先级、自动安装、自动退回", () => {
     // 坏了不自动重装（免得循环下载）
     expect(f.fetches).toHaveLength(1);
     // 重启后还记得
-    const again = fake({ root: f.root, env: { AMB_PWSH_IGNORE_SYSTEM: "1" } });
+    const again = fake({ root: f.root, ignoreSystem: true });
     await again.priv.prepare();
     expect(again.priv.status()).toMatchObject({ installed: true, ready: false, bad: expect.anything() });
     // 重新检测：重新试运行，通过就恢复
@@ -475,7 +479,7 @@ describe("探测器：优先级、自动安装、自动退回", () => {
   });
 
   it(".NET 宿主报错之类的弱信号：重新试运行一次，通过就不动，没通过才退回", async () => {
-    const f = fake({ env: { AMB_PWSH_IGNORE_SYSTEM: "1" } });
+    const f = fake({ ignoreSystem: true });
     const { probe } = probeWith(f);
     probe.configure({ agent: true, mode: "auto" });
     await probe.check();
@@ -494,7 +498,7 @@ describe("探测器：优先级、自动安装、自动退回", () => {
   });
 
   it("改回系统默认再改回来；重新安装（坏了也行）", async () => {
-    const f = fake({ env: { AMB_PWSH_IGNORE_SYSTEM: "1" } });
+    const f = fake({ ignoreSystem: true });
     const { probe } = probeWith(f);
     probe.configure({ agent: true, mode: "auto" });
     await probe.check();

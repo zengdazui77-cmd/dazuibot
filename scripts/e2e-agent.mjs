@@ -14,15 +14,15 @@
 // --expect-pwsh7 (Windows): require that the app detected PowerShell 7 (/amb/api/pwsh and the diagnostics
 //   status), passed it to DSH (the "patch written" log line) and that the --tool command ran in it
 //   (the pwsh tool prints $PSVersionTable.PSVersion.Major). GitHub's windows-2025 image has PowerShell 7.
-// --private-pwsh (Windows): the app must ignore the runner's own PowerShell 7 (AMB_PWSH_IGNORE_SYSTEM=1), download,
-//   verify, launch-test and use its app-managed copy (AMB_PWSH_HOME=<out>/pwsh-home, fresh). The chat waits until the
+// --private-pwsh (Windows): the app must ignore the runner's own PowerShell 7 (config agent.pwshIgnoreSystem), download,
+//   verify, launch-test and use its app-managed copy (config agent.pwshRoot=<out>/pwsh-home, fresh). The chat waits until the
 //   install is done; then the --tool command must run in PowerShell 7 from that copy.
 // --pwsh-heal (with --private-pwsh): then "quarantine" the copy's pwsh.exe like antivirus would; the next tool call cannot
 //   start it, so the app must mark it broken and fall back to Windows PowerShell 5.1 (psver=5), and a one-click
 //   reinstall (POST /amb/api/pwsh/install) must bring PowerShell 7 back (psver=7).
 // --tool: the mock model asks for one shell tool call before answering each message (exercises tool spawning).
-// --managed: use the bundled magpie gateway (as users do) with "Modelflare" pointed at the mock
-//   (AMB_MODELFLARE_BASE_URL) and connected through the API; otherwise the app calls the mock directly.
+// --managed: use the bundled magpie gateway (as users do) with the site pointed at the mock. 白标版地址是字面量，
+//   这一条已作废（见下面的拒绝执行）。
 // --stream: send the message through the UI's SSE endpoint (/chat/stream) instead of /chat.
 // --reasoning: the mock streams reasoning_content deltas before the answer (like reasoning models).
 // --observe-ms N: keep the app running N ms after the reply (process monitor keeps logging), then
@@ -170,19 +170,30 @@ if (flag("procmon") && process.platform === "win32") {
 const port = await freePort();
 const token = crypto.randomBytes(16).toString("hex");
 const base = `http://127.0.0.1:${port}`;
-const env = {
-  ...process.env,
-  AMB_DATA_DIR: dataDir,
-  ...(managed ? { AMB_MODELFLARE_BASE_URL: llmUrl + "/v1" } : { AMB_MAGPIE_BASE_URL: llmUrl + "/v1", AMB_MAGPIE_API_KEY: "mock-key", AMB_DEFAULT_MODEL: MODEL }),
-  AMB_UI_PORT: String(port),
-  AMB_UI_TOKEN: token,
-  AMB_LOG_LEVEL: "debug",
-  AMB_DSH_TRACE: path.join(out, "dsh-trace.jsonl"),
-  AMB_WEIXIN_API_BASE: "http://127.0.0.1:9",
-  AMB_MEMORY_REVIEW_DELAY_MS: "600000",
-  // --private-pwsh: pretend the runner has no PowerShell 7, so the app installs and uses its own copy (a fresh one)
-  ...(privatePwsh ? { AMB_PWSH_IGNORE_SYSTEM: "1", AMB_PWSH_HOME: pwshHome } : {}),
-};
+// 白标版不读任何 AMB_* 配置环境变量（地址/路径/数据目录都在字面量或 config.json 里）。
+// 所以这里把要改的配置写进数据目录的 config.json —— 这正是用户的配置通道。
+// 数据目录固定是"启动工作目录下的 data/"，所以我们把 cwd 定成 data 的父目录来用 --data-dir。
+if (path.basename(dataDir) !== "data") {
+  console.error("--data-dir 必须以 data 结尾：程序的数据目录 = 启动工作目录下的 data/");
+  process.exit(2);
+}
+const appCwd = path.dirname(dataDir);
+fs.writeFileSync(
+  path.join(dataDir, "config.json"),
+  JSON.stringify(
+    {
+      ui: { port, token },
+      magpie: { mode: "external", externalBaseUrl: llmUrl + "/v1", externalApiKey: "mock-key" },
+      llm: { defaultModel: MODEL },
+      weixin: { apiBaseUrl: "http://127.0.0.1:9" },
+      // --private-pwsh: pretend the runner has no PowerShell 7, so the app installs and uses its own copy (a fresh one)
+      ...(privatePwsh ? { agent: { pwshIgnoreSystem: true, pwshRoot: pwshHome } } : {}),
+    },
+    null,
+    2,
+  ) + "\n",
+);
+const env = { ...process.env, AMB_LOG_LEVEL: "debug", AMB_MEMORY_REVIEW_DELAY_MS: "600000" };
 if (privatePwsh) fs.rmSync(pwshHome, { recursive: true, force: true });
 const launch = opt("launch", "node");
 say("launching", launch, JSON.stringify(cmd));
@@ -191,7 +202,7 @@ let appExit;
 if (launch === "node" || launch === "broken-pipe") {
   const appOut = fs.openSync(path.join(out, "app.stdout.log"), "w");
   const appErr = fs.openSync(path.join(out, "app.stderr.log"), "w");
-  app = spawn(cmd[0], cmd.slice(1), { env, stdio: launch === "node" ? ["ignore", appOut, appErr] : ["ignore", "pipe", "pipe"] });
+  app = spawn(cmd[0], cmd.slice(1), { env, cwd: appCwd, stdio: launch === "node" ? ["ignore", appOut, appErr] : ["ignore", "pipe", "pipe"] });
   if (launch === "broken-pipe") {
     app.stdout.destroy();
     app.stderr.destroy();
@@ -204,7 +215,7 @@ if (launch === "node" || launch === "broken-pipe") {
 } else {
   // Start-Process: ShellExecute (shell) or CreateProcess with file handles (redirect); env is inherited.
   const q = (v) => `'${String(v).replaceAll("'", "''")}'`;
-  const wd = opt("cwd", path.dirname(cmd[0]));
+  const wd = opt("cwd", appCwd);
   const argList = cmd.length > 1 ? ` -ArgumentList ${cmd.slice(1).map(q).join(",")}` : "";
   const redirect = launch === "redirect" ? ` -RedirectStandardOutput ${q(path.join(out, "app.stdout.log"))} -RedirectStandardError ${q(path.join(out, "app.stderr.log"))}` : "";
   // The PID comes back through a file, and PowerShell gets no pipes from us: Start-Process with
