@@ -118,7 +118,7 @@ describe("服务端词典", () => {
       return t("web.botNotFound");
     });
     expect(inner).toBe("机器人不存在");
-    expect(tl("en", "desktop.trayOpen", { product: "AnyModelBot" })).toBe("Open AnyModelBot");
+    expect(tl("en", "desktop.trayOpen", { product: "dazuibot" })).toBe("Open dazuibot");
     setLangPref("system");
   });
 

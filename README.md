@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot 的 Eyes 标志：两只竖向胶囊形的眼睛，会左右张望">
+  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="dazuibot 的 Eyes 标志：两只竖向胶囊形的眼睛，会左右张望">
 </p>
 
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/wordmark-dark.svg">
-    <img src="docs/assets/brand/wordmark-light.svg" height="40" alt="AnyModelBot">
+    <img src="docs/assets/brand/wordmark-light.svg" height="40" alt="dazuibot">
   </picture>
 </h1>
 
@@ -29,16 +29,16 @@
 </div>
 
 <p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot 演示：首次启动粘贴 API Key、选择模型、让机器人整理一个文件夹，并批准一次文件移动" width="100%">
+  <img src="docs/assets/hero/hero-demo.gif" alt="dazuibot 演示：首次启动粘贴 API Key、选择模型、让机器人整理一个文件夹，并批准一次文件移动" width="100%">
 </p>
 
-# 🤖 AnyModelBot
+# 🤖 dazuibot
 
-AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
+dazuibot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
 
-对话、记忆、文件和 API Key 都留在你的设备上。模型来自本站的中转站（[zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)）：一个 API Key，任意模型，按 token 计费。AnyModelBot 本身没有订阅。
+对话、记忆、文件和 API Key 都留在你的设备上。模型来自本站的中转站（[zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)）：一个 API Key，任意模型，按 token 计费。dazuibot 本身没有订阅。
 
-和 xAI 的 Grok Bot、OpenAI 的 dots、Anthropic 的 Claude Duet 一样，它是一个常驻的个人 AI 智能体：在后台替你干活，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上，GPT、Claude、Gemini、Grok 等任意模型都能用，按量付费，不绑定某一家的订阅（[详细对比](#-对比-grok-bot--openai-dots--claude-duet)）。
+和 xAI 的 Grok Bot、OpenAI 的 dots、Anthropic 的 Claude Duet 一样，它是一个常驻的个人 AI 智能体：在后台替你干活，需要你拍板时再来问你。不同的是，dazuibot 开源（MIT），跑在你自己的电脑或服务器上，GPT、Claude、Gemini、Grok 等任意模型都能用，按量付费，不绑定某一家的订阅（[详细对比](#-对比-grok-bot--openai-dots--claude-duet)）。
 
 装好就是一个开箱即用的 Super Agent：后台任务、定时规则和「需要你」都不用另外配置。它的设计参考了 DeepSeek 的 [Super Agent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)，智能体运行在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 上（[详细介绍](./docs/blog/superagent.md)）。
 
@@ -48,7 +48,7 @@ AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS
 
 ## 本站中转站
 
-AnyModelBot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 API Key 就能调用 GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 68 个文本、图片和视频模型，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。按 token 计费，价格表公开。
+dazuibot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 API Key 就能调用 GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 68 个文本、图片和视频模型，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。按 token 计费，价格表公开。
 
 **注册、建 Key、粘回应用，三步**
 
@@ -58,7 +58,7 @@ AnyModelBot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一�
 
 充值在[账单页](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme)；用量、余额和令牌都在[控制台](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme)。
 
-**AnyModelBot 怎么用本站中转站**
+**dazuibot 怎么用本站中转站**
 
 - **只要一把 Key。** 白标版不提供应用内账户登录：首次启动粘贴 API Key 即可，之后应用自己记住。Docker 或服务器上跑也一样。
 - **所有模型，一个选择器。** 你账户能用的模型会自动列出。参考价来自站点公开的价格表；上下文长度与能力标记来自站点的模型资料接口，站点目前没有提供这一项，所以这两项目前不显示。
@@ -83,10 +83,10 @@ AnyModelBot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一�
 | ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
 
 <p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="在 Windows 上安装 AnyModelBot：运行安装程序、打开应用，来到粘贴 API Key 的欢迎页" width="100%">
+  <img src="docs/assets/download/install-windows.gif" alt="在 Windows 上安装 dazuibot：运行安装程序、打开应用，来到粘贴 API Key 的欢迎页" width="100%">
 </p>
 
-**首次打开。** 如果系统提示这是从网上下载的应用：Windows 点「更多信息 → 仍要运行」，macOS 在「系统设置 → 隐私与安全性」里点「仍要打开」。Linux 先给 AppImage 加可执行权限（`chmod +x`）再运行。关闭窗口会把 AnyModelBot 收到托盘，要退出请用托盘菜单或设置里的选项。
+**首次打开。** 如果系统提示这是从网上下载的应用：Windows 点「更多信息 → 仍要运行」，macOS 在「系统设置 → 隐私与安全性」里点「仍要打开」。Linux 先给 AppImage 加可执行权限（`chmod +x`）再运行。关闭窗口会把 dazuibot 收到托盘，要退出请用托盘菜单或设置里的选项。
 
 **校验下载文件。**
 
@@ -110,7 +110,7 @@ docker exec amb cat /data/ui-token   # 然后打开 http://<主机>:3600/?token=
 
 ```bash
 git clone <本仓库地址>
-cd AnyModelBot
+cd dazuibot
 npm install
 npm run setup      # 拉取并编译内置网关
 npm start          # 本地管理界面：http://127.0.0.1:3600/
@@ -152,7 +152,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/bots-dark.webp">
-  <img src="docs/assets/screenshots/bots-light.webp" alt="六个 AnyModelBot 角色排成一排，每个有自己的颜色" width="100%">
+  <img src="docs/assets/screenshots/bots-light.webp" alt="六个 dazuibot 角色排成一排，每个有自己的颜色" width="100%">
 </picture>
 
 <p align="center"><i>六个角色，帮你分清不同的机器人。它们的眼睛会跟着你的鼠标转。</i></p>
@@ -187,7 +187,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 - **随时暂停。** 机器人设置 › 主动消息里一个开关暂停后台工作，聊天照常。
 - **用完会清理。** 任务和运行记录留 30 天；任务文件夹 30 天没动过会自动删除，不来问你，任务详情里写着哪天删，想留就点保留。运行记录能导出成 Markdown。
 
-完整介绍见[《AnyModelBot 超级智能体》](./docs/blog/superagent.md)。
+完整介绍见[《dazuibot 超级智能体》](./docs/blog/superagent.md)。
 
 ## 🖥️ 操作你的电脑，生成图片和视频
 
@@ -208,7 +208,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 - **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，能算出参考价的都标出来。
 - **按对话切换**，也可以给每个机器人设默认模型；记忆整理、上下文交接这类后台小任务，还能单独指定一个模型。
 - **一条线路。** 白标版只指向一个中转站地址，不分国际/大陆两套，也不会自动切换。
-- **按量付费。** 每日用量和每个机器人的预算在应用里；钱包余额与充值在站点网页上。AnyModelBot 没有订阅。
+- **按量付费。** 每日用量和每个机器人的预算在应用里；钱包余额与充值在站点网页上。dazuibot 没有订阅。
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="首次启动：粘贴 API Key，回到应用后模型已列出，发出第一条消息" width="100%">
@@ -245,7 +245,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 - **托盘与开机自启。** 关闭窗口会收到托盘；macOS 和 Windows 支持开机自启。
 
 <p align="center">
-  <img src="docs/assets/features/characters-eyes.gif" alt="六个 AnyModelBot 角色排成一排，鼠标从它们上方移过时，眼睛会跟着转" width="100%">
+  <img src="docs/assets/features/characters-eyes.gif" alt="六个 dazuibot 角色排成一排，鼠标从它们上方移过时，眼睛会跟着转" width="100%">
 </p>
 
 > [!NOTE]
@@ -253,9 +253,9 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 # 🆚 对比 Grok Bot / OpenAI dots / Claude Duet
 
-2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布，"常驻的个人 AI 智能体"成了热门：它替你盯着事情、在后台干活，需要你决定时再来找你。AnyModelBot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
+2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布，"常驻的个人 AI 智能体"成了热门：它替你盯着事情、在后台干活，需要你决定时再来找你。dazuibot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
 
-| | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
+| | dazuibot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- |
 | 开源 | ✅ MIT | — | — |
 | 智能体跑在哪 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
@@ -264,10 +264,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 | 在哪找它 | 桌面应用（Windows、macOS、Linux）、Docker、微信、飞书、Telegram、Slack、Discord | 桌面应用、iPhone | ChatGPT、Slack、Teams | iOS、Android、claude.ai |
 | 现在能用吗 | 直接下载 | 测试版 | 部分地区开放 | 研究预览，美国候补名单 |
 
-AnyModelBot 同样能在后台干活：交代的任务可以在后台跑完，再把结果发到你用的聊天渠道；需要你批准或回答时，它会出现在侧栏的「需要你」里。机器人做的每一步都看得见，越出工作区的操作先问你。
+dazuibot 同样能在后台干活：交代的任务可以在后台跑完，再把结果发到你用的聊天渠道；需要你批准或回答时，它会出现在侧栏的「需要你」里。机器人做的每一步都看得见，越出工作区的操作先问你。
 
 > [!NOTE]
-> 其他产品的信息来自 2026 年 10 月的公开报道，可能已有变化，以各家官方说明为准。Grok Bot、dots、Claude Duet 分别是 xAI、OpenAI、Anthropic 的产品和商标，AnyModelBot 与它们没有关联。
+> 其他产品的信息来自 2026 年 10 月的公开报道，可能已有变化，以各家官方说明为准。Grok Bot、dots、Claude Duet 分别是 xAI、OpenAI、Anthropic 的产品和商标，dazuibot 与它们没有关联。
 
 # 🔐 工作原理与隐私
 
@@ -345,7 +345,7 @@ npm run typecheck && npm test
 
 # 📜 许可证
 
-AnyModelBot 以 [MIT 许可证](./LICENSE)发布。随附的第三方软件保留各自的许可证，见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 和 [`LICENSES/`](./LICENSES) 目录。
+dazuibot 以 [MIT 许可证](./LICENSE)发布。随附的第三方软件保留各自的许可证，见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 和 [`LICENSES/`](./LICENSES) 目录。
 
 <!-- link & badge references -->
 [license-shield]: https://img.shields.io/badge/license-MIT-d7ff00?style=flat-square&labelColor=161a00

@@ -1,4 +1,4 @@
-// AnyModelBot 界面：Preact + htm，无构建步骤（原生 ES 模块）。
+// dazuibot 界面：Preact + htm，无构建步骤（原生 ES 模块）。
 // 未连接 zdzui → 整页引导；已连接 → 侧栏 + 对话（信息面板按需），设置与机器人设置占满主区。
 import { render } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";

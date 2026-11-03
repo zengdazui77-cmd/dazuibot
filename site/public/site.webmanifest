@@ -1,12 +1,12 @@
 {
-  "name": "AnyModelBot",
-  "short_name": "AnyModelBot",
+  "name": "dazuibot",
+  "short_name": "dazuibot",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "theme_color": "#060706",
-  "background_color": "#060706",
+  "theme_color": "#05080f",
+  "background_color": "#05080f",
   "display": "browser"
 }

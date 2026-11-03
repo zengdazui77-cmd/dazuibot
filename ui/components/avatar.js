@@ -241,7 +241,7 @@ export function AvatarPicker({ value, fallback, onChange, size = 44, label = t("
   </div>`;
 }
 
-/** AnyModelBot 自己的标志：一个 m 字形的折线 */
+/** dazuibot 自己的标志：一个 m 字形的折线 */
 export function AppMark({ size = 32 }) {
   return html`<div class="app-mark" style=${{ width: size + "px", height: size + "px" }} aria-hidden="true">
     <svg viewBox="0 0 18 18" fill="none"><path d="M4 12.5V5.5L9 10l5-4.5v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>

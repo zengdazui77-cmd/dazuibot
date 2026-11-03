@@ -406,7 +406,7 @@ function WinApp({ screen = "chat", open: initial = false }) {
     <aside class="side">
       ${settings
         ? html`<div class="side-top start"><button type="button" class="side-back"><${Icon} name="arrowLeft" size="md" />返回应用</button></div>`
-        : html`<div class="side-top"><span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>AnyModelBot</span></span><${IconButton} icon="plus" iconSize="md" label="新建机器人" /></div>`}
+        : html`<div class="side-top"><span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>dazuibot</span></span><${IconButton} icon="plus" iconSize="md" label="新建机器人" /></div>`}
       <label class="side-search"><${Icon} name="search" size="sm" /><input type="search" placeholder="搜索" /></label>
       <nav class="side-list">
         ${settings
@@ -488,7 +488,7 @@ function Gallery() {
     </nav>
     <main class="gal-main">
       <header class="gal-head">
-        <span class="t-heading grow">AnyModelBot 设计库</span>
+        <span class="t-heading grow">dazuibot 设计库</span>
         <${Seg} label="主题" value=${mode} onChange=${setThemeMode} options=${[["system", "跟随系统"], ["light", "浅色"], ["dark", "深色"]]} />
         <${Seg} label="对照" value=${compare ? "both" : "one"} onChange=${(v) => setCompare(v === "both")} options=${[["one", "单主题"], ["both", "双主题对照"]]} />
       </header>

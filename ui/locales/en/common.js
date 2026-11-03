@@ -1,7 +1,7 @@
 // common · en
 export default {
   /** Product name, shared by the window title and the About row */
-  appName: "zdzui Assistant",
+  appName: "dazuibot",
   ok: "OK",
   cancel: "Cancel",
   close: "Close",

@@ -6,7 +6,7 @@
  * pip 于是用 TLS 去连一个普通 HTTP 代理，报 SSLEOFError（EOF occurred in violation of protocol）。环境变量里的代理优先于注册表，
  * 所以把代理写成 http://host:port 传下去就好了。
  *
- * 这些都是用户自己的网络设置，不是 AnyModelBot 的密钥：名字固定（不含 KEY / TOKEN / SECRET / PASSWORD），模型密钥不在其中。
+ * 这些都是用户自己的网络设置，不是 dazuibot 的密钥：名字固定（不含 KEY / TOKEN / SECRET / PASSWORD），模型密钥不在其中。
  * DSH 拉起命令时按名字过滤密钥样的变量（dsh-subprocess scrubbedParentEnv），这些都会照样传到命令里。
  */
 

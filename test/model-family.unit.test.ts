@@ -1,7 +1,7 @@
 /** 模型选择器的模型族分组：Modelflare 的 ID 不带厂商前缀，按名字归族，族内版本新的在前。 */
 import { describe, it, expect } from "vitest";
 // @ts-expect-error 界面代码是不经构建的 JS
-import { groupModels, modelFamily, OTHER_FAMILY, looksNonChat } from "../ui/lib/models.js";
+import { groupModels, modelFamily, OTHER_FAMILY, looksNonChat, firstChatModel } from "../ui/lib/models.js";
 
 // Modelflare 2026-10-30 公开的对话模型（节选）
 const LIST = [
@@ -59,5 +59,13 @@ describe("明显不能对话的模型：不藏，只加提示", () => {
     ]) {
       expect([id, looksNonChat(id)] as const).toEqual([id, false]);
     }
+  });
+
+  it("默认选中项跳过不适合主对话的；全都是时退回第一个，一个都不藏", () => {
+    const all = ["dall-e-3", "gpt-6-sol", "claude-opus-5"];
+    expect(firstChatModel(all)).toBe("gpt-6-sol");
+    expect(firstChatModel(["tts-1", "whisper-1"])).toBe("tts-1");
+    expect(firstChatModel([])).toBe("");
+    expect(all).toEqual(["dall-e-3", "gpt-6-sol", "claude-opus-5"]);
   });
 });

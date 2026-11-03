@@ -495,7 +495,7 @@ export class NotionService {
     const res = await this.send()(meta.registration_endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ client_name: "AnyModelBot", redirect_uris: [redirectUri], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none" }),
+      body: JSON.stringify({ client_name: "dazuibot", redirect_uris: [redirectUri], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none" }),
       signal: this.deadline(signal),
     });
     const data: any = await res.json().catch(() => undefined);
@@ -617,7 +617,7 @@ export class NotionService {
 
   private async mcpTool(account: ConnectedAccount, name: string, args: Record<string, unknown>, signal: AbortSignal | undefined): Promise<string> {
     if (!this.mcpSessions.has(account.id)) {
-      const init = await this.rpc(account, { id: this.rpcId++, method: "initialize", params: { protocolVersion: MCP_PROTOCOL, capabilities: {}, clientInfo: { name: "AnyModelBot", version: "1" } } }, signal);
+      const init = await this.rpc(account, { id: this.rpcId++, method: "initialize", params: { protocolVersion: MCP_PROTOCOL, capabilities: {}, clientInfo: { name: "dazuibot", version: "1" } } }, signal);
       this.mcpSessions.set(account.id, init.res.headers.get("mcp-session-id") ?? "");
       if (!this.mcpSessions.get(account.id)) this.mcpSessions.delete(account.id);
       if (init.res.ok) await this.rpc(account, { method: "notifications/initialized" }, signal);

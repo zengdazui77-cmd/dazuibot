@@ -2,7 +2,7 @@
  * 应用内置的 PowerShell 7（只在 Windows 上）：系统里没有能用的 PowerShell 7 时，应用自己下载官方 zip，校验、解压、试运行后
  * 装在用户目录里，代理用它执行命令。不要管理员权限，不写注册表、不改 PATH，不碰用户自己的 PowerShell。
  *
- * - 位置：%LOCALAPPDATA%\AnyModelBot\pwsh\<版本>-<架构>\（config.json 的 agent.pwshRoot 可改）。不放数据目录：数据目录在 Roaming（%APPDATA%），
+ * - 位置：%LOCALAPPDATA%\dazuibot\pwsh\<版本>-<架构>\（config.json 的 agent.pwshRoot 可改）。不放数据目录：数据目录在 Roaming（%APPDATA%），
  *   漫游配置文件会同步这两百多 MB；LOCALAPPDATA 只在本机，开发版和安装版共用一份，删数据目录也不用重新下载。
  * - 步骤：下载到临时文件 → 核对 SHA256（版本和哈希写死在 PRIVATE_PWSH）→ 解压到临时目录（系统自带的 tar.exe，不行再用 5.1 的
  *   Expand-Archive）→ 核对 pwsh.exe 等文件的 Authenticode 签名（5.1 的 Get-AuthenticodeSignature，必须是 Microsoft 签发）→ 按 DSH 的
@@ -244,13 +244,13 @@ export async function resolveArch(o: { arch?: string; env?: NodeJS.ProcessEnv; r
 }
 
 /**
- * 安装根目录：root 优先（config.json 的 agent.pwshRoot），否则 %LOCALAPPDATA%\AnyModelBot\pwsh。
+ * 安装根目录：root 优先（config.json 的 agent.pwshRoot），否则 %LOCALAPPDATA%\dazuibot\pwsh。
  * root 同时也是 state.json 与安装标记文件的位置，落地前必须自己算，不能来自环境变量：
  * 谁改得了安装根，谁就能连 state.json 一起伪造，签名校验会被指纹命中跳过。
  */
 export function pwshRoot(env: NodeJS.ProcessEnv = process.env, root?: string): string {
   if (root) return path.resolve(root);
-  return path.join(env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "AnyModelBot", "pwsh");
+  return path.join(env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "dazuibot", "pwsh");
 }
 
 // ---------- 下载 ----------
@@ -425,7 +425,7 @@ export interface PrivateDeps {
   lockPollMs?: number;
   /** 测试用：换掉固定的版本与哈希 */
   pin?: PwshPin;
-  /** 安装根目录（config.json 的 agent.pwshRoot）；不给就用 %LOCALAPPDATA%\AnyModelBot\pwsh */
+  /** 安装根目录（config.json 的 agent.pwshRoot）；不给就用 %LOCALAPPDATA%\dazuibot\pwsh */
   root?: string;
   /** 下载镜像前缀（config.json 的 agent.pwshMirror） */
   mirror?: string;
@@ -729,7 +729,7 @@ export class PrivatePwsh {
       this.setProgress({ state: "done", finishedAt: Date.now() }, true);
       return true;
     }
-    // 另一个 AnyModelBot 正在装：等它（锁没了再看一眼，它装好了就直接用），最多等 LOCK_WAIT_MS
+    // 另一个 dazuibot 正在装：等它（锁没了再看一眼，它装好了就直接用），最多等 LOCK_WAIT_MS
     const waitUntil = Date.now() + LOCK_WAIT_MS;
     for (;;) {
       let locked = false;

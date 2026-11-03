@@ -62,7 +62,7 @@ describe("Attention", () => {
     expect(att.list()).toEqual([]);
     expect(att.count()).toBe(0);
     expect(att.byBot()).toEqual({});
-    expect(trayTitle("AnyModelBot", 0)).toBe("AnyModelBot");
+    expect(trayTitle("dazuibot", 0)).toBe("dazuibot");
     expect(att.takeNew()).toEqual([]);
   });
 
@@ -116,8 +116,8 @@ describe("Attention", () => {
     expect(notificationOf(item({ id: "a", kind: "question" }))).toEqual({ title: "小蓝 需要你", body: "GPU 价格调研：报告用中文还是英文？" });
     expect(notificationOf(item({ id: "l", kind: "login", subject: "微信登录已过期", status: "", head: "微信登录已过期", line: "" }))).toEqual({ title: "小蓝 需要你", body: "微信登录已过期" });
     expect(botLine(item({ id: "f", kind: "failed", status: "失败", head: "「GPU 价格调研」失败了" }))).toBe("「GPU 价格调研」失败了");
-    expect(trayTitle("AnyModelBot", 3)).toBe("AnyModelBot 有 3 件事需要你");
-    expect(withLang("en", () => [trayTitle("AnyModelBot", 1), trayTitle("AnyModelBot", 3)])).toEqual(["AnyModelBot has 1 thing that needs you", "AnyModelBot has 3 things that need you"]);
+    expect(trayTitle("dazuibot", 3)).toBe("dazuibot 有 3 件事需要你");
+    expect(withLang("en", () => [trayTitle("dazuibot", 1), trayTitle("dazuibot", 3)])).toEqual(["dazuibot has 1 thing that needs you", "dazuibot has 3 things that need you"]);
   });
 
   it("审批中心那一份：任务的以任务名为题，聊天里的以渠道为题；那一句（界面上的标题行）是一句话", () => {

@@ -33,15 +33,17 @@ let entryUrl = "";
 let quitting = false;
 let stopped = false;
 
-// 图标由 scripts/build-app-icons.py 生成。Windows 窗口和托盘都用多尺寸 ico，系统按当前缩放挑对应的帧；
-// 其他系统窗口用 icon.png（macOS 忽略，Dock 用包里的 icns），托盘用 18px 的 tray.png，高分屏自动换 tray@2x.png
+// 图标由 scripts/build-app-icons.py 生成。窗口在 Windows 用多尺寸 ico，系统按当前缩放挑对应的帧；
+// 其他系统窗口用 icon.png（macOS 忽略，Dock 用包里的 icns）。
+// 托盘单独一套：Windows 用 tray.ico（16–48 多帧），其他系统用 18px 的 tray.png，高分屏自动换 tray@2x.png。
+// 托盘源图是简化图形（anymodelbot_design/icon/tray-36.png）—— 主图缩到 16px 只剩一团色块，认不出来。
 function assetPath(name: string): string {
   const root = findAppRoot(path.dirname(fileURLToPath(import.meta.url)));
   return path.join(root, "assets", name);
 }
 const isWin = process.platform === "win32";
 const windowIconPath = () => assetPath(isWin ? "icon.ico" : "icon.png");
-const trayIconPath = () => assetPath(isWin ? "icon.ico" : "tray.png");
+const trayIconPath = () => assetPath(isWin ? "tray.ico" : "tray.png");
 
 function showWindow(): void {
   if (!win) return createWindow();
@@ -50,7 +52,7 @@ function showWindow(): void {
   win.focus();
 }
 
-const PRODUCT = "AnyModelBot";
+const PRODUCT = "dazuibot";
 const canAutostart = process.platform === "darwin" || process.platform === "win32";
 
 // Windows：也不要系统标题栏，侧栏顶部那一行就是标题栏——左上角是应用图标 + 名称（Windows 的习惯；macOS 那里是红绿灯），

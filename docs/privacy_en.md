@@ -4,7 +4,7 @@
 
 **In one sentence:** conversations, memory, files and keys are stored on your device; whatever you send to a model goes through this site's relay service to the model provider you chose. We do not claim your data is beyond all risk — anything sent to a model leaves your device.
 
-This document explains what zdzui Assistant stores where, what leaves your device, and how to delete it. Questions: contact us through the channel you got this software from.
+This document explains what dazuibot stores where, what leaves your device, and how to delete it. Questions: contact us through the channel you got this software from.
 
 ## Data directory
 
@@ -88,7 +88,7 @@ Besides model requests, the app goes online to:
 
 ## Deleting your data
 
-1. Quit zdzui Assistant (tray menu → Quit).
+1. Quit dazuibot (tray menu → Quit).
 2. Delete the data directory from the table above. Docker: `docker rm -f amb && docker volume rm amb-data`.
 3. If you issued an API key on the site, delete it in the site's console (it lives only on your device, so deleting the data directory removes it too).
 4. If needed, disable the apps you created on the Feishu Open Platform (including any created by scanning), unbind the bot in WeChat, delete the bots you created on Telegram (@BotFather), Slack and Discord, and in Notion disconnect this app and delete any tokens you created.

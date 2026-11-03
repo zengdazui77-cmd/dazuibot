@@ -564,7 +564,7 @@ const FORCE_DEMO = ["missing", "installing", "installed", "broken", "failed"];
 /** force 模拟的状态（截图、界面测试；任何平台） */
 function forcedStatus(kind: string, version: string): PwshStatus {
   const now = Date.now();
-  const dir = "C:\\Users\\you\\AppData\\Local\\AnyModelBot\\pwsh\\" + `${version}-x64`;
+  const dir = "C:\\Users\\you\\AppData\\Local\\dazuibot\\pwsh\\" + `${version}-x64`;
   const exe = `${dir}\\pwsh.exe`;
   const priv = (o: Partial<PrivatePwshStatus>): PrivatePwshStatus => ({ version, arch: "x64", supported: true, dir, installed: false, ready: false, install: { state: "idle" }, ...o });
   const base = { applicable: true, forced: true, checkedAt: now, mode: "auto" as const, autoInstall: true };

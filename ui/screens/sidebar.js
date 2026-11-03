@@ -110,7 +110,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
 
   return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
     <div class="side-top">
-      <span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>AnyModelBot</span></span>
+      <span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>dazuibot</span></span>
       <${IconButton} icon="plus" iconSize="md" label=${canGroup ? t("sidebar.newMenu") : t("sidebar.newShortcut")} on=${view === "new"} aria-haspopup=${canGroup ? "menu" : undefined} aria-expanded=${canGroup ? !!newMenu : undefined}
         onClick=${(e) => { if (!canGroup) return onNew(); const el = e.currentTarget; setNewMenu((m) => (m ? null : el)); }} />
     </div>

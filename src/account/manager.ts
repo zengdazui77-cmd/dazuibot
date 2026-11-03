@@ -443,7 +443,7 @@ export class AccountManager {
   // ---------- Key 核对 ----------
 
   private deviceKeyName(): string {
-    return `AnyModelBot · ${this.o.hostname ?? os.hostname()}`.slice(0, 50);
+    return `dazuibot · ${this.o.hostname ?? os.hostname()}`.slice(0, 50);
   }
 
   /**
@@ -690,7 +690,7 @@ export class AccountManager {
 }
 
 function keyName(botName: string): string {
-  return `AnyModelBot · ${botName}`.slice(0, 50);
+  return `dazuibot · ${botName}`.slice(0, 50);
 }
 
 export function startOfLocalDay(ms: number): number {

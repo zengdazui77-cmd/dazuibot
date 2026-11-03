@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
 从 anymodelbot_design/icon/1024x1024.png（满版正方形原图）生成应用在各平台、各尺寸用到的图标。
+托盘另有一份源图 anymodelbot_design/icon/tray-36.png：主图缩到 18px 会糊成色块，托盘必须用
+线条更粗的简化图形；该文件存在时优先用它，不存在则退回主图缩放。
 
   assets/icon.icns            macOS 打包（electron-builder mac.icon）：Apple 网格，1024 画布里 824 的圆角方块 + 轻投影，16–1024 全套
-  assets/icon.ico             Windows 打包（win.icon、NSIS 安装包）+ 运行时窗口 / 托盘：16–256，<256 存 32 位 BMP，256 存 PNG
+  assets/icon.ico             Windows 打包（win.icon、NSIS 安装包）+ 运行时窗口：16–256，<256 存 32 位 BMP，256 存 PNG
   assets/icons/<N>x<N>.png    Linux 打包（electron-builder linux.icon，AppImage / 桌面菜单）：16–512
   assets/icon.png             运行时窗口图标（Linux；macOS 忽略，Dock 用包里的 icns），256
   assets/tray.png, tray@2x    托盘（macOS 菜单栏 / Linux），18 / 36，Electron 在高分屏自动换 @2x
+  assets/tray.ico             Windows 托盘：16–48 多帧，Windows 按当前 DPI 挑一帧，比缩放 PNG 清楚
   ui/assets/favicon-*.png     管理界面的浏览器标签图标，32 / 64
   ui/assets/apple-touch-icon  手机浏览器加到主屏幕，180，满版不透明（iOS 自己切圆角）
 
 只用 Pillow：  python3 scripts/build-app-icons.py
-换图标时只替换原图（≥1024 的正方形），重跑脚本，提交生成的文件。
+换图标时只替换原图（≥1024 的正方形）与 tray-36.png，重跑脚本，提交生成的文件。
 """
 import io
 import os
@@ -21,6 +24,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "anymodelbot_design", "icon", "1024x1024.png")
+TRAY_SRC = os.path.join(ROOT, "anymodelbot_design", "icon", "tray-36.png")
 ASSETS = os.path.join(ROOT, "assets")
 UI_ASSETS = os.path.join(ROOT, "ui", "assets")
 
@@ -119,6 +123,27 @@ def write_ico(src: Image.Image, path: str) -> None:
         f.write(head + b"".join(d for _, d in frames))
 
 
+def fit(src: Image.Image, size: int, margin: int = 1) -> Image.Image:
+    """把 src 缩进 size 画布，四周留 margin，不做圆角（托盘源图自带形状）。"""
+    n = max(1, size - 2 * margin)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.alpha_composite(src.resize((n, n), LANCZOS), (margin, margin))
+    return out
+
+
+def write_tray_ico(src: Image.Image, path: str) -> None:
+    """Windows 托盘：多帧 ICO，系统按当前 DPI 挑（100%=16、125%=20、150%=24、200%=32）。"""
+    sizes = [16, 20, 24, 32, 48]
+    frames = [(s, ico_bmp(fit(src, s))) for s in sizes]
+    offset = 6 + 16 * len(frames)
+    head = struct.pack("<HHH", 0, 1, len(frames))
+    for s, d in frames:
+        head += struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32, len(d), offset)
+        offset += len(d)
+    with open(path, "wb") as f:
+        f.write(head + b"".join(d for _, d in frames))
+
+
 def main() -> None:
     src = Image.open(SRC).convert("RGBA")
     if src.width != src.height or src.width < 1024:
@@ -131,9 +156,14 @@ def main() -> None:
     for s in [16, 24, 32, 48, 64, 128, 256, 512]:
         save_png(app_icon(src, s), os.path.join(ASSETS, "icons", f"{s}x{s}.png"))
     save_png(app_icon(src, 256), os.path.join(ASSETS, "icon.png"))
-    # 托盘：菜单栏 18pt 高，图形占 16pt（四周各留 1pt）
-    save_png(render(src, 18, 1), os.path.join(ASSETS, "tray.png"))
-    save_png(render(src, 36, 2), os.path.join(ASSETS, "tray@2x.png"))
+    # 托盘：菜单栏 18pt 高，图形占 16pt（四周各留 1pt）。有独立托盘源图就优先用它 ——
+    # 主图是细节丰富的插画，缩到 18px 只剩一团色块，托盘要的是轮廓清楚的简化图形。
+    tray_src = src
+    if os.path.exists(TRAY_SRC):
+        tray_src = Image.open(TRAY_SRC).convert("RGBA")
+    save_png(fit(tray_src, 18), os.path.join(ASSETS, "tray.png"))
+    save_png(fit(tray_src, 36, 2), os.path.join(ASSETS, "tray@2x.png"))
+    write_tray_ico(tray_src, os.path.join(ASSETS, "tray.ico"))
     save_png(app_icon(src, 32), os.path.join(UI_ASSETS, "favicon-32.png"))
     save_png(app_icon(src, 64), os.path.join(UI_ASSETS, "favicon-64.png"))
     save_png(render(src, 180, 0, shape=False), os.path.join(UI_ASSETS, "apple-touch-icon.png"))

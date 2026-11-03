@@ -133,7 +133,7 @@ describe("AccountManager", () => {
   it("登录后签发本机 Key 并接到内置网关；refresh token 只存在 600 权限的账户文件里", async () => {
     await signIn();
     expect(calls).toEqual(["connect:sk-key-1"]);
-    expect(mf.s.keys[0].name).toBe("AnyModelBot · test-pc");
+    expect(mf.s.keys[0].name).toBe("dazuibot · test-pc");
     const st = manager.status();
     expect(st).toMatchObject({ state: "signed_in", name: "Ada", source: "account", balanceUsd: 12.5 });
     expect(JSON.stringify(st)).not.toMatch(/rt-|at-/);
@@ -189,7 +189,7 @@ describe("AccountManager", () => {
     await signIn();
     await manager.setBotBudget("b1", "写作助手", { enabled: true, limitUsd: 5 });
     expect(calls).toContain("bot:b1:sk-key-2");
-    expect(mf.s.keys.find((k) => k.id === 2)).toMatchObject({ name: "AnyModelBot · 写作助手", limit_usd: 5 });
+    expect(mf.s.keys.find((k) => k.id === 2)).toMatchObject({ name: "dazuibot · 写作助手", limit_usd: 5 });
     await manager.setBotBudget("b1", "写作助手", { enabled: true, limitUsd: 8 });
     expect(mf.s.keys).toHaveLength(2);
     expect(mf.s.keys.find((k) => k.id === 2)!.limit_usd).toBe(8);
@@ -226,7 +226,7 @@ describe("AccountManager", () => {
     mf.s.keys = [];
     expect(await manager.repairKeys()).toBe(true);
     expect(calls).toEqual(["connect:sk-key-1", "connect:sk-key-2"]);
-    expect(mf.s.keys).toMatchObject([{ id: 2, name: "AnyModelBot · test-pc" }]);
+    expect(mf.s.keys).toMatchObject([{ id: 2, name: "dazuibot · test-pc" }]);
     expect(AccountVault.at(dir).load()!.deviceKeyId).toBe(2);
     expect(alerts.filter((a) => a.includes("已自动重新签发"))).toHaveLength(1);
     // 刚换过：maxAgeMs 内再问得到“换过了”（失败的请求可以重试），过后重新核对，没再换
@@ -267,7 +267,7 @@ describe("AccountManager", () => {
     expect(await manager.repairKeys()).toBe(true);
     expect(calls).toContain("bot:b1:sk-key-4");
     expect(calls).toContain("unbot:b2");
-    expect(mf.s.keys.find((k) => k.id === 4)).toMatchObject({ name: "AnyModelBot · 写作助手", limit_usd: 5 });
+    expect(mf.s.keys.find((k) => k.id === 4)).toMatchObject({ name: "dazuibot · 写作助手", limit_usd: 5 });
     expect(alerts.filter((a) => a.includes("写作助手") && a.includes("$5"))).toHaveLength(1);
     expect(await manager.botBudgets()).toMatchObject({ b1: { limit_usd: 5 } });
     expect(Object.keys(await manager.botBudgets())).toEqual(["b1"]);
@@ -293,7 +293,7 @@ describe("AccountManager", () => {
   it("性价比：登录签发的 Key 带着均衡；Modelflare 回显了才算支持，核对时不再重复改", async () => {
     mf.s.routing = "echo";
     await signIn();
-    expect(posts()).toMatchObject([{ body: { name: "AnyModelBot · test-pc", routing_strategy: "balanced" } }]);
+    expect(posts()).toMatchObject([{ body: { name: "dazuibot · test-pc", routing_strategy: "balanced" } }]);
     expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
     await manager.repairKeys();
     expect(patches()).toEqual([]);

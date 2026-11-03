@@ -18,14 +18,16 @@ export const ORIGIN = `https://${SITE_DOMAIN}`;
 /** GitHub 星数的初始值：构建时取（scripts/fetch-github-stars.ts）；页面打开后由 scripts/stars.ts 换成站内 /stars.json 的值 */
 export const githubStars = z.object({ stars: z.number().int().nonnegative() }).parse(githubJson).stars;
 
-/** 跳到 Modelflare 的链接都带来源参数：全项目统一 utm_source=anymodelbot&utm_campaign=amb_<位置>，官网是 amb_homepage */
-export const MF_UTM = "utm_source=anymodelbot&utm_campaign=amb_homepage";
+/** 跳到中转站控制台的链接都带来源参数：全项目统一 utm_source=zdzui&utm_campaign=dazuibot_<位置>，官网是 dazuibot_homepage。
+ *  与客户端 src/modelflare.ts 的 UTM 保持一致（那里是 utm_source: "zdzui"）。 */
+export const MF_UTM = "utm_source=zdzui&utm_campaign=dazuibot_homepage";
 const mf = (url: string) => `${url}${url.includes("?") ? "&" : "?"}${MF_UTM}`;
 
+// 中转站控制台（new-api 二开）就在主域上：站点首页、定价页、文档都挂在 zdzui.xyz。
 export const MF = {
-  home: mf("https://modelflare.dev/"),
-  pricing: mf("https://modelflare.dev/pricing"),
-  docs: mf("https://docs.modelflare.dev/"),
+  home: mf("https://zdzui.xyz/"),
+  pricing: mf("https://zdzui.xyz/pricing"),
+  docs: mf("https://zdzui.xyz/docs"),
 };
 
 const Bin = z.object({ url: z.string().min(1), sha256: z.string().min(1), sizeMB: z.number().nonnegative() });

@@ -35,7 +35,6 @@ export default {
   capsUnknown: "The site provides no capability data: a model without a Vision / Tools / Reasoning badge is unknown, not unsupported",
   /** The model exists on the site but this key's group does not include it: list it so the user knows what to ask for */
   notInKeyGroup: "not in this key's group",
-  notInKeyGroupCount: "{count} of these are not in this key's group and will fail if picked; switch groups on the site or ask the site owner for access",
   /** Header of the collapsed "unavailable models" section */
   blockedHead: "{count} more models on the site are not in your group (expand to view)",
   tiers: {

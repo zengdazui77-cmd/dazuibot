@@ -1,9 +1,9 @@
 {
-  "name": "zdzui-assistant",
-  "productName": "zdzui 助手",
+  "name": "dazuibot",
+  "productName": "dazuibot",
   "version": "1.0.0-zdzui.1",
   "private": true,
-  "description": "zdzui 助手：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
+  "description": "dazuibot：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
   "license": "MIT",
   "type": "module",
   "main": "dist/electron/main.js",
@@ -58,8 +58,8 @@
   },
   "build": {
     "appId": "xyz.zdzui.assistant",
-    "productName": "zdzui 助手",
-    "artifactName": "zdzui-assistant-${version}-${os}-${arch}.${ext}",
+    "productName": "dazuibot",
+    "artifactName": "dazuibot-${version}-${os}-${arch}.${ext}",
     "publish": null,
     "directories": {
       "output": "release",
@@ -240,7 +240,7 @@
       ],
       "desktop": {
         "entry": {
-          "StartupWMClass": "anymodel bot"
+          "StartupWMClass": "dazuibot"
         }
       }
     }

@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="AnyModelBot Eyes mark: two vertical pill-shaped eyes that glance left and right">
+  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="dazuibot Eyes mark: two vertical pill-shaped eyes that glance left and right">
 </p>
 
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/wordmark-dark.svg">
-    <img src="docs/assets/brand/wordmark-light.svg" height="40" alt="AnyModelBot">
+    <img src="docs/assets/brand/wordmark-light.svg" height="40" alt="dazuibot">
   </picture>
 </h1>
 
@@ -29,16 +29,16 @@
 </div>
 
 <p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot in action: paste an API key on first launch, pick a model, ask a bot to tidy a folder, and approve a file move" width="100%">
+  <img src="docs/assets/hero/hero-demo.gif" alt="dazuibot in action: paste an API key on first launch, pick a model, ask a bot to tidy a folder, and approve a file move" width="100%">
 </p>
 
-# 🤖 AnyModelBot
+# 🤖 dazuibot
 
-AnyModelBot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
+dazuibot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
 
-Your conversations, memory, files and API keys live on your device. Models come from this site's relay ([zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)): one API key, any model, priced per token. AnyModelBot itself has no subscription.
+Your conversations, memory, files and API keys live on your device. Models come from this site's relay ([zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)): one API key, any model, priced per token. dazuibot itself has no subscription.
 
-Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: AnyModelBot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
+Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: dazuibot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
 
 It is a Super Agent out of the box: background tasks, scheduled rules and Needs you need no extra setup. The design draws on DeepSeek's [super-agent prototype](https://github.com/deepseek-ai/dsh-superagent-prototype), and the agent runs on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ([the full story, in Chinese](./docs/blog/superagent.md)).
 
@@ -48,7 +48,7 @@ It is a Super Agent out of the box: background tasks, scheduled rules and Needs 
 
 ## This site's relay
 
-Every model in AnyModelBot comes from this site's relay: <https://zdzui.xyz>. One API key opens 68 text, image and video models, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Billing is per token and the price list is public.
+Every model in dazuibot comes from this site's relay: <https://zdzui.xyz>. One API key opens 68 text, image and video models, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Billing is per token and the price list is public.
 
 **Sign up, create a key, paste it back — three steps**
 
@@ -58,7 +58,7 @@ Every model in AnyModelBot comes from this site's relay: <https://zdzui.xyz>. On
 
 Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme); usage, balance and keys live in the [console](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme).
 
-**How AnyModelBot uses this relay**
+**How dazuibot uses this relay**
 
 - **One key is all it takes.** The white-label build has no in-app account sign-in: paste an API key on first launch and the app remembers it. Same in Docker or on a server.
 - **Every model, one picker.** Models your key can use are listed automatically. Reference prices come from the site's public price list; context length and capability tags come from the site's model-profile endpoint, which the site does not currently serve, so those two are not shown yet.
@@ -83,10 +83,10 @@ Pick your platform. Every version ships with all installers and a `SHA256SUMS` f
 | ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
 
 <p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="Installing AnyModelBot on Windows: run the installer, open the app, and land on the paste-your-API-key welcome screen" width="100%">
+  <img src="docs/assets/download/install-windows.gif" alt="Installing dazuibot on Windows: run the installer, open the app, and land on the paste-your-API-key welcome screen" width="100%">
 </p>
 
-**First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides AnyModelBot to the tray; quit from the tray menu or from Settings.
+**First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides dazuibot to the tray; quit from the tray menu or from Settings.
 
 **Verify a download.**
 
@@ -110,7 +110,7 @@ Don't expose port 3600 directly to the internet.
 
 ```bash
 git clone <this-repository-url>
-cd AnyModelBot
+cd dazuibot
 npm install
 npm run setup      # fetches and builds the bundled gateway
 npm start          # opens the local console at http://127.0.0.1:3600/
@@ -152,7 +152,7 @@ These screenshots show the Simplified Chinese interface. The app also runs in En
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/bots-dark.webp">
-  <img src="docs/assets/screenshots/bots-light.webp" alt="Six AnyModelBot characters in a row, each with its own color" width="100%">
+  <img src="docs/assets/screenshots/bots-light.webp" alt="Six dazuibot characters in a row, each with its own color" width="100%">
 </picture>
 
 <p align="center"><i>Six characters to tell your bots apart. Their eyes follow your pointer.</i></p>
@@ -187,7 +187,7 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
 - **Pause anytime.** One switch in bot settings › Proactive messages pauses background work; chat carries on.
 - **Cleans up after itself.** Tasks and run logs are kept for 30 days. A task folder unused for 30 days is deleted without asking; the task details show the date, and Keep holds on to it. Run logs export as Markdown.
 
-The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent.md).
+The full story, in Chinese: [dazuibot 超级智能体](./docs/blog/superagent.md).
 
 ## 🖥️ Operates your computer, and makes images and video
 
@@ -208,7 +208,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with a reference price whenever one can be computed.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
 - **One route.** The white-label build points at a single relay address: there is no international/mainland pair and no automatic switching.
-- **Pay per use.** Daily usage and per-bot budgets live in the app; wallet balance and top-ups live on the site. AnyModelBot has no subscription.
+- **Pay per use.** Daily usage and per-bot budgets live in the app; wallet balance and top-ups live on the site. dazuibot has no subscription.
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="First launch: paste an API key, return to the app with models listed, and send a first message" width="100%">
@@ -245,17 +245,17 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **Tray and autostart.** Close the window to hide to the tray; autostart is available on macOS and Windows.
 
 <p align="center">
-  <img src="docs/assets/features/characters-eyes.gif" alt="Six AnyModelBot characters in a row; their eyes follow the pointer as it moves across them" width="100%">
+  <img src="docs/assets/features/characters-eyes.gif" alt="Six dazuibot characters in a row; their eyes follow the pointer as it moves across them" width="100%">
 </p>
 
 > [!NOTE]
 > Features depend on the model you choose, your operating system and the permissions you grant. Computer use requires a desktop session, and macOS computer use is in Beta. Model requests go through this relay to the provider you pick; see [How it works & privacy](#-how-it-works--privacy).
 
-# 🆚 AnyModelBot vs Grok Bot, OpenAI dots and Claude Duet
+# 🆚 dazuibot vs Grok Bot, OpenAI dots and Claude Duet
 
-In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet made the always-on personal AI agent the thing to watch: it keeps an eye on things, works in the background and comes to you when a decision is yours. AnyModelBot does the same kind of job a different way: open source, on your own device, with any model.
+In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet made the always-on personal AI agent the thing to watch: it keeps an eye on things, works in the background and comes to you when a decision is yours. dazuibot does the same kind of job a different way: open source, on your own device, with any model.
 
-| | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
+| | dazuibot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- |
 | Open source | ✅ MIT | — | — |
 | Where the agent runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
@@ -264,10 +264,10 @@ In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](
 | Where you reach it | Desktop app (Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | Desktop app, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | Availability | Download it now | Beta | Select markets | Research preview, US waitlist |
 
-AnyModelBot works in the background too: a task you hand over can finish in the background and send its result to your chat app, and anything that needs your approval or answer shows up under "Needs you" in the sidebar. Every step a bot takes is visible, and anything outside its workspace asks you first.
+dazuibot works in the background too: a task you hand over can finish in the background and send its result to your chat app, and anything that needs your approval or answer shows up under "Needs you" in the sidebar. Every step a bot takes is visible, and anything outside its workspace asks you first.
 
 > [!NOTE]
-> Details about the other products come from public reports as of October 2026 and may have changed; check each vendor's official information. Grok Bot, dots and Claude Duet are products and trademarks of xAI, OpenAI and Anthropic respectively. AnyModelBot is not affiliated with them.
+> Details about the other products come from public reports as of October 2026 and may have changed; check each vendor's official information. Grok Bot, dots and Claude Duet are products and trademarks of xAI, OpenAI and Anthropic respectively. dazuibot is not affiliated with them.
 
 # 🔐 How it works & privacy
 
@@ -345,7 +345,7 @@ Full licenses and notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
 # 📜 License
 
-AnyModelBot is released under the [MIT License](./LICENSE). Bundled third-party software keeps its own licenses; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [`LICENSES/`](./LICENSES) folder.
+dazuibot is released under the [MIT License](./LICENSE). Bundled third-party software keeps its own licenses; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [`LICENSES/`](./LICENSES) folder.
 
 <!-- link & badge references -->
 [license-shield]: https://img.shields.io/badge/license-MIT-d7ff00?style=flat-square&labelColor=161a00

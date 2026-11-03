@@ -1,7 +1,7 @@
 // common · zh-CN：多处共用的短词。只放意思完全相同、语气也通用的词；带上下文的文案放各自的命名空间。
 export default {
   /** 产品名：窗口标题、关于页等处共用 */
-  appName: "zdzui 助手",
+  appName: "dazuibot",
   ok: "好",
   cancel: "取消",
   close: "关闭",

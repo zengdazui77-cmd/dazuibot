@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, Menu, Notice, Seg, Spinner, Switch, CopyButton } from "../components/ui.js";
 import { BotAvatar, MAIN_CHAR } from "../components/avatar.js";
 import { FamilyHead, PickModel, familyName, groupModels, useFamilies } from "../components/model-picker.js";
+import { firstChatModel } from "../lib/models.js";
 import { api } from "../lib/api.js";
 import { failed } from "../lib/store.js";
 import { LANG_NAMES, changeLang, getLangPref, t, useLang } from "../lib/i18n.js";
@@ -170,7 +171,8 @@ export function AccountLogin({ onSignedIn, onFace, label = t("onboarding.login.l
 
 function ModelStep({ models, initial, onDone }) {
   const [q, setQ] = useState("");
-  const [cur, setCur] = useState(initial && models.includes(initial) ? initial : models[0] || "");
+  // 默认选中：优先挑适合当主对话模型的那个（looksNonChat 只管这一处，不再隐藏任何模型）
+  const [cur, setCur] = useState(initial && models.includes(initial) ? initial : firstChatModel(models));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const groups = useMemo(() => groupModels(models, q), [models, q]);

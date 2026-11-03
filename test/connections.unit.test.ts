@@ -360,7 +360,7 @@ describe("Notion：一键授权", () => {
     const { notion, calls } = notionWith([META, { json: { client_id: "client-1" } }]);
     const url = new URL(await notion.startAuthorization(redirect));
     const reg = calls.find((c) => c.path === "/register")!;
-    expect(reg.body).toMatchObject({ client_name: "AnyModelBot", redirect_uris: [redirect], token_endpoint_auth_method: "none" });
+    expect(reg.body).toMatchObject({ client_name: "dazuibot", redirect_uris: [redirect], token_endpoint_auth_method: "none" });
     expect(url.origin + url.pathname).toBe("https://mcp.notion.com/authorize");
     expect(url.searchParams.get("client_id")).toBe("client-1");
     expect(url.searchParams.get("redirect_uri")).toBe(redirect);

@@ -1,4 +1,4 @@
-/* AnyModelBot 设计库入口。规范见 ui/design/README.md，在线样例见 /amb/static/design/index.html。
+/* dazuibot 设计库入口。规范见 ui/design/README.md，在线样例见 /amb/static/design/index.html。
    层叠顺序（后面的层总是赢，与选择器权重无关）：
      tokens → base → components → app（页面样式，ui/css/*）→ utilities
    页面样式放在 app 层，可以随意覆盖组件，不用拼选择器权重；工具类排最后，加上就生效。 */
