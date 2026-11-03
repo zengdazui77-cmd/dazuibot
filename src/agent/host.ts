@@ -723,7 +723,7 @@ export class AgentHost {
     this.writeMediaSkill();
     const cuOn = !!this.computerUseActive();
     const text = [
-      "# 由 anymodel bot 每次启动生成；请勿手改。",
+      "# 由 dazuibot 每次启动生成；请勿手改。",
       // 接口按模型选（agentApi）：Responses / Anthropic Messages / Chat Completions，各一个 provider
       ...providerPatchLines(providerProfiles(list, this.o.bridge.url, this.o.botId)),
       // 长命令转后台；Windows：命令用检测到的 PowerShell 7（DSH 自己只看 Program Files\PowerShell\7 和 PATH，找不到就退回 5.1）
@@ -900,7 +900,7 @@ export class AgentHost {
     const q = (v: string) => `'${v.replaceAll("'", `'\\''`)}'`;
     const data = path.resolve(this.o.dataDir);
     const script = `#!/bin/sh
-# 由 anymodel bot 生成：遮住宿主数据目录后再交给真正的 bwrap。
+# 由 dazuibot 生成：遮住宿主数据目录后再交给真正的 bwrap。
 REAL=${q(real)}
 DATA=${q(data)}
 WS=${q(path.resolve(this.workspace))}

@@ -189,7 +189,7 @@ export class App {
     if (opts.fileLog !== false) initFileLog(path.join(config.dataDir, "logs"));
     registerSecret(config.ui.token);
     registerSecret(config.magpie.externalApiKey);
-    log.info(`anymodel bot ${appVersion()} starting`, {
+    log.info(`dazuibot ${appVersion()} starting`, {
       platform: process.platform,
       arch: process.arch,
       os: os.release(),

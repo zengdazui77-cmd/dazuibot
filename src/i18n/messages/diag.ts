@@ -51,7 +51,7 @@ export const zh = {
   stage_now_output: "；当前阶段：{stage}；最近输出：{line}",
   timeout: "超时",
   // 诊断报告
-  report_title: "anymodel bot 诊断信息 · {at}",
+  report_title: "dazuibot 诊断信息 · {at}",
   report_version: "版本 {version} · {platform} {arch} · {os}{electron} · Node {node} · 运行 {uptime} 秒",
   report_data_dir: "数据目录 {dir}",
   report_log_file: "日志文件 {file}",
@@ -136,7 +136,7 @@ export const en: Catalog<typeof zh> = {
   stage_now: "; current stage: {stage}",
   stage_now_output: "; current stage: {stage}; latest output: {line}",
   timeout: "Timed out",
-  report_title: "anymodel bot diagnostics · {at}",
+  report_title: "dazuibot diagnostics · {at}",
   report_version: "Version {version} · {platform} {arch} · {os}{electron} · Node {node} · up {uptime}s",
   report_data_dir: "Data directory {dir}",
   report_log_file: "Log file {file}",

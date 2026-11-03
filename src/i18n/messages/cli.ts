@@ -4,7 +4,7 @@ import type { Catalog } from "../types.js";
 export const zh = {
   entered: "（已输入）",
   done: "完成。运行 npm start 启动；微信请在管理界面的 设置 › 连接 里扫码，或运行 npm run weixin:login。",
-  title: "anymodel bot 首次设置（数据目录：{dir}）",
+  title: "dazuibot 首次设置（数据目录：{dir}）",
   noMagpie: "找不到 magpie 可执行文件，请先运行：npm run setup",
   alreadyConnected: "zdzui 已连接（尾号 {tail}{account}），保留现有连接。",
   accountSuffix: "，账户 {name}",
@@ -26,7 +26,7 @@ export const zh = {
 export const en: Catalog<typeof zh> = {
   entered: "(entered)",
   done: "Done. Run npm start to launch. For WeChat, scan the QR code in the console under Settings > Connections, or run npm run weixin:login.",
-  title: "anymodel bot first-run setup (data directory: {dir})",
+  title: "dazuibot first-run setup (data directory: {dir})",
   noMagpie: "magpie executable not found; run npm run setup first",
   alreadyConnected: "zdzui is already connected (key ending {tail}{account}); keeping the existing connection.",
   accountSuffix: ", account {name}",

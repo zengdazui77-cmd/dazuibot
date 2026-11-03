@@ -323,7 +323,7 @@ describe("故障排查接口", () => {
     const logs = await api("/diagnostics/logs?lines=50");
     expect(logs.status).toBe(200);
     expect(logs.json.lines.length).toBeGreaterThan(0);
-    expect(logs.json.lines.join("\n")).toMatch(/\[app\] anymodel bot .* starting/);
+    expect(logs.json.lines.join("\n")).toMatch(/\[app\] dazuibot .* starting/);
     const rep = await api("/diagnostics/report");
     expect(rep.status).toBe(200);
     expect(rep.json.text).toContain("[测试模型]");

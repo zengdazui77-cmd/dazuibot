@@ -208,7 +208,7 @@ describe("数据目录锁", () => {
     // 父进程（vitest 的）活着
     fs.writeFileSync(file, JSON.stringify({ pid: process.ppid, host: os.hostname(), at: Date.now(), token: "x" }));
     expect(() => lockDataDir(dir)).toThrow(DataDirLocked);
-    expect(() => lockDataDir(dir)).toThrow(/正被另一个 anymodel bot 进程使用/);
+    expect(() => lockDataDir(dir)).toThrow(/正被另一个 dazuibot 进程使用/);
     // 不在了（崩溃、kill -9）
     fs.writeFileSync(file, JSON.stringify({ pid: 2 ** 22 + 12345, host: os.hostname(), at: Date.now(), token: "x" }));
     const a = lockDataDir(dir);

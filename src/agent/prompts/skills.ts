@@ -1,5 +1,5 @@
 /**
- * 宿主写进 DSH 主目录 skills/ 的技能说明（SKILL.md），由 anymodel bot 编写。
+ * 宿主写进 DSH 主目录 skills/ 的技能说明（SKILL.md），由 dazuibot 编写。
  */
 
 /** Cua Driver 后端的技能说明（工具来自 trycua/cua 的 cua-driver，MIT）。 */
