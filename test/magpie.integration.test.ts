@@ -84,7 +84,7 @@ d("内置 magpie 集成", () => {
     expect(chat.json.reply).toContain("你说：经过网关");
     expect(llm.calls.at(-1)!.auth).toBe("Bearer mf-upstream-key-a1b2");
     // 调用归因：内置网关把 provider 上配置的请求头带给 Modelflare
-    expect(llm.calls.at(-1)!.skill).toBe(`anymodel-bot/${appVersion()}`);
+    expect(llm.calls.at(-1)!.skill).toBe(`zdzui-assistant/${appVersion()}`);
   }, 30_000);
 
   it("开了预算的机器人走它自己的 Key；模型列表不重复；关掉后回到共用 Key", async () => {
@@ -95,7 +95,7 @@ d("内置 magpie 集成", () => {
       const r = await api("/bots/default/chat", "POST", { text: "预算 Key" });
       return String(r.json.reply).includes("你说：预算 Key") && llm.calls.at(-1)!.auth === "Bearer mf-bot-key-c3d4";
     }, 15_000, 300);
-    expect(llm.calls.at(-1)!.skill).toMatch(/^anymodel-bot\//);
+    expect(llm.calls.at(-1)!.skill).toMatch(/^zdzui-assistant\//);
     expect((await api("/models")).json.models.every((m: string) => !m.startsWith("mfb-"))).toBe(true);
     await app.magpie!.removeBotProvider("default");
     expect(app.routeModel("default", "up-model")).toBe("modelflare/up-model");

@@ -427,9 +427,12 @@ describe("模型路由与归因", () => {
   });
 
   it("归因头接受 semver 预发布版本，但拒绝空白与引号", () => {
-    expect(skillHeader("0.1.3")).toEqual({ "X-Modelflare-Skill": "anymodel-bot/0.1.3" });
+    expect(skillHeader("0.1.3")).toEqual({ "X-Modelflare-Skill": "zdzui-assistant/0.1.3" });
     // 白标版本号就是预发布格式：只认纯数字会把归因头整个丢掉，站后台就看不到客户端版本分布
-    expect(skillHeader("1.0.0-zdzui.1")).toEqual({ "X-Modelflare-Skill": "anymodel-bot/1.0.0-zdzui.1" });
+    expect(skillHeader("1.0.0-zdzui.1")).toEqual({ "X-Modelflare-Skill": "zdzui-assistant/1.0.0-zdzui.1" });
+    // 头名保留上游的（协议层），值的前缀必须是本产品名；站主按这个前缀配后台统计规则
+    expect(Object.keys(skillHeader("0.1.3"))).toEqual(["X-Modelflare-Skill"]);
+    expect(skillHeader("0.1.3")["X-Modelflare-Skill"].startsWith("zdzui-assistant/")).toBe(true);
     expect(skillHeader("0.1.3 ")).toEqual({});
     expect(skillHeader('0.1.3"x')).toEqual({});
     expect(skillHeader("0.1.3\nX-Evil: 1")).toEqual({});
@@ -534,7 +537,7 @@ describe("生图 / 生视频", () => {
       expect(text).toContain("present");
       const vtext = await media.run("b1", "video", { prompt: "海浪" });
       expect(fs.readFileSync(path.join(ws, vtext.match(/media\/video-[\w-]+\.mp4/)![0]), "utf8")).toBe("mp4");
-      expect(seen.every((x) => x.auth === "Bearer sk-bot" && x.skill === "anymodel-bot/0.1.3")).toBe(true);
+      expect(seen.every((x) => x.auth === "Bearer sk-bot" && x.skill === "zdzui-assistant/0.1.3")).toBe(true);
       await expect(media.run("b2", "image", { prompt: "x" })).rejects.toThrow(/还没有连接/);
       await expect(media.run("b1", "image", { prompt: "x", model: "nope" })).rejects.toThrow(/没有这个模型/);
     } finally {

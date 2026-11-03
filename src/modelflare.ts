@@ -108,13 +108,18 @@ export const CONSOLE_URL = webUrl("/dashboard/overview", "amb_console");
  * 调用归因：每个经中转站的请求都带 X-Modelflare-Skill（站点只记到用量日志，
  * 用来统计各集成的调用量）。
  *
+ * 头的**名字**保留 X-Modelflare-Skill 不动：它是协议层的东西，改了可能被上游中间件拒绝，
+ * 属于不该碰的那一批。变的只是**值的前缀**——站主要按这个值统计"从本客户端来的调用"，
+ * 值里挂着上游项目名会把归属算错，所以前缀是本产品名 zdzui-assistant。
+ * 站点后台的统计规则要按 `zdzui-assistant/` 配。
+ *
  * 版本号允许 semver 的预发布后缀（如 1.0.0-zdzui.1）——白标版正是这种格式，
  * 早期只认纯数字会把归因头整个丢掉，站后台就看不到客户端版本分布了。
  * 仍然拒绝空白、引号、控制字符，避免往请求头里塞东西。
  */
 export function skillHeader(version: string): Record<string, string> {
   return /^\d{1,4}(\.\d{1,4}){0,2}(-[0-9A-Za-z][0-9A-Za-z.-]{0,19})?$/.test(version)
-    ? { "X-Modelflare-Skill": `anymodel-bot/${version}` }
+    ? { "X-Modelflare-Skill": `zdzui-assistant/${version}` }
     : {};
 }
 
