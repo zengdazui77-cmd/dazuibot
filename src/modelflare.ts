@@ -109,8 +109,11 @@ export function webUrl(pathname: string, campaign?: string): string {
 export const SIGNUP_URL = webUrl("/sign-up", "amb_signup");
 export const TOPUP_URL = webUrl("/billing", "amb_topup");
 /**
- * 控制台没有 `/overview` 这个 section：站点的前端是 `/dashboard/$section` 动态段，
- * section 不在白名单里会被 redirect 回默认页。所以只给 `/dashboard`，让站点自己决定落在哪。
+ * 控制台落点：站点前端是 `/dashboard/$section`，sections = overview（默认）/ models / flow /
+ * users(adminOnly)，所以 `/dashboard` 与 `/dashboard/overview` 都有效、且是同一页。
+ * 这里给前者，不写死 section 名：站点以后调默认页，客户端不用跟着改。
+ * （2026-11 更正：早期注释说 "/overview 不在白名单会被 redirect"，与站点 bundle 里的
+ *   `defaultSection: "overview"` 不符，已改正；功能结论不变。）
  */
 export const CONSOLE_URL = webUrl("/dashboard", "amb_console");
 

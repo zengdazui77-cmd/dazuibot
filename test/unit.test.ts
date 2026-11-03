@@ -333,6 +333,29 @@ describe("Modelflare", () => {
     // 两个都拿不到：返回 null，让界面走「余额不可用」，而不是抛错把整个账户面板弄失败
     expect(await fetchKeyBalance("http://127.0.0.1:9/v1", "k")).toBeNull();
   });
+  it("无限额度占位值的阈值 1e7 钉死：达到/超过就不当余额，低一分才算真实额度", async () => {
+    // 站点把「无限额度」写成一个极大的 hard_limit_usd。阈值一旦漂移，界面会显示
+    // "$10,000,000 余额" 这种客服事故，所以这里把边界两侧都钉住。
+    let sub = JSON.stringify({ hard_limit_usd: 1e7 });
+    const srv = await listen((req, res) => {
+      res.writeHead(200, { "content-type": "application/json" }).end(
+        req.url?.endsWith("/usage") ? JSON.stringify({ total_usage: 0 }) : sub,
+      );
+    });
+    try {
+      const base = srv.url + "/v1";
+      for (const v of [1e7, 1e8, 999999999]) {
+        sub = JSON.stringify({ hard_limit_usd: v });
+        expect((await fetchKeyBalance(base, "k"))?.available).toBeNull();
+      }
+      for (const v of [0, 50, 1e7 - 1]) {
+        sub = JSON.stringify({ hard_limit_usd: v });
+        expect((await fetchKeyBalance(base, "k"))?.available).toBe(v);
+      }
+    } finally {
+      await srv.close();
+    }
+  });
   it("配置写回：只改给出的键，其余保留；读取时规范化", () => {
     const dir = tmp();
     fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ ui: { port: 4000 }, llm: { defaultModel: "f" } }));
