@@ -10,7 +10,7 @@ import DownloadButton from "../components/DownloadButton.astro";
 import EyesMark from "../components/EyesMark.astro";
 import Icon from "../components/Icon.astro";
 import { dict, fmt, href, fmtDate, type Lang } from "../i18n";
-import { releases, PLATFORMS, GITHUB_URL } from "../lib/site";
+import { releases, PLATFORMS, GITHUB_URL, hasRepo } from "../lib/site";
 import "../styles/pages.css";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -33,8 +33,9 @@ const docker = [
   { label: d.dockerSteps.token, code: "docker exec amb cat /data/ui-token" },
   { label: d.dockerSteps.open, code: d.dockerUrl },
 ];
+// 还没建仓库时 clone 这条没有意义，从步骤里去掉，只留安装/启动
 const cli = [
-  { label: d.cliSteps.clone, code: `git clone ${GITHUB_URL}.git && cd dazuibot` },
+  ...(hasRepo ? [{ label: d.cliSteps.clone, code: `git clone ${GITHUB_URL}.git && cd dazuibot` }] : []),
   { label: d.cliSteps.setup, code: "npm install && npm run setup" },
   { label: d.cliSteps.start, code: "npm start" },
 ];
@@ -50,7 +51,7 @@ const verify = [
       <h1>{d.pageTitle}</h1>
       <p class="lead">{d.pageLead}</p>
       <DownloadButton lang={lang} placement="download-hero" plain id="dl-cta" fallback="#platforms" />
-      <p class="dl-hero__meta"><span set:html={fmt(d.meta, { version: mono(releases.version), publishedAt: mono(published) })} /> · <a href={href(lang, "/changelog")}>{d.changelog}</a> · <a href={`${GITHUB_URL}/releases`} target="_blank" rel="noopener">{d.releases}</a></p>
+      <p class="dl-hero__meta"><span set:html={fmt(d.meta, { version: mono(releases.version), publishedAt: mono(published) })} /> · <a href={href(lang, "/changelog")}>{d.changelog}</a> · {hasRepo && <a href={`${GITHUB_URL}/releases`} target="_blank" rel="noopener">{d.releases}</a>}</p>
       {t.hero.appUiNote && <p class="small muted">{t.hero.appUiNote}</p>}
     </header>
 

@@ -2,7 +2,7 @@
 
 [简体中文](./development.md) | English
 
-This guide is for people who want to run dazuibot from source, package it, or contribute. If you only want to use the app, download an installer from [Releases](https://github.com/modelflare-ai/AnyModelBot/releases); see the [README](../README_en.md#-download).
+This guide is for people who want to run dazuibot from source, package it, or contribute. If you only want to use the app, download an installer; see the [README](../README_en.md#-download).
 
 - A bot is a persona, a default model and its memory. Accounts are global (Settings › Connections) and shared by all bots, with as many per service as you like. Built for personal use by one person.
 - Models come from this site's [relay](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme): **in the white-label build the first run only asks for an API key** (account sign-in is off, see `ACCOUNT_LOGIN_ENABLED`), and the models are listed once `GET https://api.zdzui.xyz/v1/models` succeeds. Requests go through the bundled [magpie](https://github.com/yetone/magpie) gateway.

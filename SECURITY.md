@@ -29,7 +29,7 @@ Please include:
 
 ### Supported versions
 
-Security fixes go into the latest release. Please check that the problem still exists in the [latest release](https://github.com/modelflare-ai/AnyModelBot/releases) before reporting.
+Security fixes go into the latest release. Please check that the problem still exists in the latest release you have before reporting.
 
 ### Scope
 
@@ -64,7 +64,7 @@ Out of scope here: the relay site's own services (report those at <https://zdzui
 
 ### 支持的版本
 
-安全修复进入最新版本。报告前请先确认问题在[最新版本](https://github.com/modelflare-ai/AnyModelBot/releases)里仍然存在。
+安全修复进入最新版本。报告前请先确认问题在你手上的最新版本里仍然存在。
 
 ### 范围
 

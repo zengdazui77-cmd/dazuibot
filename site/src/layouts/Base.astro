@@ -9,7 +9,7 @@ import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import SiteBanner from "../components/SiteBanner.astro";
 import { dict, href, type Lang } from "../i18n";
-import { ORIGIN, ANALYTICS_SCRIPT_URL, ANALYTICS_SITE_ID, releases, GITHUB_URL } from "../lib/site";
+import { ORIGIN, ANALYTICS_SCRIPT_URL, ANALYTICS_SITE_ID, releases, GITHUB_URL, hasRepo } from "../lib/site";
 
 interface Props {
   lang: Lang;
@@ -32,7 +32,7 @@ const dlData = {
   publishedAt: releases.publishedAt,
   platforms: Object.fromEntries(Object.entries(releases.platforms).filter(([k]) => k !== "docker")),
   docker: releases.platforms.docker.command,
-  github: `${GITHUB_URL}/releases`,
+  github: hasRepo ? `${GITHUB_URL}/releases` : "",
   i18n: {
     win: t.download.win, mac: t.download.mac, linux: t.download.linux, mobile: t.download.mobile, generic: t.download.generic,
     downloading: t.download.downloading, started: t.download.started, copied: t.ui.copied, copyFailed: t.ui.copyFailed,

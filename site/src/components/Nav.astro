@@ -3,11 +3,12 @@ import EyesMark from "./EyesMark.astro";
 import Icon from "./Icon.astro";
 import DownloadButton from "./DownloadButton.astro";
 import { dict, href, altLang, switchHref, type Lang } from "../i18n";
-import { GITHUB_URL } from "../lib/site";
+import { GITHUB_URL, hasRepo } from "../lib/site";
 import { docsUrl } from "../lib/docs";
 interface Props { lang: Lang; path: string }
 const { lang, path } = Astro.props;
 const t = dict(lang);
+const docs = docsUrl(lang);
 const home = href(lang, "/");
 // 通栏导航（样式见 components.css）：左 logo、中间链接、右侧工具，左右边缘和正文容器对齐。
 // 链接前四项是首页的章节（顺序同首页），价格是独立页；下载由右侧按钮负责。
@@ -44,11 +45,11 @@ const themes = [
     <nav class="nav__links" aria-label={t.nav.main} data-nav-links>
       <span class="nav__pill" aria-hidden="true"></span>
       {links.map((l) => <a class="nav__link" href={l.href} aria-current={l.current ? "page" : undefined}>{l.label}</a>)}
-      <a class="nav__link" href={docsUrl(lang)} target="_blank" rel="noopener">{t.nav.docs}<Icon name="external" size={13} class="nav__ext" /></a>
+      {docs && <a class="nav__link" href={docs} target="_blank" rel="noopener">{t.nav.docs}<Icon name="external" size={13} class="nav__ext" /></a>}
     </nav>
     <div class="nav__tools">
       <div class="nav__utils hide-md">
-        <a class="nav__util nav__util--icon" href={GITHUB_URL} target="_blank" rel="noopener" aria-label={t.nav.github} data-tip={t.nav.github} data-track="github_click" data-track-location="nav"><Icon name="github" size={16} /></a>
+        {hasRepo && <a class="nav__util nav__util--icon" href={GITHUB_URL} target="_blank" rel="noopener" aria-label={t.nav.github} data-tip={t.nav.github} data-track="github_click" data-track-location="nav"><Icon name="github" size={16} /></a>}
         <div class="nav__menu">
           <button class="nav__util nav__util--icon" type="button" aria-haspopup="menu" aria-expanded="false" aria-label={t.nav.langLabel} data-tip={t.nav.langLabel} data-menu-toggle><Icon name="globe" size={16} /></button>
           <div class="menu" role="menu" aria-label={t.nav.langLabel} hidden>
@@ -88,11 +89,12 @@ const themes = [
         <Icon name="arrow" size={18} class="drawer__go" />
       </a>
     ))}
-    <a href={docsUrl(lang)} target="_blank" rel="noopener" style={`--i:${links.length}`}>
-      <span class="drawer__num">{String(links.length + 1).padStart(2, "0")}</span>
-      <span class="drawer__label">{t.nav.docs}</span>
-      <Icon name="external" size={18} class="drawer__go" />
-    </a>
+    {docs &&
+      <a href={docs} target="_blank" rel="noopener" style={`--i:${links.length}`}>
+        <span class="drawer__num">{String(links.length + 1).padStart(2, "0")}</span>
+        <span class="drawer__label">{t.nav.docs}</span>
+        <Icon name="external" size={18} class="drawer__go" />
+      </a>}
   </nav>
   <div class="container drawer__foot">
     <div class="drawer__prefs">
@@ -106,7 +108,7 @@ const themes = [
       </div>
     </div>
     <div class="drawer__actions">
-      <a class="btn btn--secondary" href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="drawer"><Icon name="github" />{t.nav.github}</a>
+      {hasRepo && <a class="btn btn--secondary" href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="drawer"><Icon name="github" />{t.nav.github}</a>}
       <a class="btn btn--primary" href={href(lang, "/download")} data-dl-generic>{t.download.generic}</a>
     </div>
   </div>

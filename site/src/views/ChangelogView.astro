@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import { dict, fmt, fmtDate, type Lang } from "../i18n";
-import { releases, GITHUB_URL } from "../lib/site";
+import { releases, GITHUB_URL, hasRepo } from "../lib/site";
 import { parseChangelog } from "../lib/changelog";
 import changelogZh from "../data/changelog.md?raw";
 import changelogEn from "../data/changelog.en.md?raw";
@@ -29,6 +29,6 @@ const list = parseChangelog(lang === "en" ? changelogEn : changelogZh);
       </section>
     ))}
     <p>{c.body}</p>
-    <p class="page__cta"><a class="btn btn--secondary" href={`${GITHUB_URL}/releases`} target="_blank" rel="noopener">{c.link}</a></p>
+    {hasRepo && <p class="page__cta"><a class="btn btn--secondary" href={`${GITHUB_URL}/releases`} target="_blank" rel="noopener">{c.link}</a></p>}
   </article>
 </Base>

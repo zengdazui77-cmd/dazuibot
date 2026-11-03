@@ -6,8 +6,8 @@
 
 ## 提问与反馈
 
-- **提问、想法、使用交流：** [GitHub Discussions](https://github.com/modelflare-ai/AnyModelBot/discussions)
-- **Bug 与功能建议：** [GitHub Issues](https://github.com/modelflare-ai/AnyModelBot/issues)，按模板填写
+- **提问、想法、使用交流：** 到 <https://zdzui.xyz> 反馈（代码仓库建好后会在这里补 Discussions 入口）
+- **Bug 与功能建议：** 仓库的 Issues，按模板填写（仓库建好后补链接）
 - **安全问题：** 不要公开提 issue，按 [SECURITY.md](./SECURITY.md) 私下报告
 - **其他事情：** 发邮件到 [support@anymodel.bot](mailto:support@anymodel.bot)
 
@@ -23,7 +23,7 @@
 需要 Node.js 22.13+ 和 Go 1.26.8+（编译内置网关 magpie）。
 
 ```bash
-git clone https://github.com/modelflare-ai/AnyModelBot.git
+git clone <dazuibot 仓库地址>   # 仓库建好后替换
 cd AnyModelBot
 npm install
 npm run setup          # 拉取 vendor/magpie 子模块并编译到 build/bin/

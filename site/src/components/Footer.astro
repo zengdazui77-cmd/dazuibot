@@ -18,9 +18,10 @@ const t = dict(lang);
 const c = t.footer.cols;
 const h = (p: string) => href(lang, p);
 const home = h("/");
+// 文档在仓库里、GitHub 也是仓库入口：没配仓库地址时这两条不渲染（不要留半截链接）
 const cols = [
   { title: c.product.title, links: [[c.product.links[0], `${home}#features`], [c.product.links[1], h("/pricing")], [c.product.links[2], h("/download")], [c.product.links[3], h("/changelog")]] },
-  { title: c.resources.title, links: [[c.resources.links[0], docsUrl(lang)], [c.resources.links[1], h("/security")], [c.resources.links[2], GITHUB_URL], [c.resources.links[3], MF.home]] },
+  { title: c.resources.title, links: ([[c.resources.links[0], docsUrl(lang)], [c.resources.links[1], h("/security")], [c.resources.links[2], GITHUB_URL], [c.resources.links[3], MF.home]] as [string, string | null][]).filter(([, u]) => !!u) as [string, string][] },
   { title: c.legal.title, links: [[c.legal.links[0], h("/privacy")], [c.legal.links[1], h("/licenses")]] },
 ];
 const ext = (u: string) => /^https?:/.test(u);

@@ -1,5 +1,5 @@
 > **本文改编自上游 AnyModelBot 的营销文。** 上游的产品数字、`modelflare.dev` 相关表述与仓库链接均不代表本分发；本文已按 dazuibot 的实际情况改写。
-> 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
+> 当前站点、API 基址与归因参数的唯一真源是 `src/modelflare.ts`（站点 `zdzui.xyz`，API `https://api.zdzui.xyz/v1`，归因 `utm_source=zdzui&utm_campaign=amb_*`）。
 > **若本文会随站点对外发布，必须升级为 A 级逐句核对（数字、链接、品牌），不得原样引用上游营销话术。**
 
 <p align="center">
@@ -14,10 +14,10 @@
 
 <p align="center">
   <a href="../../README.md">项目首页</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">下载</a> |
+  <a href="../../README.md#-下载">下载</a> |
   <a href="../design/background-tasks-and-proactive.md">设计文档</a> |
   <a href="https://github.com/deepseek-ai/dsh-superagent-prototype">dsh-superagent</a> |
-  <a href="https://github.com/modelflare-ai/AnyModelBot/issues">问题反馈</a>
+  <a href="https://zdzui.xyz">问题反馈</a>
 </p>
 
 📌 [一个例子](#-先看一个例子) · ⏳ [后台任务](#-后台任务) · 📋 [规则](#-规则说一句按时去做) · 🙋 [需要你](#-需要你) · 🔕 [不打扰](#-不打扰的规矩) · 💰 [权限与花费](#-权限花费与清理) · 🧭 [设计原则](#-设计原则)
@@ -251,7 +251,7 @@ GPU 价格调研                                              [停止]
 
 递归删除这类危险操作，不管什么档位，都会先问你。
 
-**每件事都有预算。** 花费按 Modelflare 的公开价格估算，标着「约」，以账单为准。
+**每件事都有预算。** 花费按站点后台的实时定价估算，标着「约」，以账单为准。
 
 | | 默认预算 | 花到了怎么办 |
 | :--- | :--- | :--- |
@@ -260,7 +260,7 @@ GPU 价格调研                                              [停止]
 | 规则每月 | $3.00 | 暂停到下个月 1 号，或者你在「需要你」里再给 $3 |
 
 - 任务每次运行最长 4 小时，等你回答的时间不算；规则每次最长 15 分钟。
-- 给机器人设了 Modelflare 预算时，余额低于 20%，后台工作先停下，剩下的留给聊天。
+- 给机器人设了预算时，余额低于 20%，后台工作先停下，剩下的留给聊天（余额由站点提供）。
 - 没有公开价格的模型不估算花费，只受时间限制。
 - 预算可以在任务详情和规则编辑器里改。
 
@@ -327,15 +327,15 @@ DeepSeek 开源的 [dsh-superagent](https://github.com/deepseek-ai/dsh-superagen
 
 GitHub 会是第一个模板。规则已经留好了「事件触发」的接口，工作负载会建在它上面。设计会先公开讨论，再动手。
 
-有想法？欢迎提 [issue](https://github.com/modelflare-ai/AnyModelBot/issues) 或发起[讨论](https://github.com/modelflare-ai/AnyModelBot/discussions)。
+有想法？欢迎到 <https://zdzui.xyz> 反馈。
 
 # 🚀 试试看
 
-1. [下载 dazuibot](https://github.com/modelflare-ai/AnyModelBot/releases)，登录 Modelflare。
+1. [下载 dazuibot](../../README.md#-下载)，首次启动粘贴站点签发的 API Key。
 2. 在应用、微信或飞书里，交代机器人一件要跑一阵子的事，或者直接说「后台做」。
 3. 说一句「每天早上 8 点……」，建一条规则，有值得说的它会告诉你。
 
 > [!NOTE]
-> 功能是否可用取决于你选择的模型、操作系统和授予的权限。花费都是估算，以 Modelflare 账单为准。微信的主动消息受 24 小时窗口限制，见[上文](#-微信的-24-小时老实说)。
+> 功能是否可用取决于你选择的模型、操作系统和授予的权限。花费都是估算，以站点后台的账单为准。微信的主动消息受 24 小时窗口限制，见[上文](#-微信的-24-小时老实说)。
 
 dazuibot 以 [MIT 许可证](../../LICENSE)发布。

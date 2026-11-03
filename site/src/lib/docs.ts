@@ -3,4 +3,6 @@
 import type { Lang } from "../i18n";
 import { GITHUB_URL } from "./site";
 
-export const docsUrl = (lang: Lang) => (lang === "zh" ? `${GITHUB_URL}#readme` : `${GITHUB_URL}/blob/master/README_en.md`);
+/** 文档入口：开发文档在仓库里（README / docs/development.md）。还没建仓库时返回 null，调用方不要渲染这个入口 */
+export const docsUrl = (lang: Lang): string | null =>
+  GITHUB_URL ? (lang === "zh" ? `${GITHUB_URL}#readme` : `${GITHUB_URL}/blob/master/README_en.md`) : null;

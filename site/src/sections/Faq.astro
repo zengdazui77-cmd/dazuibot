@@ -10,6 +10,7 @@ import { docsUrl } from "../lib/docs";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
+const docs = docsUrl(lang);
 const v = buildVars(lang);
 ---
 <section class="section" id="faq" aria-labelledby="faq-h2">
@@ -19,7 +20,7 @@ const v = buildVars(lang);
       <div class="faq-wrap__aside" data-doze>
         <p class="faq-wrap__bubble">{t.faq.ask}</p>
         <BotFace char="yellow" size={120} lively pokeable class="faq-wrap__bot" />
-        <a class="faq-wrap__more" href={docsUrl(lang)} target="_blank" rel="noopener">{t.faq.more}<Icon name="arrow" size={16} /></a>
+        {docs && <a class="faq-wrap__more" href={docs} target="_blank" rel="noopener">{t.faq.more}<Icon name="arrow" size={16} /></a>}
       </div>
       <div class="faq">
         {t.faq.items.map((it, i) => (

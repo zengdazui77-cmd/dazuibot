@@ -1,6 +1,6 @@
 // 结构化数据（§15）：SoftwareApplication（offers 只描述 App 本身：免费）、Organization、FAQPage（与可见文案一致）。
 import { dict, fmt, buildVars, href, type Lang } from "../i18n";
-import { ORIGIN, GITHUB_URL } from "./site";
+import { ORIGIN, GITHUB_URL, hasRepo } from "./site";
 
 export function homeJsonLd(lang: Lang) {
   const t = dict(lang);
@@ -19,9 +19,10 @@ export function homeJsonLd(lang: Lang) {
       license: "https://opensource.org/licenses/MIT",
       softwareVersion: String(v.version),
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-      codeRepository: GITHUB_URL,
+      // 还没建仓库时不填，避免结构化数据里出现空串或指向上游
+      ...(hasRepo ? { codeRepository: GITHUB_URL } : {}),
     },
-    { "@context": "https://schema.org", "@type": "Organization", name: "dazuibot", url: `${ORIGIN}/`, logo: `${ORIGIN}/icon-512.png`, sameAs: [GITHUB_URL] },
+    { "@context": "https://schema.org", "@type": "Organization", name: "dazuibot", url: `${ORIGIN}/`, logo: `${ORIGIN}/icon-512.png`, ...(hasRepo ? { sameAs: [GITHUB_URL] } : {}) },
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",

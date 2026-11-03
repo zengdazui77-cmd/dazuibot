@@ -9,7 +9,7 @@ import BotFace from "../components/BotFace.astro";
 import DownloadButton from "../components/DownloadButton.astro";
 import Icon from "../components/Icon.astro";
 import { dict, href, type Lang } from "../i18n";
-import { GITHUB_URL } from "../lib/site";
+import { GITHUB_URL, hasRepo } from "../lib/site";
 import { CHAR_KEYS } from "../lib/bots";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -53,7 +53,7 @@ const sky = (() => {
           <DownloadButton lang={lang} placement="final" id="cta-final" />
           <a class="final__docker" href={`${href(lang, "/download")}#docker`} data-track="cta_click" data-track-location="final-docker">{t.final.docker}</a>
         </div>
-        <p class="final__oss small"><span class="badge badge--neutral">MIT</span> {t.final.oss} · <a href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="final"><Icon name="branch" size={14} />{t.final.ossRepo}</a> · <a href={href(lang, "/licenses")} data-track="licenses_click">{t.final.ossLicenses}</a></p>
+        <p class="final__oss small"><span class="badge badge--neutral">MIT</span> {t.final.oss}{hasRepo && <> · <a href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="final"><Icon name="branch" size={14} />{t.final.ossRepo}</a></>} · <a href={href(lang, "/licenses")} data-track="licenses_click">{t.final.ossLicenses}</a></p>
       </div>
       <div class="final__bots" aria-hidden="true" data-doze>{CHAR_KEYS.map((k, i) => <span class="final__bot" style={`--k:${i}`}><BotFace char={k} size={72} lively pokeable /></span>)}</div>
       <div class="final__horizon" aria-hidden="true"></div>

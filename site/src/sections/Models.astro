@@ -36,7 +36,7 @@ const vendorOf: Record<string, string> = Object.fromEntries(rows.map((r) => [r.m
 const logos = Object.fromEntries(rows.map((r) => [r.model, vendorLogo(r.vendor) ?? ""]));
 const scen = ["copy", "code", "research"] as const;
 const first = rowOf(demoModels.copy)!;
-const demoData = { prices: {}, logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.models.question[s], a: t.models.answer[s] }])), priceLine: t.models.priceLine, priceValue: t.models.priceValue };
+const demoData = { logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.models.question[s], a: t.models.answer[s] }])), priceLine: t.models.priceLine, priceValue: t.models.priceValue };
 // 外环：演示里会用到的模型 + 主推模型（都得在价格表里，点了才能切过去）；内环：前 8 家厂商
 const ring = [...new Set([...Object.values(demoModels), ...pricing.config.featuredModels])].filter((m) => rowOf(m)).slice(0, 9);
 const inner = vendors.slice(0, 8);

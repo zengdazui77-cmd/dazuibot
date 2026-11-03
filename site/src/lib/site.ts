@@ -6,12 +6,19 @@ import githubJson from "../data/github.json";
 import type { Snapshot } from "./pricing";
 
 const env = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || `{${k}}`;
+/** 可选配置：没配时为空串（不产生占位符，也不会渲染出半截链接） */
+const optional = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || "";
 
 export const SITE_DOMAIN = env("SITE_DOMAIN");
-export const GITHUB_URL = env("GITHUB_URL");
+/**
+ * dazuibot 自己的仓库地址。目前还没有建仓库，留空即可：
+ * 页面上所有跟仓库有关的入口（GitHub 按钮、Stars、releases 链接、文档链接、CLI 的 git clone）
+ * 都按 hasRepo 判断，为空时不渲染，避免出现 {GITHUB_URL} 占位符或指向上游仓库。
+ */
+export const GITHUB_URL = optional("GITHUB_URL").replace(/\/+$/, "");
+export const hasRepo = GITHUB_URL !== "";
 export const SECURITY_EMAIL = env("SECURITY_EMAIL");
 // 统计是可选的：没配置时页面不加载统计脚本（不留占位符）
-const optional = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || "";
 export const ANALYTICS_SCRIPT_URL = optional("ANALYTICS_SCRIPT_URL");
 export const ANALYTICS_SITE_ID = optional("ANALYTICS_SITE_ID");
 export const ORIGIN = `https://${SITE_DOMAIN}`;

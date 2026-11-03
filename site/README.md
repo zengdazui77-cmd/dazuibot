@@ -219,7 +219,8 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 
 | 值 | 来源 |
 |---|---|
-| `SITE_DOMAIN`、`GITHUB_URL`、`SECURITY_EMAIL`、`ANALYTICS_SCRIPT_URL`、`ANALYTICS_SITE_ID`、`DOCKER_IMAGE` | `deploy/.env` |
+| `SITE_DOMAIN`、`SECURITY_EMAIL`、`ANALYTICS_SCRIPT_URL`、`ANALYTICS_SITE_ID`、`DOCKER_IMAGE` | `deploy/.env` |
+| `GITHUB_URL`（可选） | `deploy/.env`；留空时 GitHub / Stars / 文档 / releases 入口不渲染 |
 | 版本、发布日期、各平台下载地址 / SHA-256 / 大小 | GitHub 最新 Release 自动生成（`scripts/releases-from-github.ts`；也可以手改 `src/data/releases.json`） |
 
 统计用自托管的 Umami（无 Cookie、`data-do-not-track`）；开发模式不加载统计脚本。

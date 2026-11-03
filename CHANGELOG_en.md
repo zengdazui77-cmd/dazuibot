@@ -2,7 +2,7 @@
 
 [简体中文](./CHANGELOG.md) | English
 
-This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
+This covers changes you'll notice in the app. Earlier versions belong to upstream AnyModelBot's history and are not part of this distribution.
 
 ## 1.0.0-zdzui.1 - 2026-11-03
 

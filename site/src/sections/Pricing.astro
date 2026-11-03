@@ -3,16 +3,15 @@
 // 白标版不列任何具体单价：pricing.snapshot.json 是上游抓来的静态快照，而本站 68 条模型里有 54 条用
 // tiered_expr 的 weekday()/hour() 时段浮动计价，静态单价只在某个时段成立——写出来就是错的。
 // 所以这一页只讲"怎么计费"，数字一律指向站点后台的实时定价。
-// 价格表（islands/PriceTable.tsx）和计算器（islands/PriceCalculator.tsx）仍在仓库里，数据源恢复后可以接回来。
+// 原来的价格表与计算器两座岛已随"官网不列单价"的定案删除（需要时从 git 历史里取回）。
 import EyesMark from "../components/EyesMark.astro";
 import PriceCards from "../components/PriceCards.astro";
-import { dict, fmt, buildVars, type Lang } from "../i18n";
+import { dict, type Lang } from "../i18n";
 import { MF } from "../lib/site";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
 const p = t.pricing;
-const v = buildVars(lang);
 ---
 <section class="section pricing" aria-labelledby="pricing-h">
   <div class="container">

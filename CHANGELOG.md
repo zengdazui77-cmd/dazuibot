@@ -2,7 +2,7 @@
 
 简体中文 | [English](./CHANGELOG_en.md)
 
-这里只写用户能感受到的变化。更早的版本见 [GitHub 发布页](https://github.com/modelflare-ai/AnyModelBot/releases)。
+这里只写用户能感受到的变化。更早的版本是上游 AnyModelBot 的历史，不属于本分发。
 
 ## 1.0.0-zdzui.1 - 2026-11-03
 

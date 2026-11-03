@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        谢谢反馈！提交前请先搜索已有 issue。安全问题请看 [SECURITY.md](https://github.com/modelflare-ai/AnyModelBot/blob/master/SECURITY.md)，不要在这里公开。
-        Thanks for the report! Please search existing issues first. For security problems, see [SECURITY.md](https://github.com/modelflare-ai/AnyModelBot/blob/master/SECURITY.md) instead of posting here.
+        谢谢反馈！提交前请先搜索已有 issue。安全问题请看仓库根目录的 SECURITY.md，不要在这里公开。
+        Thanks for the report! Please search existing issues first. For security problems, see SECURITY.md in the repository root instead of posting here.
   - type: input
     id: version
     attributes:

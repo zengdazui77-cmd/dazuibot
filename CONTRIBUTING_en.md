@@ -6,8 +6,8 @@ Thanks for helping make AnyModelBot better. Bug reports, fixes, docs and ideas a
 
 ## Questions and feedback
 
-- **Questions, ideas, show and tell:** [GitHub Discussions](https://github.com/modelflare-ai/AnyModelBot/discussions)
-- **Bugs and feature requests:** [GitHub Issues](https://github.com/modelflare-ai/AnyModelBot/issues), using the templates
+- **Questions, ideas, show and tell:** reach us at <https://zdzui.xyz> (Discussions link goes here once the repository exists)
+- **Bugs and feature requests:** the repository's Issues, using the templates (link to follow once the repository exists)
 - **Security problems:** do not open a public issue; report privately as described in [SECURITY.md](./SECURITY.md)
 - **Anything else:** email [support@anymodel.bot](mailto:support@anymodel.bot)
 
@@ -23,7 +23,7 @@ When reporting a bug, please include:
 Requires Node.js 22.13+ and Go 1.26.8+ (to compile the bundled magpie gateway).
 
 ```bash
-git clone https://github.com/modelflare-ai/AnyModelBot.git
+git clone <dazuibot repository URL>   # replace once the repository exists
 cd AnyModelBot
 npm install
 npm run setup          # fetch the vendor/magpie submodule and compile it into build/bin/
