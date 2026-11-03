@@ -18,7 +18,6 @@ const stays = (["chats", "memory", "workspace", "key", "console"] as const).map(
     <ul class="ticks" role="list">{stays.map((x) => <li><b>{x.label}</b> — {x.body}</li>)}</ul>
     <h2>{s.leaves}</h2>
     <ul class="ticks" role="list">{s.leavesItems.map((x) => <li>{x}</li>)}</ul>
-    <p class="small page__aside"><a href={t.flow.retentionUrl} target="_blank" rel="noopener">{t.flow.retentionLink}</a></p>
     <h2>{cmp.caption}</h2>
     <div class="table-wrap compare">
       <table class="table">

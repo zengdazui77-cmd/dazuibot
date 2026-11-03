@@ -55,7 +55,7 @@
     /** 应用窗口：rect 是内容区（iframe）的位置和大小；title 时上面加一条 34px 的示意标题栏 */
     async openApp({ src = "/", rect, title = false, enter = false }) {
       const h = rect.h + (title ? 34 : 0);
-      const w = el(`<div class="win app-win${title ? "" : " plain"}${enter ? " enter" : ""}" id="app-win">${title ? titlebar("AnyModelBot", APP_ICON) : ""}<div class="win-body"></div></div>`);
+      const w = el(`<div class="win app-win${title ? "" : " plain"}${enter ? " enter" : ""}" id="app-win">${title ? titlebar("dazuibot", APP_ICON) : ""}<div class="win-body"></div></div>`);
       place(w, { x: rect.x, y: rect.y - (title ? 34 : 0), w: rect.w, h });
       const f = document.createElement("iframe");
       f.id = "app";
@@ -74,18 +74,18 @@
     browser: {
       show(rect, { loading = 0 } = {}) {
         const b = el(`<div class="win browser enter" id="browser">
-          <div class="tabs"><div class="tab"><i></i>授权 AnyModelBot</div></div>
+          <div class="tabs"><div class="tab"><i></i>授权 dazuibot</div></div>
           <div class="bar"><span class="nav">‹ › ↻</span><div class="addr"><svg width="12" height="14" viewBox="0 0 12 14"><rect x="1" y="6" width="10" height="7" rx="1.5" fill="#9a9a95"/><path d="M3 6V4a3 3 0 0 1 6 0v2" fill="none" stroke="#9a9a95" stroke-width="1.6"/></svg><span><b>modelflare.dev</b>/oauth/authorize?client_id=anymodelbot&amp;response_type=code</span></div></div>
           <div class="page${loading ? " loading" : ""}">
             <div class="auth-card">
               <div class="marks"><img src="/__docs/brand/logo-eyes.svg" alt=""><span class="dots">• • •</span><span class="mf">M</span></div>
-              <h1>AnyModelBot 想连接你的 Modelflare 账户</h1>
+              <h1>dazuibot 想连接你的 Modelflare 账户</h1>
               <div class="who">登录身份：演示账户</div>
               <ul><li>读取账户名称和钱包余额</li><li>为这台电脑签发一把 API Key</li><li>可以随时在 Modelflare 网页上撤销</li></ul>
               <div class="btns"><button class="btn-s primary" id="auth-ok">继续</button><button class="btn-s ghost">取消</button></div>
             </div>
             <div class="auth-done"><div class="ok"><svg width="26" height="26" viewBox="0 0 26 26"><path d="M6 13.5l4.5 4.5L20 8" fill="none" stroke="#d7ff00" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <h2>已连接</h2><p>可以回到 AnyModelBot 了，这个页面可以关掉。</p></div>
+              <h2>已连接</h2><p>可以回到 dazuibot 了，这个页面可以关掉。</p></div>
           </div></div>`);
         place(b, rect);
         screen.append(b);

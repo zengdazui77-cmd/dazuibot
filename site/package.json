@@ -2,7 +2,7 @@
   "name": "anymodelbot-site",
   "private": true,
   "type": "module",
-  "description": "AnyModelBot 官网落地页（Astro 静态站）",
+  "description": "dazuibot 官网落地页（Astro 静态站）",
   "license": "MIT",
   "engines": {
     "node": ">=22.13"

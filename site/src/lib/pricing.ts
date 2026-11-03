@@ -1,5 +1,6 @@
-// 价格数据：把 modelflare.dev/api/pricing 的原始数据整理成页面用的行。
-// 构建脚本（scripts/fetch-pricing.ts）、价格表、计算器和单测共用这一份规则，页面上不手写任何价格。
+// 价格数据：把上游（AnyModelBot / Modelflare，2026-10-30 抓取）的原始数据整理成结构化行。
+// 构建脚本（scripts/fetch-pricing.ts）、单测共用这一份规则；页面上不手写、也不再展示任何具体价格。
+// 这份快照只作"上游历史数据"留档，本站定价以 zdzui.xyz 站点后台的实时定价为准。
 import { z } from "zod";
 
 const Cond = z.object({ metric: z.string(), operator: z.string(), value: z.number() }).passthrough();
@@ -70,7 +71,7 @@ export interface PriceRow {
   /** 默认线路价，USD / 1M tokens（标准档） */
   input: number;
   output: number;
-  /** 官方价：与 modelflare.dev/pricing 一致——有 official_input_price 用它，否则用基础价 */
+  /** 官方价：上游同一规则——有 official_input_price 用它，否则用基础价 */
   officialInput: number;
   officialOutput: number;
   ratio: number;
@@ -90,8 +91,11 @@ export interface PriceSample { model: string; input: string; output: string; off
 export interface Snapshot {
   fetchedAt: string;
   pricingVersion: string;
+  /** 来源标签，形如 "upstream-modelflare-2026-10-30"；不是 URL（页面上不引用、也不当链接用） */
   source: string;
   stale: boolean;
+  /** 维护者备注：这份快照是上游历史数据，不是本站定价 */
+  note?: string;
   counts: { models: number; text: number; media: number; vendors: number };
   vendors: string[];
   config: Pick<PricingConfig, "featuredModels" | "sampleModel" | "sampleUsage">;
@@ -174,7 +178,7 @@ function baseTiers(m: RawModel): PriceTier[] {
   return [{ label: "standard", maxInputTokens: null, input: m.input_price, output: m.input_price * m.completion_ratio }];
 }
 
-/** 官方价（modelflare.dev/pricing 的同一规则）：official_input_price > 0 时用它（输出 × official_completion_ratio ?? completion_ratio），否则用标准档基础价 */
+/** 官方价（上游的同一规则）：official_input_price > 0 时用它（输出 × official_completion_ratio ?? completion_ratio），否则用标准档基础价 */
 function officialOf(m: RawModel, std: PriceTier) {
   const o = m.official_input_price;
   if (o != null && Number.isFinite(o) && o > 0) {

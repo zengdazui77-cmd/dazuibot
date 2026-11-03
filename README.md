@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="dazuibot 的 Eyes 标志：两只竖向胶囊形的眼睛，会左右张望">
+  <img src="docs/assets/brand/logo-mark.png" width="120" height="120" alt="dazuibot 的标志：霓虹蓝的大嘴">
 </p>
 
 <h1 align="center">
@@ -28,10 +28,6 @@
 
 </div>
 
-<p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="dazuibot 演示：首次启动粘贴 API Key、选择模型、让机器人整理一个文件夹，并批准一次文件移动" width="100%">
-</p>
-
 # 🤖 dazuibot
 
 dazuibot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
@@ -56,13 +52,13 @@ dazuibot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 
 2. **建一把 Key。** 登录后打开[令牌管理](https://zdzui.xyz/keys?utm_source=zdzui&utm_campaign=amb_readme)，新建一个令牌，复制出来（令牌只在创建时显示一次）。
 3. **粘回应用。** 首次启动的欢迎页选「粘贴 API Key」，粘进去。应用校验 `GET /v1/models` 通过后，模型自动列出。
 
-充值在[账单页](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme)；用量、余额和令牌都在[控制台](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme)。
+充值在[账单页](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme)；用量、余额和令牌都在[控制台](https://zdzui.xyz/dashboard?utm_source=zdzui&utm_campaign=amb_readme)。
 
 **dazuibot 怎么用本站中转站**
 
 - **只要一把 Key。** 白标版不提供应用内账户登录：首次启动粘贴 API Key 即可，之后应用自己记住。Docker 或服务器上跑也一样。
-- **所有模型，一个选择器。** 你账户能用的模型会自动列出。参考价来自站点公开的价格表；上下文长度与能力标记来自站点的模型资料接口，站点目前没有提供这一项，所以这两项目前不显示。
-- **按量付费。** 每日用量在应用里看。钱包余额与充值在站点网页上——应用只持有 API Key，读不到账户余额。
+- **所有模型，一个选择器。** 你账户能用的模型会自动列出。参考价来自站点公开的价格表（多数模型是按时段浮动计费，算不出静态参考价）；能力标记（视觉/工具/推理）来自带 Key 的 `GET /v1/model-profiles`，本站返回 404，所以恒为「未知」；上下文长度来自公开的 `/api/pricing`，这个接口能拿到，只是本站 68 条里的 `context_window` 全是 0，所以也不显示。
+- **按量付费。** 账户余额站点不提供给客户端，应用只显示这把 Key 的已用金额；钱包余额与充值在站点网页上。
 - **一条诚实的边界。** 模型请求会经过本站中转站转发给你选定的供应商，中转站会保留请求日志（保留范围与期限由站点说明）。除此之外的内容都留在你的设备上（[详情](#-工作原理与隐私)）。
 
 ---
@@ -81,10 +77,6 @@ dazuibot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 
 | ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
 | ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
 | ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
-
-<p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="在 Windows 上安装 dazuibot：运行安装程序、打开应用，来到粘贴 API Key 的欢迎页" width="100%">
-</p>
 
 **首次打开。** 如果系统提示这是从网上下载的应用：Windows 点「更多信息 → 仍要运行」，macOS 在「系统设置 → 隐私与安全性」里点「仍要打开」。Linux 先给 AppImage 加可执行权限（`chmod +x`）再运行。关闭窗口会把 dazuibot 收到托盘，要退出请用托盘菜单或设置里的选项。
 
@@ -205,14 +197,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 ## 🌐 任意模型，通过本站中转站
 
 - **一把 Key 就够**，你账户能用的模型会自动出现。
-- **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，能算出参考价的都标出来。
+- **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等；多数模型按时段浮动计费，算不出参考价，能算出的才标出来。
 - **按对话切换**，也可以给每个机器人设默认模型；记忆整理、上下文交接这类后台小任务，还能单独指定一个模型。
 - **一条线路。** 白标版只指向一个中转站地址，不分国际/大陆两套，也不会自动切换。
 - **按量付费。** 每日用量和每个机器人的预算在应用里；钱包余额与充值在站点网页上。dazuibot 没有订阅。
-
-<p align="center">
-  <img src="docs/assets/features/first-run.gif" alt="首次启动：粘贴 API Key，回到应用后模型已列出，发出第一条消息" width="100%">
-</p>
 
 <p align="center">
   <img src="docs/assets/features/model-switch.gif" alt="打开模型选择器、搜索一个模型、查看它的上下文长度和参考价，并把当前对话切换过去" width="100%">

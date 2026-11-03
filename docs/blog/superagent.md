@@ -1,14 +1,14 @@
-> **本文件描述上游 AnyModelBot 的原貌，且为上游营销文。** 其中 `modelflare.dev` 相关表述、产品数字与仓库链接均不代表本分发。
+> **本文改编自上游 AnyModelBot 的营销文。** 上游的产品数字、`modelflare.dev` 相关表述与仓库链接均不代表本分发；本文已按 dazuibot 的实际情况改写。
 > 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
 > **若本文会随站点对外发布，必须升级为 A 级逐句核对（数字、链接、品牌），不得原样引用上游营销话术。**
 
 <p align="center">
   <a href="../../README.md">
-    <img src="../assets/brand/logo-eyes.webp" width="96" height="96" alt="AnyModelBot 的 Eyes 标志：两只竖向胶囊形的眼睛">
+    <img src="../assets/brand/logo-mark.png" width="96" height="96" alt="dazuibot 的标志：霓虹蓝的大嘴">
   </a>
 </p>
 
-<h1 align="center">AnyModelBot 超级智能体</h1>
+<h1 align="center">dazuibot 超级智能体</h1>
 
 <p align="center"><b>交代一句，它在后台做完。需要你的时候，才来找你。</b></p>
 
@@ -28,7 +28,7 @@
 
 聊天机器人等你开口，答完就停。可很多事不是一问一答：调研要跑半小时，价格要每天盯，周报每周一要写。你想交代一句就去忙别的，有结果、要你拍板的时候再听它说。
 
-AnyModelBot 的超级智能体做的就是这件事。它由三样东西组成：
+dazuibot 的超级智能体做的就是这件事。它由三样东西组成：
 
 | | 是什么 | 例子 |
 | :--- | :--- | :--- |
@@ -38,7 +38,7 @@ AnyModelBot 的超级智能体做的就是这件事。它由三样东西组成�
 
 三样东西背后是同一条原则，来自 DeepSeek 的 [dsh-superagent](https://github.com/deepseek-ai/dsh-superagent-prototype) 原型：**占用尽量少的注意力，带来尽量多的价值。** 一个能替你干活的智能体，也能把你的注意力耗光。所以它只在你要求、或你写下的规则允许时才动手，只在你必须决定、或能用上结果时才开口。
 
-和 AnyModelBot 的其他部分一样，这一切跑在你自己的电脑上，任意模型都能用，按量付费。
+和 dazuibot 的其他部分一样，这一切跑在你自己的电脑上，任意模型都能用，按量付费。
 
 # 📌 先看一个例子
 
@@ -150,7 +150,7 @@ AnyModelBot 的超级智能体做的就是这件事。它由三样东西组成�
 
 **不追旧账。** 电脑关着错过了时间：错过不久的，开机补跑一次；太久的记为「跳过：电脑没开」，不会一口气补一堆。连续失败 3 次的规则自动暂停，出现在「需要你」里。
 
-**观察保证什么。** 不通过 AnyModelBot 给任何人发消息，也不改文件，因为沙箱是只读的。它拦不住命令行工具自己联网，这一点界面上也写明了。
+**观察保证什么。** 不通过 dazuibot 给任何人发消息，也不改文件，因为沙箱是只读的。它拦不住命令行工具自己联网，这一点界面上也写明了。
 
 # 🙋 需要你
 
@@ -202,7 +202,7 @@ AnyModelBot 的超级智能体做的就是这件事。它由三样东西组成�
 
 # 💬 微信的 24 小时，老实说
 
-微信只允许机器人在你最近一次发消息后的 24 小时内给你发消息，每次最多 10 条。AnyModelBot 把这当成硬规矩，不去绕：
+微信只允许机器人在你最近一次发消息后的 24 小时内给你发消息，每次最多 10 条。dazuibot 把这当成硬规矩，不去绕：
 
 - **留着，不丢。** 发不出去的结果先留着，桌面端「需要你」里看得到，也会弹一次桌面通知。
 - **你一开口就送到。** 你下次在微信里发消息，留着的先合成一条「你不在时：…」发给你，然后才是这次的回复。
@@ -289,7 +289,7 @@ flowchart LR
   A -->|你回答| T
 ```
 
-- **应用说了算。** 任务、时间表、送达和预算都由 AnyModelBot 自己管，[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 只负责跑会话。每个机器人一个智能体进程，任务和规则在里面各开各的会话。
+- **应用说了算。** 任务、时间表、送达和预算都由 dazuibot 自己管，[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 只负责跑会话。每个机器人一个智能体进程，任务和规则在里面各开各的会话。
 - **结构化汇报。** 后台会话用 `task_report` 工具汇报状态：进展、要你、做完、失败，附一句给你看的话，最多一个问题。「需要你」看的是这些字段，不去猜自由文本。
 - **时间表在应用里。** 规则的定时由应用管，智能体进程没起来也照样到点；电脑睡眠醒来后会重新计算。
 - **送达走发件箱。** 每条主动消息先存到本地再发，按渠道的规矩排队、合并、留存。重启后接着发，发过的不会再发。
@@ -299,9 +299,9 @@ flowchart LR
 
 # 🙏 从 dsh-superagent 学到的
 
-DeepSeek 开源的 [dsh-superagent](https://github.com/deepseek-ai/dsh-superagent-prototype) 是一个面向团队、盯着一个 GitHub 仓库的主动编程智能体，配套文章是《Exploring Super-agent Design: Towards a More Autonomous Agent System》。AnyModelBot 是一个人的助手，所以我们拿来了它的骨架，留下了只有团队才需要的部分。
+DeepSeek 开源的 [dsh-superagent](https://github.com/deepseek-ai/dsh-superagent-prototype) 是一个面向团队、盯着一个 GitHub 仓库的主动编程智能体，配套文章是《Exploring Super-agent Design: Towards a More Autonomous Agent System》。dazuibot 是一个人的助手，所以我们拿来了它的骨架，留下了只有团队才需要的部分。
 
-| dsh-superagent | AnyModelBot |
+| dsh-superagent | dazuibot |
 | :--- | :--- |
 | 工单的阶段表，第一条匹配的算数 | 任务的状态表 |
 | 重启后标记中断，附一条恢复说明，从最老的开始恢复 | 任务重启后接着做 |
@@ -331,11 +331,11 @@ GitHub 会是第一个模板。规则已经留好了「事件触发」的接口�
 
 # 🚀 试试看
 
-1. [下载 AnyModelBot](https://github.com/modelflare-ai/AnyModelBot/releases)，登录 Modelflare。
+1. [下载 dazuibot](https://github.com/modelflare-ai/AnyModelBot/releases)，登录 Modelflare。
 2. 在应用、微信或飞书里，交代机器人一件要跑一阵子的事，或者直接说「后台做」。
 3. 说一句「每天早上 8 点……」，建一条规则，有值得说的它会告诉你。
 
 > [!NOTE]
 > 功能是否可用取决于你选择的模型、操作系统和授予的权限。花费都是估算，以 Modelflare 账单为准。微信的主动消息受 24 小时窗口限制，见[上文](#-微信的-24-小时老实说)。
 
-AnyModelBot 以 [MIT 许可证](../../LICENSE)发布。
+dazuibot 以 [MIT 许可证](../../LICENSE)发布。

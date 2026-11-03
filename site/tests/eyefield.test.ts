@@ -4,8 +4,8 @@ import { aim, blinkLid, blinkSpan, cellSize, easeOutBack, EYE_TOKENS, hexToRgb, 
 
 describe("wordLines", () => {
   it("扁的画布（宽屏 7.4:1）排一行，接近方形（手机 1.3:1）排三行", () => {
-    expect(wordLines(1200, 194)).toEqual(["AnyModelBot"]);
-    expect(wordLines(343, 264)).toEqual(["Any", "Model", "Bot"]);
+    expect(wordLines(1200, 194)).toEqual(["dazuibot"]);
+    expect(wordLines(343, 264)).toEqual(["da", "zui", "bot"]);
   });
 });
 

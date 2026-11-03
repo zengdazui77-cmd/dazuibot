@@ -2,7 +2,7 @@
 // 文件名按应用 electron-builder 的 artifactName：anymodel-bot-<版本>-<系统>-<架构>.<扩展名>
 //   win-x64 ← *-win-x64.exe（NSIS）   mac-arm64 / mac-x64 ← *-mac-<架构>.dmg   linux-x64 ← *-linux-(x64|x86_64).AppImage
 // SHA-256 取 Release 里的 SHA256SUMS；没有时用 GitHub 给每个文件算的 digest。缺平台时保留占位符（生产构建会因此失败）。
-//   GITHUB_URL     仓库地址（必填），如 https://github.com/modelflare-ai/AnyModelBot
+//   GITHUB_URL     仓库地址（必填），如 https://github.com/<your-org>/dazuibot
 //   GITHUB_TOKEN   可选；匿名请求每小时 60 次，构建一天一次，一般用不上
 //   DOCKER_IMAGE   应用镜像名；为空时给"从源码构建"的命令
 // 请求失败（重试 3 次后）退出码为 1：builder 这次不构建，继续用上一版。

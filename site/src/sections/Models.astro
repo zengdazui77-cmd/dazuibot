@@ -19,7 +19,6 @@ import VendorSprite from "../components/VendorSprite.astro";
 import { vendorLogo } from "../lib/vendors";
 import { dict, fmt, buildVars, type Lang } from "../i18n";
 import { pricing, rowOf, MF } from "../lib/site";
-import { fmtPrice } from "../lib/pricing";
 import { demoModels } from "../data/pricing.config";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -31,13 +30,13 @@ const vendors = pricing.vendors.filter((vd) => vendorLogo(vd));
 const rows = pricing.rows.filter((r) => vendorLogo(r.vendor));
 const models = rows.map((r) => r.model);
 const byVendor = [...new Set(rows.map((r) => r.vendor))].map((vd) => ({ vendor: vd, rows: rows.filter((r) => r.vendor === vd) }));
-const prices = Object.fromEntries(rows.map((r) => [r.model, [fmtPrice(r.input), fmtPrice(r.output)]]));
+// 只带厂商，不带单价：本站按时段浮动计价，页面上不出现任何静态数字
 const vendorOf: Record<string, string> = Object.fromEntries(rows.map((r) => [r.model, r.vendor]));
 // 选择器胶囊里的标志随模型换（scripts/sections.ts 的 setModel 读这张表）：模型 → 图标表的键
 const logos = Object.fromEntries(rows.map((r) => [r.model, vendorLogo(r.vendor) ?? ""]));
 const scen = ["copy", "code", "research"] as const;
 const first = rowOf(demoModels.copy)!;
-const demoData = { prices, logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.models.question[s], a: t.models.answer[s] }])), priceLine: t.models.priceLine };
+const demoData = { prices: {}, logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.models.question[s], a: t.models.answer[s] }])), priceLine: t.models.priceLine, priceValue: t.models.priceValue };
 // 外环：演示里会用到的模型 + 主推模型（都得在价格表里，点了才能切过去）；内环：前 8 家厂商
 const ring = [...new Set([...Object.values(demoModels), ...pricing.config.featuredModels])].filter((m) => rowOf(m)).slice(0, 9);
 const inner = vendors.slice(0, 8);
@@ -89,7 +88,7 @@ const inner = vendors.slice(0, 8);
           <p class="msg msg--user" data-q>{t.models.question.copy}</p>
           <div class="msg msg--bot"><BotFace char="purple" size={36} /><p data-a aria-live="polite">{t.models.answer.copy}</p></div>
         </div>
-        <p class="small model-demo__price tnum" data-price-line>{fmt(t.models.priceLine, { model: first.model, input: fmtPrice(first.input), output: fmtPrice(first.output) })}</p>
+        <p class="small model-demo__price tnum" data-price-line>{fmt(t.models.priceLine, { model: first.model, price: t.models.priceValue })}</p>
         <p class="small muted">{t.models.example}</p>
       </div>
     </div>

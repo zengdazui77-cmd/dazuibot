@@ -1,4 +1,4 @@
-> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述与素材出处已被白标替换。
+> **本文件描述上游 dazuibot 的原貌。** 其中 `modelflare.dev` 相关表述与素材出处已被白标替换。
 > 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
 > 本文档为内部素材说明，不随安装包分发；其中标注为上游品牌素材的图片不得进入交付物。
 
@@ -16,6 +16,8 @@
 | # | 文件 | 类型 | 尺寸 | 时长 | 帧率 | 体积上限 | 来源 |
 |---|---|---|---|---|---|---|---|
 | 1 | `brand/logo-eyes.webp` | 动画 WebP（透明，无限循环） | 240×240（显示 120×120） | 6 s | 20 | 80 KB | 脚本 |
+| 1b | `brand/logo-mark.png` | PNG（透明圆角底板） | 480×480（显示 120×120） | — | — | 200 KB | 大嘴品牌图（`anymodelbot_design/icon/1024x1024.png` 缩放）；README 头部用 |
+| 1b | `brand/logo-mark.png` | PNG（透明圆角底板） | 480×480（显示 120×120） | — | — | 200 KB | 大嘴品牌图（`anymodelbot_design/icon/1024x1024.png` 缩放）；README 头部用 |
 | 2 | `brand/logo-eyes.svg` | 静态 SVG | viewBox 100×100 | — | — | 2 KB | 脚本 |
 | 3 | `brand/wordmark-light.svg` | SVG（文字转曲线） | viewBox 520×96 | — | — | 12 KB | 脚本 |
 | 4 | `brand/wordmark-dark.svg` | SVG（文字转曲线） | viewBox 520×96 | — | — | 12 KB | 脚本 |

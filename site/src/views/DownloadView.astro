@@ -34,7 +34,7 @@ const docker = [
   { label: d.dockerSteps.open, code: d.dockerUrl },
 ];
 const cli = [
-  { label: d.cliSteps.clone, code: `git clone ${GITHUB_URL}.git && cd AnyModelBot` },
+  { label: d.cliSteps.clone, code: `git clone ${GITHUB_URL}.git && cd dazuibot` },
   { label: d.cliSteps.setup, code: "npm install && npm run setup" },
   { label: d.cliSteps.start, code: "npm start" },
 ];
@@ -43,7 +43,7 @@ const verify = [
   { label: d.verifyUnixLabel, cmd: d.verifyUnix },
 ];
 ---
-<Base lang={lang} path="/download" title={`${d.pageTitle} — AnyModelBot`} description={d.pageDescription}>
+<Base lang={lang} path="/download" title={`${d.pageTitle} — dazuibot`} description={d.pageDescription}>
   <div class="container page dl-page">
     <header class="dl-hero">
       <EyesMark size={72} class="dl-hero__mark" lookAt="#dl-cta" />

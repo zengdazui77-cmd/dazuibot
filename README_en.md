@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="dazuibot Eyes mark: two vertical pill-shaped eyes that glance left and right">
+  <img src="docs/assets/brand/logo-mark.png" width="120" height="120" alt="dazuibot mark: a neon-blue big mouth">
 </p>
 
 <h1 align="center">
@@ -28,10 +28,6 @@
 
 </div>
 
-<p align="center">
-  <img src="docs/assets/hero/hero-demo.gif" alt="dazuibot in action: paste an API key on first launch, pick a model, ask a bot to tidy a folder, and approve a file move" width="100%">
-</p>
-
 # 🤖 dazuibot
 
 dazuibot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
@@ -56,13 +52,13 @@ Every model in dazuibot comes from this site's relay: <https://zdzui.xyz>. One A
 2. **Create a key.** Once signed in, open [Keys](https://zdzui.xyz/keys?utm_source=zdzui&utm_campaign=amb_readme), create a token and copy it (it is shown only once).
 3. **Paste it back.** On the first-launch welcome screen choose "Paste API key". The app validates `GET /v1/models` and lists your models.
 
-Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme); usage, balance and keys live in the [console](https://zdzui.xyz/dashboard/overview?utm_source=zdzui&utm_campaign=amb_readme).
+Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme); usage, balance and keys live in the [console](https://zdzui.xyz/dashboard?utm_source=zdzui&utm_campaign=amb_readme).
 
 **How dazuibot uses this relay**
 
 - **One key is all it takes.** The white-label build has no in-app account sign-in: paste an API key on first launch and the app remembers it. Same in Docker or on a server.
-- **Every model, one picker.** Models your key can use are listed automatically. Reference prices come from the site's public price list; context length and capability tags come from the site's model-profile endpoint, which the site does not currently serve, so those two are not shown yet.
-- **Pay for what you use.** Per-day usage shows up inside the app. Wallet balance and top-ups live on the site — the app only holds an API key and cannot read the account balance.
+- **Every model, one picker.** Models your key can use are listed automatically. Reference prices come from the public price list (most models use time-of-day pricing, so no static reference price can be computed); capability tags (vision/tools/reasoning) come from the authenticated `GET /v1/model-profiles`, which this site returns 404 for, so they stay "unknown"; context length comes from the public `/api/pricing`, which is reachable, but `context_window` is 0 on all 68 entries here, so it is not shown either.
+- **Pay for what you use.** The site does not expose the account balance to the client; the app shows only the amount this key has used. Wallet balance and top-ups live on the site.
 - **An honest boundary.** Model requests travel through this relay to the provider you pick, and the relay keeps request logs (the site states what and for how long). Everything else stays on your device ([details](#-how-it-works--privacy)).
 
 ---
@@ -81,10 +77,6 @@ Pick your platform. Every version ships with all installers and a `SHA256SUMS` f
 | ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
 | ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
 | ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
-
-<p align="center">
-  <img src="docs/assets/download/install-windows.gif" alt="Installing dazuibot on Windows: run the installer, open the app, and land on the paste-your-API-key welcome screen" width="100%">
-</p>
 
 **First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides dazuibot to the tray; quit from the tray menu or from Settings.
 
@@ -205,14 +197,10 @@ The full story, in Chinese: [dazuibot 超级智能体](./docs/blog/superagent.md
 ## 🌐 Any model, through this relay
 
 - **One key is enough** and the models your key can use appear automatically.
-- **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with a reference price whenever one can be computed.
+- **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more. Most models use time-of-day pricing with no static reference price; a price is shown only where one can actually be computed.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
 - **One route.** The white-label build points at a single relay address: there is no international/mainland pair and no automatic switching.
 - **Pay per use.** Daily usage and per-bot budgets live in the app; wallet balance and top-ups live on the site. dazuibot has no subscription.
-
-<p align="center">
-  <img src="docs/assets/features/first-run.gif" alt="First launch: paste an API key, return to the app with models listed, and send a first message" width="100%">
-</p>
 
 <p align="center">
   <img src="docs/assets/features/model-switch.gif" alt="Opening the model picker, searching for a model, reading its context length and reference price, and switching the conversation to it" width="100%">

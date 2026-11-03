@@ -1,4 +1,4 @@
-// 厂商名 → 标志（src/data/vendor-logos.ts）。价格快照里的厂商名照 Modelflare 写（"Moonshot AI"、"Zhipu AI"），
+// 厂商名 → 标志（src/data/vendor-logos.ts）。价格快照里的厂商名照 zdzui 写（"Moonshot AI"、"Zhipu AI"），
 // 先归一化成小写字母数字再查；查不到（比如"快手"）就返回 null，组件改用首字母小圆片。
 import { VENDOR_LOGOS, VENDOR_LOGOS_COLOR } from "../data/vendor-logos";
 

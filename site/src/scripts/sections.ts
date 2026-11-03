@@ -51,7 +51,7 @@ const track = (n: string, p?: object) => { try { (window as any).umami?.track(n,
   const root = $("[data-model-demo]");
   if (!root) return;
   const data = JSON.parse($("[data-model-demo-data]", root)!.textContent!) as {
-    prices: Record<string, [string, string]>; logos: Record<string, string>; priceLine: string;
+    logos: Record<string, string>; priceLine: string; priceValue: string;
     scenarios: Record<string, { model: string; q: string; a: string }>;
   };
   const pill = $<HTMLButtonElement>("[data-model-pill]", root)!;
@@ -66,8 +66,8 @@ const track = (n: string, p?: object) => { try { (window as any).umami?.track(n,
     $("[data-model-name]", root)!.textContent = m;
     // 胶囊里的厂商标志跟着换；这家没有标志就藏起来
     if (logo) { const k = data.logos[m]; logo.style.display = k ? "" : "none"; if (k) logo.querySelector("use")?.setAttribute("href", `#vl-${k}`); }
-    const [i, o] = data.prices[m] ?? ["—", "—"];
-    $("[data-price-line]", root)!.textContent = data.priceLine.replace("{model}", m).replace("{input}", i).replace("{output}", o);
+    // 不带单价：本站按时段浮动计价，行里只报模型名和"以站点实时定价为准"
+    $("[data-price-line]", root)!.textContent = data.priceLine.replace("{model}", m).replace("{price}", data.priceValue);
     opts.forEach((x) => x.setAttribute("aria-selected", String(x.dataset.model === m)));
   };
   // 晶晶先歪头想一会儿（宝石浮起来转），再一边读一边打字，打完蹦一下；连续切换时上一段直接作废

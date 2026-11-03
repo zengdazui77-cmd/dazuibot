@@ -72,7 +72,7 @@ def og(lang):
     # 品牌锁定组合
     m = mark(56)
     im.alpha_composite(m, (72, 64))
-    d.text((140, 70), "AnyModelBot", font=brand, fill=TEXT)
+    d.text((140, 70), "dazuibot", font=brand, fill=TEXT)
     # 标题（第二行带荧光笔）
     y = 176
     d.text((72, y), c["h1"][0], font=head, fill=TEXT)

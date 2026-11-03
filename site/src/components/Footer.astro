@@ -1,7 +1,7 @@
 ---
 // 页脚：品牌（标记 + 一句话）｜ 三栏链接 → 收录徽章 → 版权行 → 眼睛田。
 // 收录徽章的原码和取舍见 data/badges.ts：要写进静态 HTML，校验机器人不跑 JS。默认收起成一两排，只是样式，HTML 里始终是全部徽章。
-// 眼睛田是页脚最下面的大字标：AnyModelBot 由几百枚迷你 Eyes 标记拼成，跟着指针看、点一下发消息、定时"换脑"（scripts/eyefield.ts）。
+// 眼睛田是页脚最下面的大字标：dazuibot 由几百枚迷你 Eyes 标记拼成，跟着指针看、点一下发消息、定时"换脑"（scripts/eyefield.ts）。
 // 纯装饰（aria-hidden），没有 JS 时整块不显示；样式在 styles/footer.css。
 import "../styles/footer.css";
 import EyesMark from "./EyesMark.astro";
@@ -42,7 +42,7 @@ const badges = [...BADGES.filter((b) => b.dark), ...BADGES.filter((b) => !b.dark
 <footer class="footer">
   <div class="container footer__inner">
     <div class="footer__brand">
-      <a class="logo" href={home} aria-label={t.nav.home}><EyesMark size={40} lookAt="#cta-final" /><span aria-hidden="true">AnyModelBot</span></a>
+      <a class="logo" href={home} aria-label={t.nav.home}><EyesMark size={40} lookAt="#cta-final" /><span aria-hidden="true">dazuibot</span></a>
       <p class="footer__tag">{t.footer.tagline}</p>
     </div>
     <div class="footer__cols">

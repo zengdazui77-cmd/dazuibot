@@ -1,4 +1,4 @@
-> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
+> **本文件描述上游 dazuibot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
 > 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
 > 本文档为内部录制工具说明，不随安装包分发；本文提到的 `screenshots/modelflare-*` 是上游素材命名，需随素材一并替换。
 
@@ -94,7 +94,7 @@ node docs/assets/_src/record/mock-server.mjs --scene fresh --port 4173       # �
 
 都在 `stage/`，中性的深色窗口，不仿任何系统或第三方产品：
 
-- G1、G6：浏览器窗口和 Modelflare 授权页（地址栏 modelflare.dev，一张"AnyModelBot 想连接你的 Modelflare 账户 / 继续"的卡片）；
+- G1、G6：浏览器窗口和 Modelflare 授权页（地址栏 modelflare.dev，一张"dazuibot 想连接你的 Modelflare 账户 / 继续"的卡片）；
 - G2：桌面、下载文件夹窗口、安装向导；
 - G4：桌面、文本编辑器窗口（记事本）和它的另存为对话框、桌面图标；
 - G5：看图窗口；

@@ -1,8 +1,9 @@
 {
   "fetchedAt": "2026-10-30T22:54:04+08:00",
   "pricingVersion": "20260821-gemini-image-resolution-v1",
-  "source": "https://modelflare.dev/api/pricing",
-  "stale": false,
+  "source": "upstream-modelflare-2026-10-30",
+  "stale": true,
+  "note": "上游历史快照，非本站定价。本站定价以 zdzui.xyz/pricing 为准；因多数模型按时段浮动计价（tiered_expr 的 weekday()/hour()），静态单价不成立，官网不展示任何单价。",
   "counts": {
     "models": 70,
     "text": 41,

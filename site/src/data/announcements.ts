@@ -41,7 +41,7 @@ export const RELEASE = {
   enabled: true,
   /** 发布后显示多少天；releases.json 里没有有效发布日期时一直显示 */
   days: 30,
-  /** 各版本的一句话亮点（可选），没有就显示"AnyModelBot {version} 已发布" */
+  /** 各版本的一句话亮点（可选），没有就显示"dazuibot {version} 已发布" */
   highlights: {
     "0.1.10": { zh: "机器人能收微信里的图片和文件了", en: "Bots can now see the images and files you send" },
   } as Record<string, { zh: string; en: string }>,

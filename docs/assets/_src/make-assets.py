@@ -4,7 +4,7 @@
 产物（路径相对仓库根目录）：
   docs/assets/brand/logo-eyes.svg            静态 Eyes 标志（居中）
   docs/assets/brand/logo-eyes.webp           Eyes 动图：240×240、透明底、20 fps、6 s、无限循环
-  docs/assets/brand/wordmark-{light,dark}.svg  「AnyModelBot」字标，文字已转曲线
+  docs/assets/brand/wordmark-{light,dark}.svg  「dazuibot」字标，文字已转曲线
   docs/assets/brand/social-preview.png       GitHub 分享预览图 1280×640
   docs/assets/diagrams/data-flow-{light,dark}.svg      数据流向图，文字已转曲线
   docs/assets/diagrams/architecture-{light,dark}.svg   架构图，文字已转曲线
@@ -63,7 +63,7 @@ def out(*parts):
 # ---------------------------------------------------------------------------
 # Eyes 标志（§7.2）：viewBox 100，面罩 94×82 圆角 36，眼睛 13×28 竖胶囊
 # ---------------------------------------------------------------------------
-EYES_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="AnyModelBot">'
+EYES_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="dazuibot">'
             '<rect x="3" y="9" width="94" height="82" rx="36" fill="#d7ff00"/>'
             '<rect x="29" y="36" width="13" height="28" rx="6.5" fill="#161a00"/>'
             '<rect x="58" y="36" width="13" height="28" rx="6.5" fill="#161a00"/></svg>\n')
@@ -270,7 +270,7 @@ def layout(text, latin, cjk, letter_spacing_em=0.0):
 # ---------------------------------------------------------------------------
 # 字标（§6.4 B2）：Geist SemiBold，字距 −0.02em，单个 path，viewBox 520×96
 # ---------------------------------------------------------------------------
-def wordmark_path(text="AnyModelBot", width=520.0, height=96.0):
+def wordmark_path(text="dazuibot", width=520.0, height=96.0):
     face = Face.get(GEIST_SEMI)
     glyphs, _ = layout(text, face, face, -0.02)
     # 先量墨迹范围（字体单位）
@@ -299,8 +299,8 @@ def wordmark_path(text="AnyModelBot", width=520.0, height=96.0):
 def make_wordmarks():
     d, _ = wordmark_path()
     for name, color in (("wordmark-light.svg", INK), ("wordmark-dark.svg", TEXT_DARK)):
-        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" role="img" aria-label="AnyModelBot">'
-               f'<title>AnyModelBot</title><path fill="{color}" d="{d}"/></svg>\n')
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" role="img" aria-label="dazuibot">'
+               f'<title>dazuibot</title><path fill="{color}" d="{d}"/></svg>\n')
         with open(out("brand", name), "w") as fh:
             fh.write(svg)
 
@@ -335,7 +335,7 @@ def make_social_preview(path):
     box = round(plate_h / 0.82)
     mark = draw_mark(box * ss)
     # 字标：墨迹高约 72
-    word = "AnyModelBot"
+    word = "dazuibot"
     px = 72
     for _ in range(4):
         _w, top, bot, _l = ink_metrics(word, GEIST_SEMI, round(px * ss), -0.02)
@@ -499,7 +499,7 @@ def diagram_data_flow(theme):
     g.rect(24, 24, 380, 288, rx=22, accent=True, fill=False, stroke_w=1.75)
     g.bilabel(214, 56, "你的设备", "Your device", kind="title")
     g.rect(44, 88, 340, 56, rx=12, accent=True)
-    g.bilabel(214, 116, "AnyModelBot 应用", "AnyModelBot app", max_w=320)
+    g.bilabel(214, 116, "dazuibot 应用", "dazuibot app", max_w=320)
     blocks = [
         (44, 160, "对话 · SQLite", "Conversations · SQLite"),
         (222, 160, "记忆 · Markdown", "Memory · Markdown"),

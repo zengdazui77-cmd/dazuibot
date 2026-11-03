@@ -32,7 +32,7 @@ ui/              管理界面（Preact + htm，无构建步骤）
   design/        设计系统：tokens/、base/、components/、机器人形象 bots/
   locales/       界面文案：zh-CN/ 与 en/，每个命名空间一个文件
   css/ lib/ components/ screens/ assets/ main.js
-dsh-runtime/     DSH 代理运行时的依赖清单与 AnyModelBot 插件（plugins/）
+dsh-runtime/     DSH 代理运行时的依赖清单与 dazuibot 插件（plugins/）
 scripts/         setup / build-magpie / fetch-cua-driver / prepare-dsh / bundle-dsh / electron-smoke / check-readme 等
 vendor/          git 子模块：magpie（构建时编译）、deepseek-harness、kimi-computer-use
 site/            官网（Astro 静态站），说明见 site/README.md
@@ -63,7 +63,7 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 ```
 
 - DSH 代理运行时：`scripts/prepare-dsh.mjs` 按目标平台安装 `dsh-runtime/`，`scripts/bundle-dsh.mjs` 把它打成 `resources/dsh/dsh.asar`（全部 JS，一个文件）加上 `resources/dsh/node_modules/`（只有原生包，约 55 个文件）。Electron 主进程和 `ELECTRON_RUN_AS_NODE` 子进程直接读 asar，无需首启解压；安装包因此只需解出几百个文件（Windows 上解压与杀毒逐个扫描是安装慢的主因）。开发时仍直接用 `dsh-runtime/`。
-- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\AnyModelBot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/agent/pwsh-private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。镜像前缀和"关掉自动安装"在 `config.json` 的 `agent.pwshMirror` / `agent.pwshAutoInstall` 里（照样核对哈希和签名）；**没有环境变量**能改这两项——安装根目录同时是 `state.json` 的位置，让它来自环境变量就能连签名核对的记录一起伪造。
+- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\dazuibot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/agent/pwsh-private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。镜像前缀和"关掉自动安装"在 `config.json` 的 `agent.pwshMirror` / `agent.pwshAutoInstall` 里（照样核对哈希和签名）；**没有环境变量**能改这两项——安装根目录同时是 `state.json` 的位置，让它来自环境变量就能连签名核对的记录一起伪造。
 - 代理执行的命令能联网（沙箱只限制写文件），用的是你的代理：应用环境变量里的 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`（及小写）和证书、软件源变量（`SSL_CERT_FILE`、`REQUESTS_CA_BUNDLE`、`NODE_EXTRA_CA_CERTS`、`PIP_INDEX_URL`、`npm_config_registry`、`GOPROXY` 等）原样传下去；环境里没设代理时，桌面版每次拉起代理进程都问一次系统代理（系统设置和 PAC），按 `http://主机:端口` 传下去（见 `src/agent/proxy-env.ts`）。本机地址（`127.0.0.1`、`localhost`、`::1`）总是并进 `NO_PROXY`，永不走代理。
 - 数据目录：`<userData>/data`（macOS `~/Library/Application Support/anymodel bot/data`，Windows `%APPDATA%\anymodel bot\data`，Linux `~/.config/anymodel bot/data`）。日志在数据目录的 `logs/app.log`。
 - 单实例；关闭窗口默认隐藏到托盘（设置 → 常规 可改为退出）；托盘菜单：打开 / 在浏览器中打开 / 开机自启（macOS、Windows）/ 打开数据目录 / 退出。
@@ -151,7 +151,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 
 - **工作区可写**（默认）：命令在沙箱里运行，只能改这个机器人的工作区；越界操作先在聊天里问你。
 - **只读**：不能改文件，命令在只读沙箱里运行。
-- **完全权限**：给熟悉风险、嫌审批太多的用户。命令**不经沙箱**，以你的用户身份直接运行，越界操作不再请求批准——它可以读取和修改你电脑上的任何文件，包括 AnyModelBot 自己的数据目录（数据库、渠道令牌、密钥）。只有**递归删除**仍会先问你（同一套审批：微信回复编号、飞书 / 网页卡片）：`rm -r` / `-rf` / `--recursive`（含 `sudo`、`xargs`、`sh -c` 里的）、`find -delete`、`git clean`、`rsync --delete`，PowerShell 的 `Remove-Item` / `rm` / `del` / `rd` / `rmdir` 加 `-Recurse`（及其缩写），cmd 的 `rd /s`、`del /s`，`robocopy /MIR`，以及 Python `shutil.rmtree`、Node `fs.rm(…, { recursive })` 等常见写法；命令里点名的脚本文件也会检查。选它时界面会先弹出确认，权限胶囊和设置页用红色标出。
+- **完全权限**：给熟悉风险、嫌审批太多的用户。命令**不经沙箱**，以你的用户身份直接运行，越界操作不再请求批准——它可以读取和修改你电脑上的任何文件，包括 dazuibot 自己的数据目录（数据库、渠道令牌、密钥）。只有**递归删除**仍会先问你（同一套审批：微信回复编号、飞书 / 网页卡片）：`rm -r` / `-rf` / `--recursive`（含 `sudo`、`xargs`、`sh -c` 里的）、`find -delete`、`git clean`、`rsync --delete`，PowerShell 的 `Remove-Item` / `rm` / `del` / `rd` / `rmdir` 加 `-Recurse`（及其缩写），cmd 的 `rd /s`、`del /s`，`robocopy /MIR`，以及 Python `shutil.rmtree`、Node `fs.rm(…, { recursive })` 等常见写法；命令里点名的脚本文件也会检查。选它时界面会先弹出确认，权限胶囊和设置页用红色标出。
   - 这是防误删的保险，不是安全边界：检查的是命令文字，运行时才拼出来的命令（`eval "$(…)"`、`curl … | sh`）和 `make clean`、`npm run clean` 这类构建脚本看不到；拿不准时宁可多问。只在你信任当前模型和任务时开启。
 
 ## 谁能使用机器人

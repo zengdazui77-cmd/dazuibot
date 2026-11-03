@@ -71,7 +71,7 @@
     .dl-sums__row .copy-btn { grid-column: 2; grid-row: 1; }
   }
 
-  /* —— 安全说明：对照表里 AnyModelBot 一列用正文色，最后两行（出网、可审计）加重 —— */
+  /* —— 安全说明：对照表里 dazuibot 一列用正文色，最后两行（出网、可审计）加重 —— */
   .compare td:nth-child(2) { color: var(--text); }
   .compare tbody tr:nth-last-child(-n+2) td:nth-child(2) { font-weight: 500; }
 

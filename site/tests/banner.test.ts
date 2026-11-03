@@ -47,7 +47,7 @@ describe("公告条：条目", () => {
   });
   it("没有亮点时用通用文案；英文页链接带 /en 前缀", () => {
     const [rel, p] = buildBannerItems("en", src({ release: { enabled: true, days: 30, highlights: {} } }, "en"), NOW);
-    expect(rel.text).toBe("AnyModelBot 0.2.0 is out");
+    expect(rel.text).toBe("dazuibot 0.2.0 is out");
     expect(rel.cta?.href).toBe("/en/download");
     expect(p.cta).toMatchObject({ href: "/en/pricing", external: false });
   });

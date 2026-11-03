@@ -1,4 +1,4 @@
-// 构建时抓取 modelflare.dev/api/pricing → src/data/pricing.snapshot.json（§13.3）。
+// 构建时抓取 zdzui.xyz/api/pricing → src/data/pricing.snapshot.json（§13.3）。
 //   默认（定时任务用）：抓取或校验失败 → 退出码 1，不改快照，任务标红。
 //   --lenient（普通构建用）：失败时沿用已提交的快照并标 stale=true，构建继续。
 //   --from <file>：从本地文件读取原始数据（单测夹具、离线调试）。

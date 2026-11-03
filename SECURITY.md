@@ -15,7 +15,7 @@ Report it privately in one of these ways:
 
 Please include:
 
-- The AnyModelBot version (Settings → About), operating system and architecture, and how you run it (desktop / command line / Docker)
+- The dazuibot version (Settings → About), operating system and architecture, and how you run it (desktop / command line / Docker)
 - What the problem is and what an attacker could do with it
 - Steps to reproduce or a proof of concept
 - Any logs or diagnostics that help (Settings → Troubleshooting → "Copy diagnostics" removes keys and tokens)
@@ -33,9 +33,9 @@ Security fixes go into the latest release. Please check that the problem still e
 
 ### Scope
 
-In scope: the AnyModelBot app in this repository (desktop app, command line, Docker image built from this repository) and its local console.
+In scope: the dazuibot app in this repository (desktop app, command line, Docker image built from this repository) and its local console.
 
-Out of scope here: Modelflare's own services (report those through the [Modelflare Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)), WeChat and Feishu platforms, and upstream projects such as magpie, DeepSeek Harness and Cua — please report those to their maintainers. If you are unsure, email us and we will route it.
+Out of scope here: the relay site's own services (report those at <https://zdzui.xyz>), WeChat and Feishu platforms, and upstream projects such as magpie, DeepSeek Harness and Cua — please report those to their maintainers. If you are unsure, email us and we will route it.
 
 ## 简体中文
 
@@ -50,7 +50,7 @@ Out of scope here: Modelflare's own services (report those through the [Modelfla
 
 请提供：
 
-- AnyModelBot 版本（设置 → 关于）、操作系统与架构、运行方式（桌面版 / 命令行 / Docker）
+- dazuibot 版本（设置 → 关于）、操作系统与架构、运行方式（桌面版 / 命令行 / Docker）
 - 问题是什么，攻击者能借此做什么
 - 复现步骤或概念验证
 - 有帮助的日志或诊断信息（设置 → 故障排查 →「复制诊断信息」会去掉密钥和令牌）
@@ -68,6 +68,6 @@ Out of scope here: Modelflare's own services (report those through the [Modelfla
 
 ### 范围
 
-范围内：本仓库的 AnyModelBot 应用（桌面版、命令行、用本仓库构建的 Docker 镜像）及其本地控制台。
+范围内：本仓库的 dazuibot 应用（桌面版、命令行、用本仓库构建的 Docker 镜像）及其本地控制台。
 
-不在这里处理：Modelflare 自身的服务（请通过 [Modelflare 信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)报告）、微信与飞书平台，以及 magpie、DeepSeek Harness、Cua 等上游项目——请报告给它们的维护者。拿不准的话，发邮件给我们，我们帮你转。
+不在这里处理：中转站自身的服务（请到 <https://zdzui.xyz> 反馈）、微信与飞书平台，以及 magpie、DeepSeek Harness、Cua 等上游项目——请报告给它们的维护者。拿不准的话，发邮件给我们，我们帮你转。

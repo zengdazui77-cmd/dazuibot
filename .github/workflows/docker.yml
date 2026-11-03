@@ -133,7 +133,7 @@ jobs:
           provenance: false
           sbom: false
           labels: |
-            org.opencontainers.image.title=AnyModelBot
+            org.opencontainers.image.title=dazuibot
             org.opencontainers.image.description=Local-first AI bots with any model, pay as you go
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.url=https://anymodel.bot/

@@ -1,6 +1,6 @@
 @layer tokens, base, components, app, utilities;
 /* 页脚（components/Footer.astro）：品牌（标记 + 一句话）｜ 三栏链接 → 收录徽章 → 版权行 → 眼睛田。
-   眼睛田是页脚最下面的大字标：AnyModelBot 由几百枚迷你 Eyes 标记拼成，画在 canvas 上（scripts/eyefield.ts）。
+   眼睛田是页脚最下面的大字标：dazuibot 由几百枚迷你 Eyes 标记拼成，画在 canvas 上（scripts/eyefield.ts）。
    两个主题两种画法，画布只认下面这些变量（主题切换时脚本会重读）：
      深色 · 发光：统一的灰面罩 --field-plate + 角色色的眼睛（--lime、--bot-*-eye）+ 光晕 --field-glow。字形靠一排排发光的眼睛读出来。
      浅色 · 淡彩：有 --field-ink 时启用。面罩是每个角色的辉光色（--lime、--bot-*-glow）调进底色的淡彩，
@@ -112,7 +112,7 @@
   @keyframes field-swap { from { opacity: 0; translate: 0 6px; filter: blur(2px); } }
 
   /* 字标盒子：比例由 CSS 定（脚本按这个比例决定排一行还是三行），首帧前就占好位，不会把页面往下顶。
-     比例贴着字形本身（一行的 AnyModelBot 约 7.4:1），上下几乎不留白；画布上下各出血 --field-bleed，盒子不为探头的脸留空 */
+     比例贴着字形本身（一行的 dazuibot 约 7.4:1），上下几乎不留白；画布上下各出血 --field-bleed，盒子不为探头的脸留空 */
   .footer__stage { position: relative; aspect-ratio: 7.4 / 1; }
   .footer__canvas {
     position: absolute; left: 0; top: calc(-1 * var(--field-bleed)); display: block; width: 100%; height: calc(100% + 2 * var(--field-bleed));

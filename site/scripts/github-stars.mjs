@@ -1,5 +1,5 @@
 // 向 GitHub 取星数，失败时抛错。构建（scripts/fetch-github-stars.ts）和线上的定时刷新（deploy/builder.mjs）共用。
-//   GITHUB_URL     仓库地址，如 https://github.com/modelflare-ai/AnyModelBot
+//   GITHUB_URL     仓库地址，如 https://github.com/<your-org>/dazuibot
 //   GITHUB_TOKEN   可选；匿名每小时 60 次，够用
 export async function fetchStars() {
   const m = /github\.com\/([^/]+)\/([^/.]+)/.exec(process.env.GITHUB_URL || "");

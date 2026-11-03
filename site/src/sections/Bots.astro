@@ -16,11 +16,10 @@ import BotFace from "../components/BotFace.astro";
 import EyesMark from "../components/EyesMark.astro";
 import Icon from "../components/Icon.astro";
 import SectionHead from "../components/SectionHead.astro";
-import { dict, fmt, href, type Lang } from "../i18n";
+import { dict, type Lang } from "../i18n";
 import { CHAR_KEYS, CHAR_PERSONA, type CharKey } from "../lib/bots";
 import { personaModels } from "../data/pricing.config";
-import { rowOf } from "../lib/site";
-import { estimate, fmtMoney, PRESETS } from "../lib/calc";
+import { MF } from "../lib/site";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
@@ -28,11 +27,6 @@ const b = t.bots;
 const L = b.looks;
 const talk = (k: CharKey) => b.personas[CHAR_PERSONA[k]];
 const modelOf = (k: CharKey) => personaModels[CHAR_PERSONA[k]];
-const pricingPage = href(lang, "/pricing");
-const cost = (k: CharKey) => {
-  const r = rowOf(modelOf(k));
-  return r ? fmtMoney(estimate(r, { group: r.defaultGroup, ...PRESETS.everyday }).monthly) : "—";
-};
 // 工牌底部的条形码：按角色名算出来的伪随机竖条，纯装饰
 const barcode = (k: string) => {
   let h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -86,7 +80,7 @@ const perkIcons = ["doc", "layers", "plus"] as const;
                     <div><dt>{b.badge.persona}</dt><dd>{talk(k).persona}</dd></div>
                     <div><dt>{b.badge.model}</dt><dd><span class="mono">{modelOf(k)}</span><small>{b.modelNote}</small></dd></div>
                     <div><dt>{b.badge.salary}</dt><dd>
-                      <a class="mono" href={`${pricingPage}?m=${modelOf(k)}#calc`} data-track="bot_cost_click" data-track-bot_id={k} data-track-model_id={modelOf(k)}>{fmt(b.cost, { amount: cost(k) })}<Icon name="arrow" size={14} /></a>
+                      <a class="mono" href={MF.pricing} target="_blank" rel="noopener" data-track="bot_cost_click" data-track-bot_id={k} data-track-model_id={modelOf(k)}>{b.cost}<Icon name="arrow" size={14} /></a>
                       <small>{b.badge.salaryNote}</small>
                     </dd></div>
                   </dl>

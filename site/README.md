@@ -1,4 +1,4 @@
-# AnyModelBot 官网（site/）
+# dazuibot 官网（site/）
 
 Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模型选择框）这几个岛上；样式是原生 CSS + token（`@layer tokens, base, components, app, utilities`），品牌色与 App 的 `ui/design` 相同。规格见《AnyModelBot Landing Page · 需求与样式设计稿 v3》。
 
@@ -226,7 +226,7 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 
 ## 数据从哪来
 
-- **价格**：构建时请求 `https://modelflare.dev/api/pricing`，用 `src/lib/pricing.ts` 算出默认线路价、分档、条件价线路和官方价（规则与 modelflare.dev/pricing 前端一致：有 `official_input_price` 用它，否则用基础价），写入 `src/data/pricing.snapshot.json`。抓取失败或数据异常时沿用快照，页面显示快照日期。
+- **价格**：`src/data/pricing.snapshot.json` 存的是上游 AnyModelBot（Modelflare）2026-10-30 的历史快照，仅作结构参考。dazuibot 的定价以站点后台实时价为准（多数模型按时段浮动计价），所以官网不展示任何具体单价——价格卡只说计费方式，价格表与计算器两座岛（`islands/PriceTable.tsx` / `PriceCalculator.tsx`）暂未挂到页面上，数据源恢复后可以接回。`tests/pricing.test.ts` 里有守卫断言，防止具体金额被加回页面。
 - **GitHub 星数**：线上的 builder 每 2 分钟向 GitHub 取一次，写到 `/srv/site/live/stars.json`，不用重新构建；页面打开时取站内的 `/stars.json`（`src/scripts/stars.ts`，缓存 1 分钟），所以数字最多晚 3 分钟左右。`scripts/fetch-github-stars.ts` 在 `npm run build` 时另取一次写进 `src/data/github.json`，作为页面的初始值和 `/stars.json` 取不到时的备用值；取不到就沿用上一个值，不影响构建。不在浏览器里请求 GitHub：不把访客 IP 发给第三方。
 - **机器人**：`scripts/sync-from-app.ts` 从 `../ui/design/bots/*.webp` 复制精灵图、从 `../THIRD_PARTY_NOTICES.md` 同步许可（Docker 构建上下文里没有应用目录，用已提交的副本）；几何（`src/lib/bots.ts`）与 `../ui/components/avatar.js` 的 `BOT_CHARS` 不一致时会警告。头像样式 `src/styles/bots.css` 移植自 `../ui/design/components/avatar.css`。
   - 精灵图另有同分辨率的 AVIF 版（`public/bots/*.avif`，约为 WebP 的一半），支持的浏览器经 `image-set()` 优先用它，其他照旧用 WebP。AVIF 必须从原图编码（`npm run bots:avif`：重跑 `../scripts/build-bot-avatars.py --png` 拿无损精灵图，q58 的画质按 PSNR 不低于 WebP q86），不能拿 WebP 再转。生成时把对应 WebP 的哈希记在 `src/data/bots-avif.json`；WebP 更新了而 AVIF 没重做，`check-images` 会失败。

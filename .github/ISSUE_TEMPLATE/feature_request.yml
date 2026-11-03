@@ -1,5 +1,5 @@
 name: 💡 功能建议 · Feature request
-description: 想让 AnyModelBot 多做点什么。Suggest something AnyModelBot should do.
+description: 想让 dazuibot 多做点什么。Suggest something dazuibot should do.
 labels: ["enhancement"]
 body:
   - type: markdown

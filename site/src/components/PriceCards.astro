@@ -1,17 +1,17 @@
 ---
-// 三张价格卡（§6.5 A）。首页用 compact：只留价格和一句说明，链接带到 /pricing；首页上是三张独立的卡片（sections.css 的"4 模型与价格"）。
+// 三张价格卡（§6.5 A）。首页用 compact：只留一句说明，链接带到 /pricing；首页上是三张独立的卡片（sections.css 的"4 模型与价格"）。
 // /pricing 页再给下载按钮和要点。
-// 价格只来自 pricing.snapshot.json。
+// 白标版不列任何具体单价：本站模型按时段浮动计价（tiered_expr 里的 weekday()/hour()），静态单价只在某段时间成立，
+// 写出来就是错的。三张卡只说计费方式，数字一律指向站点后台的实时定价。
 import EyesMark from "./EyesMark.astro";
 import DownloadButton from "./DownloadButton.astro";
 import { dict, fmt, buildVars, href, type Lang } from "../i18n";
-import { pricing, MF } from "../lib/site";
+import { MF } from "../lib/site";
 interface Props { lang: Lang; compact?: boolean }
 const { lang, compact = false } = Astro.props;
 const t = dict(lang);
 const c = t.pricing.cards;
 const v = buildVars(lang);
-const s = pricing.sample;
 const page = href(lang, "/pricing");
 ---
 <ol class:list={["pcards", { "pcards--compact": compact }]} role="list">
@@ -25,8 +25,8 @@ const page = href(lang, "/pricing");
   </li>
   <li class="card pcard reveal" style="--reveal-delay:60ms">
     <span class="eyebrow">{c.usage.tag}</span>
-    <p class="pcard__price"><span class="mono">{s.input}</span><span class="pcard__unit">{c.usage.unit}</span></p>
-    <p class="pcard__note">{fmt(c.usage.note, { model: s.model, output: s.output, officialIn: s.officialIn, officialOut: s.officialOut })}</p>
+    <p class="pcard__price"><span class="mono">{c.usage.price}</span><span class="pcard__unit">{c.usage.unit}</span></p>
+    <p class="pcard__note">{c.usage.note}</p>
     {compact
       ? <a class="pcard__link" href={page} data-track="pricing_cta_click" data-track-location="home-cards">{fmt(t.pricing.table.more, v)}</a>
       : <a class="btn btn--secondary" href={MF.pricing} target="_blank" rel="noopener" data-track="pricing_cta_click" data-track-location="cards">{c.usage.cta}</a>}
@@ -34,11 +34,11 @@ const page = href(lang, "/pricing");
   </li>
   <li class="card pcard reveal" style="--reveal-delay:120ms">
     <span class="eyebrow">{c.month.tag}</span>
-    <p class="pcard__price"><span class="mono">≈ {s.monthly}</span><span class="pcard__unit">{c.month.unit}</span></p>
-    <p class="pcard__note">{fmt(c.month.note, { model: s.model })}</p>
+    <p class="pcard__price"><span class="mono">{c.month.price}</span><span class="pcard__unit">{c.month.unit}</span></p>
+    <p class="pcard__note">{c.month.note}</p>
     {compact
-      ? <a class="pcard__link" href={`${page}#calc`}>{c.month.cta} →</a>
-      : <a class="btn btn--secondary" href="#calc">{c.month.cta}</a>}
+      ? <a class="pcard__link" href={page} data-track="pricing_cta_click" data-track-location="home-cards">{fmt(t.pricing.table.more, v)}</a>
+      : <a class="btn btn--secondary" href={MF.home} target="_blank" rel="noopener" data-track="pricing_cta_click" data-track-location="cards">{c.month.cta}</a>}
     {!compact && <ul class="ticks small" role="list">{c.month.points.map((x) => <li>{x}</li>)}</ul>}
   </li>
 </ol>

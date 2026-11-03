@@ -5,6 +5,8 @@ import { buildSnapshot } from "../src/lib/snapshot";
 import { pricingConfig } from "../src/data/pricing.config";
 import { estimate, fmtMoney, fmtSmall, PRESETS, calcGroups } from "../src/lib/calc";
 import { fmtPrice, tierFor } from "../src/lib/pricing";
+import { dict } from "../src/i18n";
+import snapshotJson from "../src/data/pricing.snapshot.json";
 
 const snap = buildSnapshot(raw, pricingConfig, new Date("2026-10-30T13:24:41Z"));
 const row = (m: string) => snap.rows.find((r) => r.model === m)!;
@@ -51,7 +53,7 @@ describe("精选行（默认线路，USD / 1M tokens）", () => {
   });
 });
 
-describe("官方价规则（与 modelflare.dev/pricing 前端一致）", () => {
+describe("官方价规则（与 zdzui.xyz/pricing 前端一致）", () => {
   it("没有 official_input_price 时用基础价", () => {
     const r = row("deepseek-v4-flash");
     expect([r.officialInput, r.officialOutput]).toEqual([0.428571, 1.285714]);
@@ -117,5 +119,36 @@ describe("格式", () => {
   });
   it("金额", () => {
     expect([fmtMoney(0.004), fmtMoney(3.955), fmtMoney(1234.5)]).toEqual(["< $0.01", "$3.96", "$1,234.50"]);
+  });
+});
+
+// 白标契约：官网不列任何具体单价。
+// 本站 68 条模型里 54 条用 tiered_expr 的 weekday()/hour() 时段浮动计价，静态单价只在某个时段成立，
+// 写出来就是错的。这几条断言钉死"别再把它加回去"。
+describe("白标口径：官网不展示具体单价", () => {
+  it("快照的 source 不是本站域名", () => {
+    expect(snap.source).not.toMatch(/zdzui\.xyz/i);
+    expect(snap.source).toMatch(/^upstream-/);
+  });
+  it("快照标记为 stale，并带维护者备注", () => {
+    expect(snap.stale).toBe(true);
+    expect(snap.note ?? "").toMatch(/非本站定价|浮动计价/);
+  });
+  it("仓库里的快照文件同样如此", () => {
+    expect(snapshotJson.source).not.toMatch(/zdzui\.xyz/i);
+    expect(snapshotJson.stale).toBe(true);
+  });
+  it("三张价格卡的文案里没有具体金额（$ 开头或纯数字单价）", () => {
+    for (const lang of ["zh", "en"] as const) {
+      const cards = dict(lang).pricing.cards;
+      const flat = [cards.app, cards.usage, cards.month].flatMap((c) => [c.tag, c.price, c.unit, c.note, ...c.points]);
+      for (const s of flat) expect(s, `${lang}: ${s}`).not.toMatch(/\$\s?\d|\d+\s?\/\s?(1M|100 万)/);
+    }
+  });
+  it("价格页的说明文字不引用上游快照时间与版本号", () => {
+    for (const lang of ["zh", "en"] as const) {
+      const p = dict(lang).pricing;
+      expect(p.snapshot, lang).not.toMatch(/\{fetchedAt\}|\{pricingVersion\}|\{snapshotDate\}/);
+    }
   });
 });

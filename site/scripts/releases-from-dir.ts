@@ -49,10 +49,11 @@ for (const id of ["win-x64", "mac-arm64", "mac-x64", "linux-x64"]) {
 // 还没发布镜像（DOCKER_IMAGE 为空）时给"从源码构建"的命令，和 README 的写法一致
 const image = process.env.DOCKER_IMAGE || "anymodel-bot";
 const runCmd = `docker run -d --name amb -p 3600:3600 -v amb-data:/data ${image}`;
-const repo = (process.env.GITHUB_URL || "https://github.com/modelflare-ai/AnyModelBot").replace(/\/+$/, "");
+const repo = (process.env.GITHUB_URL || "").replace(/\/+$/, "");
+if (!repo) { console.error("GITHUB_URL 未配置：需要 dazuibot 的发布仓库地址"); process.exit(1); }
 platforms.docker = {
   image,
-  command: process.env.DOCKER_IMAGE ? runCmd : `git clone ${repo}.git && cd AnyModelBot && git submodule update --init --depth 1 vendor/magpie && docker build -t ${image} . && ${runCmd}`,
+  command: process.env.DOCKER_IMAGE ? runCmd : `git clone ${repo}.git && cd ${repo.split("/").pop()} && git submodule update --init --depth 1 vendor/magpie && docker build -t ${image} . && ${runCmd}`,
 };
 
 const out = {

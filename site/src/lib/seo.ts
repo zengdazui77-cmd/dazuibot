@@ -10,7 +10,7 @@ export function homeJsonLd(lang: Lang) {
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "AnyModelBot",
+      name: "dazuibot",
       applicationCategory: "ProductivityApplication",
       operatingSystem: "Windows, macOS, Linux",
       description: t.meta.description,
@@ -21,7 +21,7 @@ export function homeJsonLd(lang: Lang) {
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       codeRepository: GITHUB_URL,
     },
-    { "@context": "https://schema.org", "@type": "Organization", name: "AnyModelBot", url: `${ORIGIN}/`, logo: `${ORIGIN}/icon-512.png`, sameAs: [GITHUB_URL] },
+    { "@context": "https://schema.org", "@type": "Organization", name: "dazuibot", url: `${ORIGIN}/`, logo: `${ORIGIN}/icon-512.png`, sameAs: [GITHUB_URL] },
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",

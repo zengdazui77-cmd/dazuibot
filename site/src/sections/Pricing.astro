@@ -1,12 +1,13 @@
 ---
-// /pricing 页（§6.5）：价格卡、与订阅制的对照、完整价格表、计算器。所有价格只来自 pricing.snapshot.json（构建时抓取 modelflare.dev/api/pricing）。
-// 首页只放精简的价格卡（components/PriceCards.astro compact）。
+// /pricing 页（§6.5）：价格卡、与订阅制的对照、计费口径说明。
+// 白标版不列任何具体单价：pricing.snapshot.json 是上游抓来的静态快照，而本站 68 条模型里有 54 条用
+// tiered_expr 的 weekday()/hour() 时段浮动计价，静态单价只在某个时段成立——写出来就是错的。
+// 所以这一页只讲"怎么计费"，数字一律指向站点后台的实时定价。
+// 价格表（islands/PriceTable.tsx）和计算器（islands/PriceCalculator.tsx）仍在仓库里，数据源恢复后可以接回来。
 import EyesMark from "../components/EyesMark.astro";
 import PriceCards from "../components/PriceCards.astro";
-import PriceTable from "../islands/PriceTable.tsx";
-import PriceCalculator from "../islands/PriceCalculator.tsx";
 import { dict, fmt, buildVars, type Lang } from "../i18n";
-import { pricing, MF } from "../lib/site";
+import { MF } from "../lib/site";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
@@ -19,7 +20,7 @@ const v = buildVars(lang);
       <span class="eyebrow">{p.eyebrow}</span>
       <h1 class="h2" id="pricing-h"><mark class="hl reveal-hl">{p.h2mark}</mark>{p.h2rest}</h1>
       <p class="lead prose">{p.lead}</p>
-      <p class="small muted">{pricing.stale ? fmt(p.stale, v) : fmt(p.source, v)}</p>
+      <p class="small muted">{p.snapshot}</p>
     </div>
 
     <PriceCards lang={lang} />
@@ -36,14 +37,7 @@ const v = buildVars(lang);
     </div>
 
     <div class="pricing__block">
-      <PriceTable client:visible rows={pricing.rows} featured={pricing.config.featuredModels} t={p.table}
-        mediaText={fmt(p.table.media, v)} mediaHref={MF.pricing} initialAll />
-      <p class="small muted">{fmt(p.table.note, v)}</p>
-    </div>
-
-    <div class="pricing__block calc-wrap" id="calc">
-      <h2 class="h3">{p.calc.title}</h2>
-      <PriceCalculator client:visible rows={pricing.rows} defaultModel={pricing.config.sampleModel} t={p.calc} fetchedAt={v.fetchedAt as string} fullHref={MF.pricing} />
+      <p class="models__cta"><a class="btn btn--primary" href={MF.pricing} target="_blank" rel="noopener" data-track="pricing_cta_click" data-track-location="pricing-live">{p.snapshotLink}</a></p>
     </div>
 
     <div class="pbanner">

@@ -1,4 +1,4 @@
-> **本文件描述上游 AnyModelBot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
+> **本文件描述上游 dazuibot 的原貌。** 其中 `modelflare.dev` 相关表述已被白标替换。
 > 当前域名、站点与归因参数的唯一真源是 `src/modelflare.ts`（`RELAY_GLOBAL` / `RELAY_CN` / `MODELFLARE_WEB` / `UTM`）。
 > 本文档为内部设计记录，不随安装包分发。
 
@@ -11,7 +11,7 @@ Feasibility evidence is in [Appendix A](#appendix-a-feasibility-answers-with-evi
 
 ## Summary
 
-The product owner (PO) confirmed that background work and proactive behaviour are what make AnyModelBot different. This doc covers three features:
+The product owner (PO) confirmed that background work and proactive behaviour are what make dazuibot different. This doc covers three features:
 
 1. **Background tasks.** "Build me X" or "research Y and report back" runs in its own DSH session and folder while the user keeps chatting.
 2. **Proactive rules.** These are reminders, watchers and scheduled checks that the user writes in words. A new rule **acts** right away and speaks only when something matters. The user can ask for **observe** mode first: it records what it would have said or done and does not act.
@@ -38,7 +38,7 @@ Key decisions:
 **Non-goals (Phase 3)**
 
 - Multi-user teams, delegation between bots, and event sources other than time. Polling covers "watch X" for now.
-- Exactly-once side effects outside AnyModelBot. The host can make its own effects (deliveries, cards) idempotent. Effects the agent causes, such as sending an email from a CLI, are made safe on a best-effort basis with a journal and a recovery note (see [restart](#restart-recovery)).
+- Exactly-once side effects outside dazuibot. The host can make its own effects (deliveries, cards) idempotent. Effects the agent causes, such as sending an email from a CLI, are made safe on a best-effort basis with a journal and a recovery note (see [restart](#restart-recovery)).
 
 **Principles**, from dsh-superagent `000-philosophy.md`, adapted:
 
@@ -294,7 +294,7 @@ The time zone is the system's IANA zone, stored on the rule when it is created. 
 - **Switching modes.** For a rule the user put in observe: after 3 good observed runs on the current version (outcome done; failed and skipped runs don't count), "needs you" asks: 「规则「看 X 价格」已观察 3 次，需要你来决定是否执行」, with the latest run's line (「本会发送：“…”」) under it and [改为执行] [继续观察]. It is the least urgent kind: last in the list, never pushed, no desktop notification, though it counts toward the badge. 继续观察 stops asking for this version (kept across restarts); editing the instruction makes a new version, which asks again after 3 more good runs. The row goes away when the rule switches to act or off, pauses, or is deleted. The user can also switch in the rule detail or by telling the bot. Act can go back to observe at any time.
 - **Editing the instruction** makes a new version and keeps the mode: an acting rule keeps acting. (From 2026-10-31 to 2026-11-01 an acting rule observed once after an edit, `observe_left`; the column stays in the schema, unused.) Editing only the schedule keeps the mode.
 - **Tasks a person asked for are never in observe.** An explicit request is its own mandate, as in superagent, where explicit requests work in every accept mode.
-- **What observe guarantees:** no message to anyone through AnyModelBot, and no file changes, because the sandbox is read-only. It does not block network calls from shell tools. The prompt forbids outside actions, and the Report lists what the rule would do. We say exactly this in the UI help text.
+- **What observe guarantees:** no message to anyone through dazuibot, and no file changes, because the sandbox is read-only. It does not block network calls from shell tools. The prompt forbids outside actions, and the Report lists what the rule would do. We say exactly this in the UI help text.
 
 ## 6. Transparency without noise
 
@@ -368,7 +368,7 @@ As built (decided by the product owner after 3f). A question can wait for hours 
 
 ### WeChat: the hard constraint
 
-iLink lets a bot message a user only with a `context_token` from that user's inbound message. AnyModelBot already treats this as hard.
+iLink lets a bot message a user only with a `context_token` from that user's inbound message. dazuibot already treats this as hard.
 
 - In `src/channels/weixin/quota.ts`, each inbound message resets a **24 h window with 10 sends** (`QUOTA_PER_INBOUND`, `QUOTA_WINDOW_MS`). Once the window is over, `remaining()` is 0.
 - `WeixinChannel.notifyOwner()` gives up without a token or quota.

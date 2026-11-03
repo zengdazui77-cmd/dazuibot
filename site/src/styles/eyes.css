@@ -1,5 +1,5 @@
 @layer tokens, base, components, app, utilities;
-/* AnyModelBot Eyes 标记（§7.3）：四个变换层各管一件事——head 头部转向 / eyes 目光 / squint 表情 / lids 眨眼。
+/* dazuibot Eyes 标记（动效沿用上游 AnyModelBot，§7.3）：四个变换层各管一件事——head 头部转向 / eyes 目光 / squint 表情 / lids 眨眼。
    只动 transform；无 JS 时空闲左右看与眨眼照常（纯 CSS），JS（src/lib/eyes.ts）只写 --look-x/--look-y 与 data-mode。 */
 @layer components {
   .amb-mark {
