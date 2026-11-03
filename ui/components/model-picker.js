@@ -7,8 +7,7 @@ import { html, Popover, Icon, Stops } from "./ui.js";
 import { api } from "../lib/api.js";
 import { createStore, useStore, failed } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
-import { OTHER_FAMILY, groupModels, looksNonChat, modelFamily, normModel, sameModel, shortModel, visibleModels } from "../lib/models.js";
-import { prefs, setPrefs } from "../lib/prefs.js";
+import { OTHER_FAMILY, groupModels, looksNonChat, modelFamily, normModel, sameModel, shortModel } from "../lib/models.js";
 import { DEFAULT_STRATEGY, STRATEGIES, defaultStop, levelOf, tiers } from "../lib/frontier.js";
 
 export { groupModels, normModel, sameModel, shortModel } from "../lib/models.js";
@@ -207,19 +206,33 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
   return html`<${Popover} anchor=${anchor} onClose=${onClose} class="model-picker" width=${340} maxHeight=${420} prefer=${prefer} align=${align} label=${t("models.choose")}>${body}<//>`;
 }
 
+/**
+ * 模态类型的顺序：**与 `src/modality.ts` 的 `MODALITY_ORDER` 保持一致，改一处要改两处**。
+ * 不从后端注入：ui/ 是 server.ts 原样吐出的静态模块，没有 import 后端的通道。
+ * 语音（voice）现在站上 0 个模型，所以不会渲染；站主加了模型不改代码就会出现。
+ */
+const MODALITY_TABS = ["text", "image", "video", "voice", "other"];
+const TAB_LABEL = {
+  text: "models.tab.text",
+  image: "models.tab.image",
+  video: "models.tab.video",
+  voice: "models.tab.voice",
+  other: "models.tab.other",
+};
+/** 选中的类型 tab 跨打开保留（和 famOpen 一个模式：本次运行内记住） */
+let lastTab = "";
+
 /** 完整的模型列表（选择器原来的样子）；onBack：从滑块面板进来时，搜索框左边有返回 */
 function ModelList({ models, error, current, onPick, onClose, reset, foot, onRetry, info, onBack }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const [openBlocked, setOpenBlocked] = useState(false);
   const listRef = useRef(null);
   const searchRef = useRef(null);
   // 从面板切过来时面板上的焦点没了：交给搜索框
   useEffect(() => {
     if (onBack) searchRef.current?.focus();
   }, []);
-  // 明显不能对话的模型默认藏起来；开关是本机偏好，存 localStorage，重启后仍然是客户选的那一档
-  const pref = useStore(prefs);
-  const showAll = !!pref.showAllModels;
   // 价格目录没拿到时明说 + 重试（这个端点每台客户机都打，静默失败等于没有信号）
   const pricingOk = usePricingOk();
   const profilesOk = useProfilesOk();
@@ -235,21 +248,94 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
     for (const id of Object.keys(info || {})) set.add(id);
     return [...set];
   }, [models, info]);
-  const list = useMemo(() => visibleModels(all, showAll, current), [all, showAll, current]);
-  const hidden = all.length - list.length;
-  // 当前 Key 调不了的那些：后端在拿得到 /v1/models 时会给 available=false；undefined 是"不知道"，不标注
-  const unavailable = (m) => info?.[normModel(m)]?.available === false || info?.[normModel(m)?.split("/").pop()]?.available === false;
-  const unCount = list.filter(unavailable).length;
-  const groups = useMemo(() => groupModels(list, q), [list, q]);
+  /** 后端算好的资料（去 provider 前缀，再试最后一段） */
+  const infoOf = (m) => info?.[normModel(m)] ?? info?.[normModel(m)?.split("/").pop()];
+  /** 这个模型属于哪些模态。目录里没有的（只有网关列出来的）当「其他」：不知道不等于文本 */
+  const modsOf = (m) => {
+    const mods = infoOf(m)?.modality;
+    return Array.isArray(mods) && mods.length ? mods : ["other"];
+  };
+  // 一个模型可以出现在多个 tab：gpt-image-2 系列是 image-generation|openai，图片和文本都要有它
+  const tabIds = useMemo(() => {
+    const map = new Map(MODALITY_TABS.map((k) => [k, []]));
+    for (const m of all) {
+      for (const mod of modsOf(m)) {
+        if (!map.has(mod)) map.set(mod, []);
+        map.get(mod).push(m);
+      }
+    }
+    return map;
+  }, [all, info]);
+  /** 每个 tab 的两个数：总数、可用数。available === undefined 单独算「未知」，别混进任何一边 */
+  const tabStat = (ids) => {
+    let ok = 0;
+    let unk = 0;
+    for (const m of ids) {
+      const a = infoOf(m)?.available;
+      if (a === true) ok++;
+      else if (a !== false) unk++;
+    }
+    return { total: ids.length, ok, unk };
+  };
+  // 0 个模型的类型不渲染
+  const tabs = MODALITY_TABS.filter((k) => (tabIds.get(k) ?? []).length > 0);
+  const inTab = (k, m) => !!m && (tabIds.get(k) ?? []).some((x) => sameModel(x, m));
+  const pickTab = () => {
+    if (lastTab && tabs.includes(lastTab)) return lastTab;
+    return tabs.find((k) => inTab(k, current)) ?? tabs[0] ?? "text";
+  };
+  const [tab, setTab] = useState(pickTab);
+  /** 客户自己点过 tab（或者上次运行里点过）：之后的自动跟随一律让位 */
+  const chose = useRef(!!lastTab);
+  const chooseTab = (k) => {
+    lastTab = k;
+    chose.current = true;
+    setTab(k);
+    setSel(0);
+  };
+  // 数据是异步到的：第一次拿到 tab 清单时，跟着当前模型走（当前是图片模型就落在图片 tab）；
+  // 客户点过的按客户的算，不再自己变
+  useEffect(() => {
+    if (chose.current || !tabs.length) return;
+    const own = tabs.find((k) => inTab(k, current));
+    if (own) {
+      if (own !== tab) setTab(own);
+      return;
+    }
+    if (!tabs.includes(tab)) setTab(tabs[0]);
+  }, [tabs.join("|"), current]);
+  // 搜索跨所有 tab：命中在别的 tab 时自动切过去，别让人"搜了没结果"其实是藏在别处
+  useEffect(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return;
+    const hit = (k) => (tabIds.get(k) ?? []).some((m) => normModel(m).toLowerCase().includes(needle));
+    if (hit(tab)) return;
+    const other = tabs.find(hit);
+    if (other) chooseTab(other);
+  }, [q]);
+  // 当前 Key 调不了的那些：后端在拿得到 /v1/models 时会给 available=false；undefined 是"不知道"，不标注也不折叠
+  const unavailable = (m) => infoOf(m)?.available === false;
+  const ids = tabIds.get(tab) ?? [];
+  // 不藏任何一个：显不显示由模态类型（tab）决定，looksNonChat 只加一行提示（见 item()）
+  const okIds = ids.filter((m) => !unavailable(m));
+  const blockedIds = ids.filter(unavailable);
+  const list = okIds;
+  const groups = groupModels(list, q);
   const { isOpen, toggle } = useFamilies(groups, current);
   const folding = !q.trim() && groups.length > 1;
-  const custom = q.trim() && !list.some((m) => sameModel(m, q.trim())) ? q.trim() : "";
+  // 折叠段只影响渲染、不影响筛选：搜到里面的模型时自动展开
+  const ql = q.trim().toLowerCase();
+  const blockedList = blockedIds.filter((m) => !ql || normModel(m).toLowerCase().includes(ql));
+  const blockedShown = openBlocked || (!!ql && blockedList.length > 0);
+  const custom = q.trim() && !all.some((m) => sameModel(m, q.trim())) ? q.trim() : "";
   const flat = [
     ...(reset && !q ? [{ reset: true }] : []),
     ...groups.flatMap(([g, ms]) => {
       const rows = ms.map(([m]) => ({ m, g }));
       return folding ? [{ fam: g }, ...(isOpen(g) ? rows : [])] : rows;
     }),
+    ...(blockedIds.length ? [{ blocked: true }] : []),
+    ...(blockedShown ? blockedList.map((m) => ({ m, blockedRow: true })) : []),
     ...(custom ? [{ m: custom, custom: true }] : []),
   ];
   // 列表到了以后，指向并滚到当前模型
@@ -278,6 +364,7 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
     } else if (e.key === "Enter" && it) {
       e.preventDefault();
       if (it.fam) toggle(it.fam);
+      else if (it.blocked) setOpenBlocked((v) => !v);
       else choose(it);
     } else if (folding && it && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
       // 输入框是空的（folding 时 q 为空），左右键不会挪光标：→ 展开，← 收起；在模型上按 ← 收起它所在的族
@@ -293,8 +380,8 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
   const item = (it, label, note) => {
     idx++;
     const i = idx;
-    // 开关打开时，被藏起来的模型也会列出来，但旁边写明"可能不支持对话"，让客户自己判断
-    const maybe = it.m && showAll && looksNonChat(it.m) ? t("models.maybeNonChat") : "";
+    // 名字看起来不适合当主对话模型：照常列出来，旁边写明"可能不支持对话"，让客户自己判断
+    const maybe = it.m && looksNonChat(it.m) ? t("models.maybeNonChat") : "";
     // 当前 Key 的分组不含它：照样可选（换分组/找站主开权限后就通了），但必须写清现在调不了
     const noKey = it.m && unavailable(it.m) ? t("models.notInKeyGroup") : "";
     const line = [noKey, maybe, note].filter(Boolean).join(" · ");
@@ -314,11 +401,31 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
     </li>`;
   };
   const rows = (ms) => ms.map(([m, label]) => item({ m }, label, modelNote(info, m)));
+  // 不可用的那些收在折叠段里：站上有、这把 Key 的分组没有。标题带数量，展开后逐个列出（不按族折叠，保持简单）
+  const blockedHead = () => {
+    idx++;
+    const i = idx;
+    return html`<li class=${`fam blocked ${sel === i ? "sel" : ""}`} aria-expanded=${blockedShown} onPointerMove=${() => setSel(i)} onClick=${() => setOpenBlocked((v) => !v)}>
+      <span class="v">${t("models.blockedHead", { count: blockedIds.length })}</span>
+      <${Icon} name="chevRight" size="xs" class="chev" />
+    </li>`;
+  };
+  const stat = tabStat(ids);
   return html`<div class="search">${onBack
       ? html`<button type="button" class="icon-btn xs search-back" title=${t("models.tiers.back")} aria-label=${t("models.tiers.back")} onClick=${onBack}><${Icon} name="chevLeft" size="sm" /></button>`
       : html`<${Icon} name="search" size="sm" />`}
       <input ref=${searchRef} placeholder=${t("models.filterOrId")} value=${q} onInput=${(e) => { setQ(e.target.value); setSel(0); }} onKeyDown=${onKey} aria-label=${t("models.filter")} />
     </div>
+    ${tabs.length > 1 && html`<div class="mtabs" role="tablist">
+      ${tabs.map((k) => {
+        const s = tabStat(tabIds.get(k) ?? []);
+        return html`<button type="button" role="tab" class=${`mtab${k === tab ? " on" : ""}`} aria-selected=${k === tab}
+          onClick=${() => chooseTab(k)} title=${t(TAB_LABEL[k])}>
+          <span>${t(TAB_LABEL[k])}</span><span class="n">${s.total}</span>
+          ${s.total > 0 && html`<span class=${`n${s.ok ? "" : " none"}`}>${s.unk > 0 ? t("models.tabAvailUnknown", { ok: s.ok, unk: s.unk }) : t("models.tabAvail", { ok: s.ok })}</span>`}
+        </button>`;
+      })}
+    </div>`}
     <ul role="listbox" ref=${listRef}>
       ${pricingOk === false && html`<li class="explained" style="pointer-events:auto">
         <span class="v" style="white-space:normal">${t("models.pricingUnavailable")}</span>
@@ -326,21 +433,17 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
       ${profilesOk === false && html`<li class="explained" style="pointer-events:auto">
         <span class="v" style="white-space:normal">${t("models.capsUnknown")}</span>
         <button type="button" class="text" onClick=${() => prefetchModelInfo(true)}>${t("common.retry")}</button></li>`}
-      ${unCount > 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.notInKeyGroupCount", { count: unCount })}</span></li>`}
       ${models === null && !error && [0, 1, 2, 3, 4].map((k) => html`<li key=${k}><span class="skel" style=${{ width: 60 + ((k * 37) % 30) + "%" }}></span></li>`)}
       ${error && html`<li class="explained" style="pointer-events:auto"><span class="v" style="white-space:normal;color:var(--red)">${t("models.loadFailed", { error })}</span>
         ${onRetry && html`<button type="button" class="text" onClick=${onRetry}>${t("common.retry")}</button>`}</li>`}
-      ${(hidden > 0 || showAll) && html`<li class="explained" style="pointer-events:auto">
-        <label class="switch-row">
-          <input type="checkbox" checked=${showAll} onChange=${(e) => setPrefs({ showAllModels: e.target.checked })} />
-          <span class="v" style="white-space:normal">${hidden > 0 ? t("models.showAllCount", { count: hidden }) : t("models.showAllOn")}</span>
-        </label></li>`}
       ${reset && !q && item({ reset: true }, reset.label, reset.note)}
       ${groups.map(([g, ms]) =>
         folding ? html`${head(g, ms)}${isOpen(g) && rows(ms)}` : html`${groups.length > 1 && html`<li class="group">${familyName(g)}</li>`}${rows(ms)}`,
       )}
+      ${blockedIds.length > 0 && blockedHead()}
+      ${blockedShown && blockedList.map((m) => item({ m, blockedRow: true }, normModel(m), modelNote(info, m)))}
       ${custom && item({ m: custom, custom: true }, t("models.useCustom", { id: custom }), t("models.customId"))}
-      ${all.length === 0 && !q && hidden === 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
+      ${ids.length === 0 && !q && stat.total === 0 && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
     </ul>
     ${foot && html`<div class="foot"><button type="button" disabled=${foot.disabled} onClick=${() => { onClose(); foot.onClick(); }}>${foot.label}</button></div>`}
   `;

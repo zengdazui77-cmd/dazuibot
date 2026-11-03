@@ -1,7 +1,7 @@
 /** 模型选择器的模型族分组：Modelflare 的 ID 不带厂商前缀，按名字归族，族内版本新的在前。 */
 import { describe, it, expect } from "vitest";
 // @ts-expect-error 界面代码是不经构建的 JS
-import { groupModels, modelFamily, OTHER_FAMILY, looksNonChat, visibleModels } from "../ui/lib/models.js";
+import { groupModels, modelFamily, OTHER_FAMILY, looksNonChat } from "../ui/lib/models.js";
 
 // Modelflare 2026-10-30 公开的对话模型（节选）
 const LIST = [
@@ -38,7 +38,7 @@ describe("模型族", () => {
   });
 });
 
-describe("明显不能对话的模型：默认隐藏，可开关看全部", () => {
+describe("明显不能对话的模型：不藏，只加提示", () => {
   it("生图 / 向量 / 转写 / 审核按整词认出来", () => {
     for (const id of [
       "dall-e-3", "gpt-image-1", "imagen-3", "flux-pro", "sdxl-turbo", "stable-diffusion-xl",
@@ -59,14 +59,5 @@ describe("明显不能对话的模型：默认隐藏，可开关看全部", () =
     ]) {
       expect([id, looksNonChat(id)] as const).toEqual([id, false]);
     }
-  });
-
-  it("关着就藏、开着全给；当前选中的那个即使被判不能对话也留着", () => {
-    const all = ["gpt-6-sol", "dall-e-3", "claude-opus-5", "bge-m3"];
-    expect(visibleModels(all, false)).toEqual(["gpt-6-sol", "claude-opus-5"]);
-    expect(visibleModels(all, true)).toEqual(all);
-    // 客户可能通过"自定义模型 ID"或旧配置选中了一个被藏起来的模型，不能让它凭空消失
-    expect(visibleModels(all, false, "dall-e-3")).toEqual(["gpt-6-sol", "dall-e-3", "claude-opus-5"]);
-    expect(visibleModels(all, false, "modelflare/dall-e-3")).toEqual(["gpt-6-sol", "dall-e-3", "claude-opus-5"]);
   });
 });

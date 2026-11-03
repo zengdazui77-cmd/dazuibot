@@ -2,6 +2,18 @@
 export default {
   /** 认不出的模型族 */
   otherFamily: "其他",
+  /** 模态类型 tab（文本/图片/视频/语音/其他）；0 个模型的 tab 不渲染 */
+  tab: {
+    text: "文本",
+    image: "图片",
+    video: "视频",
+    voice: "语音",
+    other: "其他",
+  },
+  /** tab 上的可用数：{ok} 可用 */
+  tabAvail: "{ok} 可用",
+  /** tab 上的可用数（有未知项）：{ok} 可用 / {unk} 未知 */
+  tabAvailUnknown: "{ok} 可用 / {unk} 未知",
   caps: {
     vision: "视觉",
     tools: "工具",
@@ -17,9 +29,7 @@ export default {
   useCustom: "使用「{id}」",
   customId: "自定义模型 ID",
   none: "没有可用模型：这个 Key 所在的分组还没有开放模型",
-  /** 明显不能对话的模型默认隐藏；打开这一档后它们会带着标记一起列出来 */
-  showAllCount: "显示全部模型（已隐藏 {count} 个）",
-  showAllOn: "显示全部模型（已开）",
+  /** 明显不能对话的模型不再隐藏，只加一行提示（见 model-picker.js） */
   maybeNonChat: "可能不支持对话",
   /** 价格目录（公开、无鉴权）没拿到时显示，不能留空白 */
   pricingUnavailable: "价格信息暂不可用。参考价来自站点的公开价格目录，只作参考，实际扣费以账单为准",
@@ -28,6 +38,8 @@ export default {
   /** 模型在站上存在，但这把 Key 所在的分组没开：照样列出来，客户才知道该找站主开什么 */
   notInKeyGroup: "当前分组不含此模型",
   notInKeyGroupCount: "其中 {count} 个不在这把 Key 的分组里，选中后请求会失败；需要的话去站点换分组或找站主开权限",
+  /** 不可用模型折叠段的标题（默认折叠，点击展开） */
+  blockedHead: "本站还有 {count} 个模型不在你的分组里（展开查看）",
   /** 选择器的两个滑块 */
   tiers: {
     value: "性价比",

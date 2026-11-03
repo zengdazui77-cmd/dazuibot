@@ -12,6 +12,7 @@
  *   这个模型在三种性价比下的分组倍率（factors）。
  */
 import { qualityFor, type QualitySnapshot } from "./model-quality.js";
+import { modalityOf, type Modality } from "../modality.js";
 import type { RoutingStrategy } from "./client.js";
 
 export interface ModelInfo {
@@ -24,6 +25,12 @@ export interface ModelInfo {
   rates?: Rates;
   /** 支持的接口（目录的 supported_endpoint_types：openai、openai-response、openai-response-compact、anthropic、gemini…） */
   endpoints?: string[];
+  /**
+   * 模态类型：由 supported_endpoint_types 推出（见 src/modality.ts），**可能多个**——
+   * `gpt-image-2` 系列既 image-generation 又 openai，所以它同时是「图片」和「文本」，不许二选一。
+   * 模型选择器的类型 tab 只认这个字段。
+   */
+  modality?: Modality[];
   /** 三种性价比（Key 的路由策略）下实际付的比例：分组倍率 × 模型售价倍率（strategyFactors） */
   factors?: Record<RoutingStrategy, number>;
   /** 应用实际用的那一档的 AA 智能指数与每次任务的花费（官方定价，美元） */
@@ -230,7 +237,10 @@ export async function loadModelInfoWithStatus(o: {
     if (rates) out[entry.model_name] = { ...out[entry.model_name], rates };
     // 没有 Key（拿不到 model-profiles）时，上下文长度用公开目录里的
     if (Number(entry.context_window) > 0 && !out[entry.model_name]?.context) out[entry.model_name] = { ...out[entry.model_name], context: Number(entry.context_window) };
-    if (Array.isArray(entry.supported_endpoint_types)) out[entry.model_name] = { ...out[entry.model_name], endpoints: entry.supported_endpoint_types.map(String) };
+    if (Array.isArray(entry.supported_endpoint_types)) {
+      const eps = entry.supported_endpoint_types.map(String);
+      out[entry.model_name] = { ...out[entry.model_name], endpoints: eps, modality: modalityOf(eps) };
+    }
     // 分组只给选择器分类用；价格仍由 factors 决定（一个模型可能在多个分组里，倍率差一个数量级）
     if (Array.isArray(entry.enable_groups)) out[entry.model_name] = { ...out[entry.model_name], groups: entry.enable_groups.map(String) };
     const factors = strategyFactors(entry, catalog!);

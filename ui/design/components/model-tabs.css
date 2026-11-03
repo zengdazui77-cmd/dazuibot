@@ -1,0 +1,31 @@
+/* 模态类型 tab（模型选择器）：文本 / 图片 / 视频 / …… 横排一行，每个带数量。
+   类型比「模型族」粗，所以放在族折叠的外层（见 ui/components/model-picker.js 的 ModelList）。
+   0 个模型的 tab 不渲染，语音现在是 0。 */
+.mtabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mtabs::-webkit-scrollbar { display: none; }
+.mtab {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-full);
+  background: var(--well);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mtab:hover { color: var(--fg); background: var(--well-hover); }
+.mtab.on { color: var(--fg); background: var(--sel); font-weight: var(--fw-semibold); }
+/* 数量：总数用小号等宽数字；括号里的可用数更弱一档，没有可用数时不显示 */
+.mtab .n { font-size: var(--fs-2xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.mtab.on .n { color: var(--muted); }
+/* 可用 0 时括号里的数字标红：这是"你的分组没配够"，得让人看见 */
+.mtab .n.none { color: var(--red); }

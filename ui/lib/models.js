@@ -66,31 +66,35 @@ export function groupModels(models, q = "") {
   return [...groups.entries()].sort((a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]));
 }
 
-// —— 明显不能对话的模型：按 ID 关键词认，默认从列表里隐藏 ——
+// —— 适不适合当主对话模型：按 ID 关键词认 ——
 //
-// 为什么用黑名单 + 软隐藏，而不是白名单或硬删：
+// 这个判断**只**回答一个问题：「拿它当主对话模型合不合适」。它**不决定模型显不显示**——
+// 显示与否由模态类型决定（`modality`，见 src/modality.ts；界面是 model-picker.js 的类型 tab）。
+// 两套判断同时决定"显不显示"会打架，这是之前的设计，已经拆开：
 //   1. 黑名单一定会误伤（有的生图模型名字里带 chat，有的对话模型名字里带 image），
-//      所以必须有「显示全部模型」这个自救开关；硬删就没救了。
-//   2. 反过来，认不出的模型一律当可对话。误杀的症状是"模型莫名消失"，客户和我们都很难查；
-//      多显示几个不能用的模型，客户点一次就知道。
-//   3. 关键词只认"整词"，不做子串匹配——`gpt-4o-audio-preview` 是能对话的，
-//      不能因为带 audio 就被藏掉；`tts-1`、`whisper-1` 才是真的不能对话。
+//      误伤的症状是"模型莫名消失"，客户和我们都很难查；
+//   2. 分类有真源（supported_endpoint_types），不该再靠名字猜一遍。
+// 所以这里只影响两处：
+//   1. 默认选中项：首启挑默认模型时跳过它们（firstChatModel）；
+//   2. 列表里的一行提示："可能不支持对话"，让客户自己判断（model-picker.js）。
+//
+// 关键词只认"整词"，不做子串匹配——`gpt-4o-audio-preview` 是能对话的，
+// 不能因为带 audio 就被标注；`tts-1`、`whisper-1` 才是真的不能对话。
 const NON_CHAT_WORD =
   /(^|[-_/])(dall-?e|gpt-image|imagen|flux|sdxl|sd3|stable-diffusion|midjourney|ideogram|recraft|kling|veo|sora|runway|pika|suno|udio|embed|embedding|rerank|moderation|whisper|transcribe|tts|image|img|video)([-_/]|$)/i;
 /** 前缀式的向量模型（bge-m3、gte-large、text-embedding-3-large 这类没有词边界） */
 const NON_CHAT_PREFIX = /^(bge|gte|e5-|jina-embed|text-embedding|nomic-embed)/i;
 
-/** 这个模型看起来是不是不能对话 */
+/** 这个模型是不是不适合当主对话模型。只用于默认选中与提示，不影响它出不出现 */
 export function looksNonChat(id) {
   const n = shortModel(normModel(id)) || "";
   return NON_CHAT_WORD.test(n) || NON_CHAT_PREFIX.test(n);
 }
 
 /**
- * 列表实际显示哪些模型。keep 是当前选中的那个：即使它被判定为不能对话也要留着，
- * 否则客户会以为"我刚才选的模型不见了"。
+ * 默认选中项：第一个适合当主对话模型的。全都是生图 / 向量之类时退回第一个——
+ * 空着比选错更糟，客户至少还能看见它、自己换。
  */
-export function visibleModels(models, showAll, keep = "") {
-  if (showAll) return models;
-  return models.filter((m) => !looksNonChat(m) || sameModel(m, keep));
+export function firstChatModel(models) {
+  return (models || []).find((m) => !looksNonChat(m)) ?? models?.[0] ?? "";
 }

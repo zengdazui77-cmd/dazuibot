@@ -22,6 +22,7 @@
 @import url("components/stops.css") layer(components);
 @import url("components/popover.css") layer(components);
 @import url("components/model-family.css") layer(components);
+@import url("components/model-tabs.css") layer(components);
 @import url("components/sheet.css") layer(components);
 @import url("components/splitter.css") layer(components);
 @import url("components/toast.css") layer(components);

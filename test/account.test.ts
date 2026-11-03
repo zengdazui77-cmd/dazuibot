@@ -517,7 +517,18 @@ describe("生图 / 生视频", () => {
       seen.push({ path: u.pathname + u.search, auth: req.headers.authorization, skill: req.headers["x-modelflare-skill"] as string });
       const json = (o: unknown) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(o));
       if (u.pathname === "/v1/models") {
-        return json({ data: u.searchParams.get("kind") === "image" ? [{ id: "gemini-img", kind: "image", image_route: "gemini-generate-content" }, { id: "gpt-image", kind: "image", image_route: "images" }] : [{ id: "veo", kind: "video" }] });
+        // 站点口径：/v1/models 只回这把 Key 能用的 id（不带 kind、不带 image_route）
+        return json({ data: [{ id: "gemini-img" }, { id: "gpt-image" }, { id: "veo" }] });
+      }
+      if (u.pathname === "/api/pricing") {
+        // 类型来自价格目录的 supported_endpoint_types，不是 /v1/models 的查询参数
+        return json({
+          data: [
+            { model_name: "gemini-img", supported_endpoint_types: ["image-generation", "openai"] },
+            { model_name: "gpt-image", supported_endpoint_types: ["image-generation", "openai"] },
+            { model_name: "veo", supported_endpoint_types: ["openai-video"] },
+          ],
+        });
       }
       if (u.pathname === "/v1/images/generations") {
         expect(await readJson(req)).toMatchObject({ model: "gpt-image", prompt: "一只猫" });
@@ -530,14 +541,16 @@ describe("生图 / 生视频", () => {
     });
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), "amb-media-"));
     try {
-      const media = new MediaService({ baseUrl: () => srv.url + "/v1", keyFor: (b) => (b === "b1" ? "sk-bot" : ""), headers: () => skillHeader("0.1.3"), workspace: () => ws, pollMs: 5 });
+      const media = new MediaService({ baseUrl: () => srv.url + "/v1", keyFor: (b) => (b === "b1" ? "sk-bot" : ""), headers: () => skillHeader("0.1.3"), workspace: () => ws, pollMs: 5, pricingUrl: () => srv.url + "/api/pricing" });
       const text = await media.run("b1", "image", { prompt: "一只猫", model: "gpt-image" });
       const rel = text.match(/media\/image-[\w-]+\.png/)![0];
       expect(fs.readFileSync(path.join(ws, rel))).toEqual(png);
       expect(text).toContain("present");
       const vtext = await media.run("b1", "video", { prompt: "海浪" });
       expect(fs.readFileSync(path.join(ws, vtext.match(/media\/video-[\w-]+\.mp4/)![0]), "utf8")).toBe("mp4");
-      expect(seen.every((x) => x.auth === "Bearer sk-bot" && x.skill === "zdzui-assistant/0.1.3")).toBe(true);
+      // 走中转站的每个请求都带这把 Key 与调用归因；价格目录是公开端点，不带 Key（也不该带）
+      expect(seen.filter((x) => x.path !== "/api/pricing").every((x) => x.auth === "Bearer sk-bot" && x.skill === "zdzui-assistant/0.1.3")).toBe(true);
+      expect(seen.find((x) => x.path === "/api/pricing")?.auth).toBeUndefined();
       await expect(media.run("b2", "image", { prompt: "x" })).rejects.toThrow(/还没有连接/);
       await expect(media.run("b1", "image", { prompt: "x", model: "nope" })).rejects.toThrow(/没有这个模型/);
     } finally {
@@ -551,7 +564,16 @@ describe("生图 / 生视频", () => {
       const u = new URL(req.url!, "http://x");
       const json = (o: unknown) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(o));
       if (u.pathname === "/v1/models") {
-        return json({ data: u.searchParams.get("kind") === "image" ? [{ id: "gemini-img", kind: "image", image_route: "gemini-generate-content" }, { id: "gpt-image", kind: "image", image_route: "images" }] : [{ id: "kling-x", kind: "video" }] });
+        return json({ data: [{ id: "gemini-img" }, { id: "gpt-image" }, { id: "kling-x" }] });
+      }
+      if (u.pathname === "/api/pricing") {
+        return json({
+          data: [
+            { model_name: "gemini-img", supported_endpoint_types: ["image-generation", "openai"] },
+            { model_name: "gpt-image", supported_endpoint_types: ["image-generation", "openai"] },
+            { model_name: "kling-x", supported_endpoint_types: ["openai-video"] },
+          ],
+        });
       }
       if (req.method !== "POST") return res.writeHead(404).end();
       bodies.push({ path: u.pathname, body: await readJson(req) });
@@ -564,7 +586,7 @@ describe("生图 / 生视频", () => {
     fs.mkdirSync(path.join(ws, "media"));
     fs.writeFileSync(path.join(ws, "media", "ref.png"), png);
     try {
-      const media = new MediaService({ baseUrl: () => srv.url + "/v1", keyFor: () => "sk", headers: () => ({}), workspace: () => ws, pollMs: 5, videoTimeoutMs: 1 });
+      const media = new MediaService({ baseUrl: () => srv.url + "/v1", keyFor: () => "sk", headers: () => ({}), workspace: () => ws, pollMs: 5, videoTimeoutMs: 1, pricingUrl: () => srv.url + "/api/pricing" });
       await media.run("b1", "image", {
         prompt: "换成水彩",
         model: "gemini-img",
@@ -592,15 +614,15 @@ describe("生图 / 生视频", () => {
     const srv = await listen(async (req, res) => {
       const u = new URL(req.url!, "http://x");
       const json = (o: unknown) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(o));
-      if (u.pathname === "/v1/models") return json({ data: [{ id: "a-i2v", kind: "video" }, { id: "b-t2v", kind: "video" }, { id: "c-pro", kind: "video" }] });
+      if (u.pathname === "/v1/models") return json({ data: [{ id: "a-i2v" }, { id: "b-t2v" }, { id: "c-pro" }] });
       if (u.pathname === "/api/pricing") {
         return json({
           group_ratio: { Media: 1 },
           usable_group: { Media: "" },
           data: [
-            { model_name: "a-i2v", enable_groups: ["Media"], media_options: { video: { requires_reference: true, resolutions: ["720p"] } } },
-            { model_name: "b-t2v", enable_groups: ["Media"], video_resolution_price: { "720p": 0.05, "1080p": 0.1 }, media_options: { video: { default_resolution: "720p", seconds: [-1, 4, 10] } } },
-            { model_name: "c-pro", enable_groups: ["Media"], display_priority: 5 },
+            { model_name: "a-i2v", enable_groups: ["Media"], supported_endpoint_types: ["openai-video"], media_options: { video: { requires_reference: true, resolutions: ["720p"] } } },
+            { model_name: "b-t2v", enable_groups: ["Media"], supported_endpoint_types: ["openai-video"], video_resolution_price: { "720p": 0.05, "1080p": 0.1 }, media_options: { video: { default_resolution: "720p", seconds: [-1, 4, 10] } } },
+            { model_name: "c-pro", enable_groups: ["Media"], supported_endpoint_types: ["openai-video"], display_priority: 5 },
           ],
         });
       }

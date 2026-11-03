@@ -3,8 +3,10 @@
  * 由宿主带着该机器人用的 Key 直连 zdzui（代理子进程拿不到任何密钥），结果存进机器人工作区的 media/，
  * 再由代理用 present 交付到聊天。生成前要不要先问用户由 AgentManager 决定（manager.ts mediaAsk）：只在预计花费超过上限
  * 或机器人设成每次都问时问。
- * - 模型取自 GET /v1/models?scope=authorized&kind=image|video（这把 Key 真正能用的）；参数范围、是否必须带参考素材、
- *   参考价、推荐顺序取自公开价格目录 /api/pricing。
+ * - 模型取自公开价格目录 /api/pricing 里 supported_endpoint_types 含 image-generation / openai-video 的条目，
+ *   「这把 Key 能不能用」由带 Key 的 GET /v1/models 决定（两者分开：站上有、当前 Key 没有的也要列出来并标注）；
+ *   参数范围、是否必须带参考素材、参考价、推荐顺序也来自同一个目录。
+ *   **不用** GET /v1/models?scope=authorized&kind=image|video：这两个参数是上游私有约定，站上的 new-api 不认。
  * - 每个模型的请求格式都不一样，以媒体文档（媒体文档 = `{站点根}/llms-full.txt`，见下面的 DOCS_URL）里该模型的章节为准：
  *   代理先用 media_docs 读文档，按文档写请求体（body）；宿主只填 model、把 "workspace:路径" 换成文件内容、发请求、保存结果。
  *   不带 body 时发最简单的文字请求。**本站目前不提供 llms-full.txt**，取不到时 media_docs 只回一句可操作提示，不影响生成。
@@ -15,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../log.js";
 import { t } from "../i18n/index.js";
+import { modalityOf, type Modality } from "../modality.js";
 import { MODELFLARE_WEB } from "../modelflare.js";
 
 const log = logger("agent.media");
@@ -55,6 +58,11 @@ export interface MediaModel {
   /** 单价（美元，已按分组倍率折算），估算花费用；按 token 计费或目录里没有价格时为空 */
   cost?: UnitPrice;
   priority: number;
+  /**
+   * 这把 Key 的分组能不能用。false = 站上有、当前 Key 没有（选中会失败，要明说）；
+   * undefined = 不知道（模型列表没拿到）——不能当 false 渲染。
+   */
+  available?: boolean;
 }
 
 /** 单价：每张 / 每次 / 每秒（视频按分辨率，default 是目录里的默认分辨率） */
@@ -75,7 +83,7 @@ export interface MediaPlan {
   default: MediaModel;
   /** 确认时一并列出的其他选择 */
   candidates: MediaModel[];
-  /** 这把 Key 能用的全部同类模型 */
+  /** 站上全部同类模型（含当前 Key 不可用的，见 MediaModel.available） */
   all: MediaModel[];
   /** 代理按文档写了自己的请求体：换模型后需要按新模型的文档重写 */
   custom: boolean;
@@ -94,6 +102,8 @@ interface CatalogEntry {
   enable_groups?: string[];
   video_resolution_price?: Record<string, number>;
   media_options?: { image?: Record<string, unknown>; video?: Record<string, unknown> };
+  /** 决定一个模型是图片还是视频的**唯一**可信来源（站上的 /api/pricing） */
+  supported_endpoint_types?: string[];
 }
 
 interface Catalog {
@@ -147,9 +157,11 @@ export function sortModels(list: MediaModel[]): MediaModel[] {
   return [...list].sort((a, b) => a.priority - b.priority || Number(a.requiresReference) - Number(b.requiresReference) || a.id.localeCompare(b.id, "en", { sensitivity: "base" }));
 }
 
-/** 设置里的默认模型还能用就用它，否则推荐顺序里第一个不需要参考素材的 */
+/** 设置里的默认模型还能用就用它，否则推荐顺序里第一个不需要参考素材的。当前 Key 不可用的排到最后 */
 export function pickDefault(list: MediaModel[], configured: string): MediaModel | undefined {
-  return list.find((m) => m.id === configured) ?? list.find((m) => !m.requiresReference) ?? list[0];
+  const usable = list.filter((m) => m.available !== false);
+  const pool = usable.length ? usable : list;
+  return pool.find((m) => m.id === configured) ?? pool.find((m) => !m.requiresReference) ?? pool[0];
 }
 
 /** 单价（按分组倍率折算）；按 token 计费或没有价格时为空 */
@@ -323,30 +335,56 @@ export class MediaService {
     return data;
   }
 
-  /** 这把 Key 能用的图片 / 视频模型，按推荐顺序 */
+  /**
+   * 站上的图片 / 视频模型，按推荐顺序。
+   *
+   * **不再用 `GET /v1/models?scope=authorized&kind=image|video`**：这两个查询参数是上游私有约定，
+   * 站上的 new-api 不认，只会原样返回这把 Key 的全部模型（实测 6 个全都是文本模型）——
+   * 于是图片/视频列表恒为空，工具却说"这把 Key 没有可用的图片模型"，客户看不出是站点不支持。
+   *
+   * 现在改成：型号类型看公开价格目录的 `supported_endpoint_types`，判定用 `modalityOf()`——
+   * 和模型选择器的类型 tab 是**同一个函数**，两处分开写的那天就会开始不一致。
+   * 「这把 Key 能不能用」看带 Key 的 `GET /v1/models`。两者分开：站上有 26 个媒体模型，当前 Key
+   * 一个都够不到，这个事实必须让客户看见，而不是把列表清空。
+   */
   async available(key: string, kind: MediaKind): Promise<MediaModel[]> {
-    const [res, catalog] = await Promise.all([this.call(key, "GET", `/models?scope=authorized&kind=${kind}`, undefined, 20_000), this.catalog()]);
-    const body = (await res.json()) as { data?: Array<{ id?: string; kind?: string; image_route?: string }> };
-    const entries = new Map((catalog.data ?? []).map((e) => [e.model_name, e]));
+    const [catalog, usable] = await Promise.all([this.catalog(), this.keyModels(key)]);
+    const want: Modality = kind === "video" ? "video" : "image";
     const out: MediaModel[] = [];
-    for (const m of body.data ?? []) {
-      if (!m.id || (m.kind && m.kind !== kind)) continue;
-      const route = kind === "video" ? "videos" : m.image_route === "gemini-generate-content" ? "gemini" : m.image_route === "images" ? "images" : undefined;
-      if (!route) continue;
-      const e = entries.get(m.id);
-      const options = e?.media_options?.[kind];
+    for (const e of catalog.data ?? []) {
+      if (!modalityOf(e.supported_endpoint_types).includes(want)) continue;
+      const options = e.media_options?.[kind];
+      // 图片默认走 OpenAI Images（站上 4 个图片模型都是 image-generation/openai）；
+      // 只有名字就是 gemini 的才走 generateContent——目录里没有字段能说明这一点，按名字判是最保守的。
+      const route: MediaModel["route"] = kind === "video" ? "videos" : /^gemini/i.test(e.model_name) ? "gemini" : "images";
       out.push({
-        id: m.id,
+        id: e.model_name,
         kind,
         route,
         options,
         requiresReference: options?.requires_reference === true,
         price: priceNote(e, catalog),
         cost: unitPrice(e, catalog),
-        priority: typeof e?.display_priority === "number" ? e.display_priority : 1e9,
+        priority: typeof e.display_priority === "number" ? e.display_priority : 1e9,
+        ...(usable ? { available: usable.has(e.model_name) } : {}),
       });
     }
     return sortModels(out);
+  }
+
+  /** 这把 Key 能调哪些模型；拿不到时 undefined（= 不知道，不是「全都不行」） */
+  private async keyModels(key: string): Promise<Set<string> | undefined> {
+    try {
+      const res = await this.fetch(`${this.o.baseUrl()}/models`, {
+        headers: { Authorization: `Bearer ${key}`, Accept: "application/json", ...this.o.headers() },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!res.ok) return undefined;
+      const body = (await res.json()) as { data?: Array<{ id?: unknown }> };
+      return new Set((body.data ?? []).map((m) => String(m?.id ?? "")).filter(Boolean));
+    } catch {
+      return undefined;
+    }
   }
 
   async models(botId: string, kind: MediaKind): Promise<MediaModel[]> {
@@ -365,12 +403,25 @@ export class MediaService {
       const list = await this.models(botId, k);
       const name = k === "image" ? "图片" : "视频";
       if (!list.length) {
-        blocks.push(`这把 Key 没有可用的${name}模型。`);
+        // 目录里就没有这类模型（而不是"这把 Key 没有"）——两者要分开说，否则客户会去换 Key 而不是找站主
+        blocks.push(`站点的公开价格目录里没有${name}模型。`);
         continue;
       }
       const def = pickDefault(list, this.defaultId(k));
-      const lines = list.map((m) => `- ${m.id}${m === def ? "（默认）" : ""}${[m.price, optionsNote(m)].filter(Boolean).map((s) => ` — ${s}`).join("")}`);
-      blocks.push(`可用的${name}模型（按推荐顺序）：\n${lines.join("\n")}`);
+      // 站上有、这把 Key 没有的也列出来（在后面，带一句标注）：客户才知道自己缺什么、该找站主开什么
+      const usable = list.filter((m) => m.available !== false);
+      const blocked = list.filter((m) => m.available === false);
+      const line = (m: MediaModel) =>
+        `- ${m.id}${m === def ? "（默认）" : ""}${[m.price, optionsNote(m)].filter(Boolean).map((s) => ` — ${s}`).join("")}`;
+      if (!usable.length) {
+        blocks.push(
+          `站上有 ${blocked.length} 个${name}模型，但这把 Key 所在的分组一个都没有：${blocked.map((m) => m.id).join("、")}。\n` +
+            `需要生成${name}的话，请到站点给这把 Key 换到对应的分组（或找站主开权限）；换完可以用 media_models 重新查。`,
+        );
+        continue;
+      }
+      blocks.push(`可用的${name}模型（按推荐顺序）：\n${usable.map(line).join("\n")}`);
+      if (blocked.length) blocks.push(`站上还有但这些分组不含（当前 Key 调不了，未计入上面）：\n${blocked.map(line).join("\n")}`);
     }
     blocks.push("调用后直接生成；只在预计花费较高或机器人设成每次都问时，程序会先问用户。要用参考图、比例、分辨率、时长等参数时，先用 media_docs 读该模型的文档，按文档写 body。");
     return blocks.join("\n\n");
@@ -399,13 +450,18 @@ export class MediaService {
     if (!prompt) throw new MediaError("缺少 prompt");
     const body = parseBody(args.body);
     const all = await this.models(botId, kind);
-    if (!all.length) throw new MediaError(kind === "image" ? "这把 Key 没有可用的图片模型" : "这把 Key 没有可用的视频模型");
+    const word = kind === "image" ? "图片" : "视频";
+    if (!all.length) throw new MediaError(`站点的公开价格目录里没有${word}模型`);
+    // 站上有、这把 Key 的分组没有的，一律不当成「可选」——选中了只会 503，不如现在说清楚
+    const usable = all.filter((m) => m.available !== false);
+    if (!usable.length) throw new MediaError(`站上有 ${all.length} 个${word}模型（${all.map((m) => m.id).join("、")}），但这把 Key 所在的分组一个都没有。请到站点给这把 Key 换分组，或找站主开权限。`);
     const name = String(args.model ?? "").trim();
     const def = pickDefault(all, this.defaultId(kind))!;
     const model = name ? all.find((m) => m.id === name) : def;
-    if (!model) throw new MediaError(`没有这个模型：${name}。可用：${all.map((m) => m.id).join("、")}`);
+    if (!model) throw new MediaError(`没有这个模型：${name}。可用：${usable.map((m) => m.id).join("、")}`);
+    if (model.available === false) throw new MediaError(`这个模型不在这把 Key 的分组里：${model.id}。可用：${usable.map((m) => m.id).join("、")}`);
     const hasRefs = /"workspace(-base64)?:|"https?:\/\/|"data:/.test(JSON.stringify(body ?? {}));
-    const candidates = [def, ...all].filter((m, i, a) => m !== model && a.indexOf(m) === i && (hasRefs || !m.requiresReference)).slice(0, 3);
+    const candidates = [def, ...usable].filter((m, i, a) => m !== model && a.indexOf(m) === i && (hasRefs || !m.requiresReference)).slice(0, 3);
     const params = describeBody(body) || [typeof args.size === "string" ? args.size : "", Number(args.seconds) > 0 ? t("media.seconds", { n: String(args.seconds) }) : ""].filter(Boolean).join(" · ");
     const summary = [
       t("media.summaryPrompt", { prompt: prompt.length > 120 ? `${prompt.slice(0, 120)}…` : prompt }),
