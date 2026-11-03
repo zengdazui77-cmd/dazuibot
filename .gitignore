@@ -3,6 +3,11 @@ dist/
 build/
 release/
 data/
+# 打包中间产物：electron-builder 会把 assets/ 下的图标复制到根目录，换输出目录时的残留目录也归这里
+/dist-*/
+/release-stale-*/
+/icon.ico
+/tray.ico
 # 应用数据目录之外的同名目录：官网的数据文件要入库
 !site/src/data/
 .env
