@@ -46,7 +46,7 @@ try {
   process.exit(1);
 }
 
-const RE = /^anymodel-bot-(\d+\.\d+\.\d+)-(win|mac|linux)-(x64|arm64|x86_64)\.(exe|dmg|AppImage)$/;
+const RE = /^dazuibot-(\d+\.\d+\.\d+(?:-[\w.]+)?)-(win|mac|linux)-(x64|arm64|x86_64)\.(exe|dmg|AppImage)$/;
 const PLATFORM: Record<string, string> = { "win-x64-exe": "win-x64", "mac-arm64-dmg": "mac-arm64", "mac-x64-dmg": "mac-x64", "linux-x64-AppImage": "linux-x64", "linux-x86_64-AppImage": "linux-x64" };
 
 // SHA256SUMS：每行 "<64 位十六进制>  <文件名>"
@@ -84,7 +84,7 @@ for (const id of ["win-x64", "mac-arm64", "mac-x64", "linux-x64"]) {
 }
 
 // 还没发布镜像（DOCKER_IMAGE 为空）时给"从源码构建"的命令，和 README 的写法一致
-const image = process.env.DOCKER_IMAGE || "anymodel-bot";
+const image = process.env.DOCKER_IMAGE || "dazuibot";
 const runCmd = `docker run -d --name amb -p 3600:3600 -v amb-data:/data ${image}`;
 platforms.docker = {
   image,

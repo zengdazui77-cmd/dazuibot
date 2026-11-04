@@ -1,11 +1,30 @@
 {
-  "version": "{VERSION}",
-  "publishedAt": "{PUBLISHED_AT}",
+  "version": "1.0.0-zdzui.1",
+  "publishedAt": "2026-11-04",
   "platforms": {
-    "win-x64": { "url": "{WIN_X64_URL}", "sha256": "{WIN_X64_SHA256}", "sizeMB": 0 },
-    "mac-arm64": { "url": "{MAC_ARM64_URL}", "sha256": "{MAC_ARM64_SHA256}", "sizeMB": 0 },
-    "mac-x64": { "url": "{MAC_X64_URL}", "sha256": "{MAC_X64_SHA256}", "sizeMB": 0 },
-    "linux-x64": { "url": "{LINUX_X64_URL}", "sha256": "{LINUX_X64_SHA256}", "sizeMB": 0 },
-    "docker": { "image": "{DOCKER_IMAGE}", "command": "docker run -d --name amb -p 3600:3600 -v amb-data:/data {DOCKER_IMAGE}" }
+    "win-x64": {
+      "url": "https://github.com/zengdazui77-cmd/dazuibot/releases/download/v1.0.0-zdzui.1/dazuibot-1.0.0-zdzui.1-win-x64.exe",
+      "sha256": "781b1aa85ae8e34755452942f8f935905b5d6aff72df333462e057cd69cf0c25",
+      "sizeMB": 158.8
+    },
+    "mac-arm64": {
+      "url": "{MAC_ARM64_URL}",
+      "sha256": "{MAC_ARM64_SHA256}",
+      "sizeMB": 0
+    },
+    "mac-x64": {
+      "url": "{MAC_X64_URL}",
+      "sha256": "{MAC_X64_SHA256}",
+      "sizeMB": 0
+    },
+    "linux-x64": {
+      "url": "{LINUX_X64_URL}",
+      "sha256": "{LINUX_X64_SHA256}",
+      "sizeMB": 0
+    },
+    "docker": {
+      "image": "dazuibot",
+      "command": "git clone https://github.com/zengdazui77-cmd/dazuibot.git && cd dazuibot && git submodule update --init --depth 1 vendor/magpie && docker build -t dazuibot . && docker run -d --name amb -p 3600:3600 -v amb-data:/data dazuibot"
+    }
   }
 }
