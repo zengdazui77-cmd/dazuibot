@@ -4,6 +4,7 @@ export default {
   gatewayFailed: "The built-in model gateway didn't start: {error}. Fix it, then restart the app and connect again.",
   unknownReason: "unknown reason",
   keyOnly: "Enter an API key created in the site console",
+  teamLogin: "Join a team or sign in with a team account",
   createKey: "Create a key in the zdzui console ↗",
   /** Must be stated up front: where the key lives and how to revoke it (no OIDC grant to revoke in this build) */
   keyStorage: "This API key is stored only on this computer (in the built-in gateway's config, protected by file permissions — not encrypted). If you suspect it leaked, delete it in the console and issue a new one.",

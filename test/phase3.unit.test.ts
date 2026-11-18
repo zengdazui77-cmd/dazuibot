@@ -138,7 +138,7 @@ describe("settings", () => {
 
 describe("computer use detection", () => {
   const home = "/Users/u";
-  const client = `${home}/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient`;
+  const client = path.join(home, ".codex", "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient");
   const probe = (o: Partial<CuProbe> & { files?: string[] } = {}): CuProbe => {
     const files = new Set(o.files ?? []);
     return {
@@ -151,11 +151,11 @@ describe("computer use detection", () => {
       ...o,
     };
   };
-  const root = "/app/vendor/kimi-computer-use";
-  const bridge = `${root}/bin/computer-use-mcp-bridge.mjs`;
+  const root = path.join("/app", "vendor", "kimi-computer-use");
+  const bridge = path.join(root, "bin", "computer-use-mcp-bridge.mjs");
   const launcher = "/Applications/ChatGPT.app/Contents/Resources/codex";
 
-  it("is disabled off macOS (this Linux box) with a clear reason", () => {
+  it("is disabled off macOS with a clear reason", () => {
     const st = detectComputerUse([root]);
     expect(process.platform === "darwin" || !st.available).toBe(true);
     if (process.platform !== "darwin") expect(st.reason).toContain(CU_UNAVAILABLE);
@@ -170,16 +170,18 @@ describe("computer use detection", () => {
     expect(detectComputerUse([root], probe({ files: [bridge, launcher] })).reason).toMatch(/客户端/);
     expect(detectComputerUse([root], probe({ files: [bridge, client] })).reason).toMatch(/启动器/);
     const ok = detectComputerUse([root], probe({ files: [bridge, client, launcher] }));
-    expect(ok).toMatchObject({ available: true, client, launcher, bridge, codexHome: `${home}/.codex` });
+    expect(ok).toMatchObject({ available: true, client, launcher, bridge, codexHome: path.join(home, ".codex") });
     const direct = detectComputerUse([root], probe({ files: [bridge, client], env: { COMPUTER_USE_BRIDGE_DIRECT_LAUNCH: "1" } }));
     expect(direct.available).toBe(true);
   });
   it("honours CODEX_HOME like the upstream bridge", () => {
     expect(clientPath({ CODEX_HOME: "/x" }, home).client).toBe(
-      "/x/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",
+      path.join("/x", "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient"),
     );
-    expect(bundledRoots("/r/dsh")).toContain("/r/kimi-computer-use");
-    expect(bundledRoots("/a/dsh-runtime")).toContain("/a/vendor/kimi-computer-use");
+    const dsh = path.join("/r", "dsh");
+    expect(bundledRoots(dsh)).toContain(path.join(path.dirname(path.resolve(dsh)), "kimi-computer-use"));
+    const runtime = path.join("/a", "dsh-runtime");
+    expect(bundledRoots(runtime)).toContain(path.join(path.dirname(path.resolve(runtime)), "vendor", "kimi-computer-use"));
   });
   it("builds a secret-free stdio MCP config", () => {
     const ok = detectComputerUse([root], probe({ files: [bridge, client, launcher] }));
@@ -187,14 +189,14 @@ describe("computer use detection", () => {
     expect(lines).toContain("serverName: computer-use");
     expect(lines).toContain('command: "/usr/bin/node"');
     expect(lines).toContain(`args: [${JSON.stringify(bridge)}]`);
-    expect(lines).toContain(`CODEX_HOME: "${home}/.codex"`);
+    expect(lines).toContain(`CODEX_HOME: ${JSON.stringify(path.join(home, ".codex"))}`);
     expect(lines).not.toMatch(/KEY|TOKEN|SECRET|PASSWORD/i);
     expect(mcpPatchLines({ available: false, reason: "" }, "/n", JSON.stringify)).toEqual([]);
   });
   it("adapts the bundled skill to our tool names", () => {
     const md = fs.readFileSync(path.join(__dirname, "..", "vendor", "kimi-computer-use", "skills", "computer-use", "SKILL.md"), "utf8");
     const out = adaptSkill(md);
-    expect(out.startsWith("---\nname: computer-use")).toBe(true);
+    expect(out).toMatch(/^---\r?\nname: computer-use/);
     expect(out).toContain("mcp__computer-use__");
     expect(out).not.toContain("mcp__plugin-kimi-computer-use");
     expect(out).not.toMatch(/Do not\s+ask the user to approve/);

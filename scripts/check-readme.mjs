@@ -35,6 +35,7 @@ const MB = 1024 * KB;
 const LIMITS = [
   [/^docs\/assets\/brand\/logo-eyes\.webp$/, 80 * KB],
   [/^docs\/assets\/brand\/logo-eyes\.svg$/, 2 * KB],
+  [/^docs\/assets\/brand\/logo-mark\.png$/, 200 * KB],
   [/^docs\/assets\/brand\/wordmark-(light|dark)\.svg$/, 12 * KB],
   [/^docs\/assets\/brand\/social-preview\.png$/, 400 * KB],
   [/^docs\/assets\/hero\/hero-demo\.gif$/, 5 * MB],
@@ -82,7 +83,7 @@ function headings(text) {
   stripFences(text)
     .split("\n")
     .forEach((line, i) => {
-      const m = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
+      const m = /^(#{1,6})\s+(.+?)\s*#*\s*\r?$/.exec(line);
       if (m) out.push({ level: m[1].length, text: m[2], line: i + 1 });
     });
   return out;
@@ -170,7 +171,7 @@ for (const readme of Object.values(READMES)) {
     }
     const size = fs.statSync(path.join(ROOT, rel)).size;
     if (rel.endsWith(".gif")) gifTotal += size;
-    const rule = LIMITS.find(([re]) => re.test(rel));
+  const rule = LIMITS.find(([re]) => re.test(rel));
     if (!rule) warn(readme, `素材没有对应的体积上限规则：${rel}（${fmtSize(size)}）`);
     else if (size > rule[1]) err(readme, `素材超出体积上限：${rel} ${fmtSize(size)} > ${fmtSize(rule[1])}`);
   }
@@ -204,10 +205,10 @@ for (const readme of Object.values(READMES)) {
   const lines = stripFences(read(readme)).split("\n");
   let inRoadmap = false;
   lines.forEach((line, i) => {
-    const h1 = /^#\s+(.*)$/.exec(line);
+    const h1 = /^#\s+(.*)\r?$/.exec(line);
     if (h1) inRoadmap = /Roadmap|路线图/.test(h1[1]);
-    for (const m of line.matchAll(BANNED)) err(readme, `第 ${i + 1} 行出现禁用词「${m[0]}」`);
-    if (!inRoadmap) for (const m of line.matchAll(ROADMAP_ONLY)) err(readme, `第 ${i + 1} 行：「${m[0]}」只能出现在路线图一节`);
+    for (const m of line.matchAll(new RegExp(BANNED.source, BANNED.flags))) err(readme, `第 ${i + 1} 行出现禁用词「${m[0]}」`);
+    if (!inRoadmap) for (const m of line.matchAll(new RegExp(ROADMAP_ONLY.source, ROADMAP_ONLY.flags))) err(readme, `第 ${i + 1} 行：「${m[0]}」只能出现在路线图一节`);
   });
 }
 

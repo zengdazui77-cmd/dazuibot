@@ -23,6 +23,7 @@ import { reducedMotion, usePresence } from "../design/motion.js";
 // 文案跟着界面语言：渲染时再取（写成函数，不在模块顶层缓存翻译）
 const commands = () => [
   ["/model", t("chat.commands.model")],
+  ["/effort", t("chat.commands.effort")],
   ["/new", t("chat.commands.new")],
   ["/reset", t("chat.commands.reset")],
   ["/status", t("chat.commands.status")],
@@ -212,6 +213,8 @@ export function ErrorNotice({ text, onRetry, onFixKey }) {
 export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false, account, onAccount }) {
   const [items, setItems] = useState(null);
   const [convModel, setConvModel] = useState("");
+  // 这个会话的思考强度（low / medium / high）；空 = 跟随机器人的默认
+  const [convEffort, setConvEffort] = useState("");
   const [text, setText] = useState("");
   // generating：正在跟着一条消息（本页发出的，或切回 / 刷新后接上的）；stopping：按了停止，等服务端收尾
   const [generating, setGenerating] = useState(false);
@@ -232,6 +235,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const ta = useRef(null);
   const plusRef = useRef(null);
   const modelRef = useRef(null);
+  const effortRef = useRef(null);
   const permRef = useRef(null);
   // 正在跟的那条消息的事件流 { ac, local }：同一时刻只跟一条，切走时断开（消息在服务端照常处理）
   const following = useRef(null);
@@ -278,6 +282,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       if (!mounted.current) return;
       convId.current = d.conversationId || "";
       setConvModel(d.model || "");
+      setConvEffort(d.effort || "");
       setCanOpen(!!d.canOpen);
       const list = toItems(d.messages || []);
       const reply = ended && list.findLast((x) => x.role !== "user");
@@ -517,7 +522,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       }
       return isReset && !isError(finalText) ? out.filter((x) => x.id === liveId) : out;
     });
-    if (/^\/model\s+\S/i.test(msg)) load();
+    if (/^\/(model|effort)\s+\S/i.test(msg)) load();
   };
 
   /**
@@ -615,6 +620,19 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       markDone("model");
     } catch (e) {
       failed(e);
+    }
+  };
+  // —— 思考强度：同一个模型想得深一点还是快一点，不用换模型 ——
+  const botEffort = (bot.settings && bot.settings.reasoningEffort) || "";
+  const effort = convEffort || botEffort;
+  const effortName = (e) => t(`chat.effort.${e || "auto"}`);
+  const pickEffort = async (e) => {
+    try {
+      await api(`/bots/${encodeURIComponent(bot.id)}/chat/effort`, { method: "PUT", body: { effort: e } });
+      setConvEffort(e);
+      saved();
+    } catch (err) {
+      failed(err);
     }
   };
   const setBotDefault = async () => {
@@ -763,6 +781,10 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
           <${Icon} name=${permMap[perm].icon} size="sm" class="lead" /><span class="v">${permMap[perm].label}</span><${Icon} name="chevDown" />
         </button>`}
         <span class="grow"></span>
+        <button type="button" class="model-chip effort" ref=${effortRef} title=${t("chat.effort.title")} aria-haspopup="menu" aria-expanded=${menu === "effort"}
+          onClick=${() => setMenu(menu === "effort" ? null : "effort")}>
+          <span class="v">${t("chat.effort.chip", { level: effortName(effort) })}</span><${Icon} name="chevDown" />
+        </button>
         <button type="button" class="model-chip" ref=${modelRef} data-guide="model" title=${effective ? t("chat.composer.currentModel", { model: effective }) : t("chat.composer.pickModel")} aria-haspopup="listbox" aria-expanded=${menu === "model"}
           onClick=${() => setMenu(menu === "model" ? null : "model")}>
           <span class="v">${effective ? shortModel(effective) : t("chat.composer.pickModel")}</span><${Icon} name="chevDown" />
@@ -792,6 +814,12 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
         ...Object.entries(permMap).map(([k, p]) => ({ label: p.label, note: p.note, icon: p.icon, danger: p.danger, cur: k === perm, onSelect: () => k !== perm && pickPerm(k) })),
         { sep: true },
         { label: t("chat.perm.more"), onSelect: () => onOpenBotSettings?.(bot.id, "permission") },
+      ]} />`}
+    ${menu === "effort" && html`<${Menu} anchor=${effortRef.current} prefer="up" align="right" width=${280} label=${t("chat.effort.menu")} onClose=${() => setMenu(null)}
+      items=${[
+        { group: t("chat.effort.menu") },
+        { label: t("chat.effort.followBot"), note: t("chat.effort.followBotNote", { level: effortName(botEffort) }), cur: !convEffort, onSelect: () => convEffort && pickEffort("") },
+        ...["low", "medium", "high"].map((e) => ({ label: effortName(e), note: t(`chat.effort.note.${e}`), cur: convEffort === e, onSelect: () => convEffort !== e && pickEffort(e) })),
       ]} />`}
     ${menu === "model" && html`<${ModelPicker} anchor=${modelRef.current} prefer="up" align="right" models=${models} error=${modelsError} onRetry=${reloadModels}
       current=${convModel || bot.defaultModel || defaultModel} onPick=${pickModel} onClose=${() => setMenu(null)} account=${account} onAccount=${onAccount || (() => {})}

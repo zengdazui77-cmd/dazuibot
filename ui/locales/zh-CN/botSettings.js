@@ -19,6 +19,12 @@ export default {
     utility: "后台小任务模型",
     utilitySub: "记忆整理、上下文管家与交接便条",
     sameAsChat: "与对话模型相同",
+    effort: "默认思考强度",
+    effortSub: "同一个模型想得深一点还是快一点；会话里还可以单独调整，模型不支持时按它自己的默认",
+    effortAuto: "默认",
+    effortLow: "低",
+    effortMedium: "中",
+    effortHigh: "高",
   },
   budget: {
     name: "预算",

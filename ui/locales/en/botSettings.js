@@ -19,6 +19,12 @@ export default {
     utility: "Background task model",
     utilitySub: "Memory tidying, context steward, and handoff notes",
     sameAsChat: "Same as chat model",
+    effort: "Default thinking effort",
+    effortSub: "How hard the same model thinks; each chat can override it, and a model that can't adjust it uses its own default",
+    effortAuto: "Default",
+    effortLow: "Low",
+    effortMedium: "Medium",
+    effortHigh: "High",
   },
   budget: {
     name: "Budget",

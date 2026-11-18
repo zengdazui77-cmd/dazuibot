@@ -31,6 +31,8 @@ import { FakeFeishu, feishuEvent } from "./helpers.js";
 const flush = async (n = 5) => {
   for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r));
 };
+const pluginPatchLine = (id: string, runtimeDir = "/rt") =>
+  `    - id: ${id}\n      name: ${JSON.stringify(path.join(runtimeDir, "plugins", `${id}.mjs`))}\n`;
 
 describe("阶段表：第一条符合的为准", () => {
   const run = (state: any, outcome: any = "") => ({ state, outcome });
@@ -921,6 +923,7 @@ describe("TaskService（假宿主）", () => {
   it("3b + 3c：任务的提问按主动消息的规则推（免打扰时排到早上）；没回答前给微信多留 1 条配额；在桌面上回答了，排着的那条撤回", async () => {
     // 主人的时区 23:00，主人 10 分钟内没说过话：在免打扰里
     const at = Date.UTC(2026, 10, 6, 23, 0);
+    outbox = new Outbox(store, { now: () => at });
     const delivery = new Delivery({ store, outbox, timeZone: "UTC", now: () => at });
     svc.stop();
     svc = new TaskService({ store, host, delivery, approvals, defaultModel: () => "mock-model", retryDelaysMs: [5, 5, 5], maxBackground: 4 });
@@ -1019,6 +1022,7 @@ describe("TaskService（假宿主）", () => {
 
   it("任务先做完了：按默认做，提问从「需要你」、审批中心和出站队列里撤回（免打扰时排着的那条不会早上再问）", async () => {
     const at = Date.UTC(2026, 10, 6, 23, 0);
+    outbox = new Outbox(store, { now: () => at });
     const delivery = new Delivery({ store, outbox, timeZone: "UTC", now: () => at });
     svc.stop();
     svc = new TaskService({ store, host, delivery, approvals, defaultModel: () => "mock-model", retryDelaysMs: [5, 5, 5], maxBackground: 4 });
@@ -1284,7 +1288,7 @@ describe("宿主：补丁加载 amb-tasks，任务规则经环境变量交给插
     try {
       fs.mkdirSync(host.home, { recursive: true });
       const text = fs.readFileSync((host as any).writePatch("m"), "utf8");
-      expect(text).toContain('    - id: amb-tasks\n      name: "/rt/plugins/amb-tasks.mjs"\n');
+      expect(text).toContain(pluginPatchLine("amb-tasks"));
       expect((host as any).env().AMB_TASK_RULES).toBe(TASK_RULES);
     } finally {
       store.close();

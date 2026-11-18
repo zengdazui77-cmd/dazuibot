@@ -511,6 +511,54 @@ export class MediaService {
     return real;
   }
 
+  /**
+   * 生成图片并直接返回字节，不落工作区。
+   * 给无限画布这类「要立刻拿到图显示出来」的场景用——存盘再读回来是多余的一步。
+   * 返回第一张图；模型返回多张时其余的会被丢掉。
+   */
+  async generateImageBytes(botId: string, args: { prompt: string; model?: string; size?: string }): Promise<{ data: Buffer; mime: string; model: string }> {
+    const prompt = String(args.prompt ?? "").trim();
+    if (!prompt) throw new MediaError("缺少 prompt");
+    const all = await this.models(botId, "image");
+    if (!all.length) throw new MediaError("站点的公开价格目录里没有图片模型");
+    const usable = all.filter((m) => m.available !== false);
+    if (!usable.length) throw new MediaError(`站上有 ${all.length} 个图片模型，但这把 Key 所在的分组一个都没有。请到站点给这把 Key 换分组，或找站主开权限。`);
+    const name = String(args.model ?? "").trim();
+    const def = pickDefault(usable, this.defaultId("image"))!;
+    const model = name ? usable.find((m) => m.id === name) : def;
+    if (!model) throw new MediaError(`没有这个模型：${name}。可用：${usable.map((m) => m.id).join("、")}`);
+    const size = typeof args.size === "string" && /^\d{2,5}x\d{2,5}$/.test(args.size) ? args.size : undefined;
+    const result = await this.imageBytes(botId, model, prompt, size);
+    return { ...result, model: model.id };
+  }
+
+  /** 真正发请求拿图片字节（与 image() 的差别只在落不落盘） */
+  private async imageBytes(botId: string, model: MediaModel, prompt: string, size?: string): Promise<{ data: Buffer; mime: string }> {
+    const key = this.key(botId);
+    if (model.route === "gemini") {
+      const res = await this.call(key, "POST", `/models/${encodeURIComponent(model.id)}:generateContent`, {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+      const out = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string }; inline_data?: { mime_type?: string; data?: string } }> } }> };
+      for (const c of out.candidates ?? [])
+        for (const p of c.content?.parts ?? []) {
+          const data = p.inlineData?.data ?? p.inline_data?.data;
+          if (data) return { data: Buffer.from(data, "base64"), mime: p.inlineData?.mimeType ?? p.inline_data?.mime_type ?? "image/png" };
+        }
+    } else {
+      const res = await this.call(key, "POST", "/images/generations", { model: model.id, prompt, ...(size ? { size } : {}) });
+      const out = (await res.json()) as { data?: Array<{ b64_json?: string; url?: string }> };
+      for (const item of out.data ?? []) {
+        if (item.b64_json) return { data: Buffer.from(item.b64_json, "base64"), mime: "image/png" };
+        if (item.url) {
+          const d = await this.download(item.url);
+          return { data: d.data, mime: d.mime || "image/png" };
+        }
+      }
+    }
+    throw new MediaError(`${model.id} 没有返回图片`);
+  }
+
   private save(botId: string, kind: MediaKind, data: Buffer, mime: string): string {
     const dir = path.join(this.o.workspace(botId), "media");
     fs.mkdirSync(dir, { recursive: true });

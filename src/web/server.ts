@@ -21,9 +21,10 @@ import { connectionFromPids } from "../agent/peer-guard.js";
 import { groupPeer, type ApprovalRow, type BotGroup, type Message, type Store } from "../store/db.js";
 import { GroupChats } from "../core/groups.js";
 import { defaultLine } from "../agent/approvals.js";
-import { normalizeSettings } from "../agent/settings.js";
+import { normalizeEffort, normalizeSettings } from "../agent/settings.js";
 import { SEARCH_PROVIDERS, normalizeSearxUrl, type SearchProvider } from "../agent/search.js";
 import { ConnectionError } from "../agent/accounts.js";
+import { PluginError } from "../agent/plugins.js";
 import { scopeLabel } from "../agent/memory.js";
 import { pwshProbe, type PwshMode, type PwshStatus } from "../agent/pwsh.js";
 import { ACCESS_CHANNELS, peerName, shortPeer, whoText, type AccessChannel } from "../core/access.js";
@@ -393,6 +394,20 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       return send(res, 200, app.modelflareStatus());
     }
     if (p === "/media/models" && m === "GET") return send(res, 200, await app.mediaModels());
+    // 无限画布生图：直接返回图片字节，界面拿到就能贴到节点上
+    if (p === "/media/image" && m === "POST") {
+      const b = await readJson(req);
+      const botId = typeof b.botId === "string" && b.botId ? b.botId : "default";
+      const result = await app.generateCanvasImage(botId, { prompt: b.prompt, model: b.model, size: b.size });
+      res.writeHead(200, {
+        "content-type": result.mime,
+        "content-length": result.data.length,
+        "cache-control": "no-store",
+        "x-amb-model": result.model,
+      });
+      res.end(result.data);
+      return;
+    }
     if (p === "/models/info" && m === "GET") {
       // pricing=false 时界面要显示"价格信息暂不可用"+重试，不能留空白：
       // 这个端点每台客户机都会打，静默失败就等于没有任何客户端侧信号。
@@ -668,6 +683,45 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, app.channelStatus(id));
       }
       throw new HttpError(405, "method not allowed");
+    }
+    // 插件（设置 › 插件）：用户自己安装的 MCP 服务器，全局一份，所有机器人共用。密钥不出现在任何回复里
+    if (seg[0] === "plugins") {
+      const pl = app.plugins;
+      const guard = async <T>(run: () => T | Promise<T>): Promise<T> => {
+        try {
+          return await run();
+        } catch (e) {
+          if (e instanceof PluginError) throw new HttpError(400, e.message);
+          throw e;
+        }
+      };
+      const state = () => ({ catalog: pl.catalog(), installed: pl.list(), node: pl.nodeAvailable() });
+      // 装、改、删之后，空闲的代理进程在后台换上新的插件集合（正在跑回合的等下一条消息）
+      const changed = () => void app.agent.refreshIdle().catch(() => undefined);
+      const id = seg[1] ?? "";
+      if (seg.length === 1 && m === "GET") return send(res, 200, state());
+      if (seg.length === 1 && m === "POST") {
+        const body = await readJson(req);
+        const plugin = await guard(() => pl.install(body));
+        changed();
+        return send(res, 201, { plugin, ...state() });
+      }
+      if (seg.length === 2 && m === "PUT") {
+        const body = await readJson(req);
+        const plugin = await guard(() => pl.update(id, body));
+        changed();
+        return send(res, 200, { plugin, ...state() });
+      }
+      if (seg.length === 2 && m === "DELETE") {
+        await guard(() => pl.remove(id));
+        changed();
+        return send(res, 200, state());
+      }
+      if (seg.length === 3 && seg[2] === "test" && m === "POST") {
+        const result = await guard(() => pl.test(id));
+        return send(res, 200, { result, ...state() });
+      }
+      throw new HttpError(404, "not found");
     }
     // 已授权账号（设置 › 连接）：全局一份，所有机器人共用。令牌不出现在任何回复里
     if (seg[0] === "connections") {
@@ -1184,6 +1238,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
           ...cur,
           ...(b.permission !== undefined ? { permission: b.permission } : {}),
           ...(b.utilityModel !== undefined ? { utilityModel: b.utilityModel } : {}),
+          ...(b.reasoningEffort !== undefined ? { reasoningEffort: b.reasoningEffort } : {}),
           ...(b.avatar !== undefined ? { avatar: b.avatar } : {}),
           ...(b.computerUse !== undefined ? { computerUse: { ...cur.computerUse, ...b.computerUse } } : {}),
           ...(b.media !== undefined ? { media: { ...cur.media, ...b.media } } : {}),
@@ -1247,6 +1302,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, {
           conversationId: consoleConvId(id),
           model: conv?.model ?? "",
+          effort: normalizeEffort(conv?.effort),
           messages: conv ? app.store.listMessages(conv.id, 200).filter((x) => x.id <= cut).map(publicMessage) : [],
           pending: app.store.listApprovals({ status: "pending", conversationId: consoleConvId(id), limit: 50 }).map((r) => publicApproval(r, app.store)),
           live: turns.map((t) => t.snapshot()),
@@ -1270,6 +1326,15 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         const conv = app.store.ensureConversation(id, "web", "console", "控制台");
         app.store.setConversationModel(conv.id, String(b.model ?? ""));
         return send(res, 200, { conversationId: conv.id, model: String(b.model ?? "") });
+      }
+      // 这个会话的思考强度：low / medium / high；空 = 跟随机器人的默认
+      if (sub === "chat/effort" && m === "PUT") {
+        const b = await readJson(req);
+        const effort = normalizeEffort(b.effort);
+        if (b.effort && !effort) throw new HttpError(400, "effort must be low, medium, high or empty");
+        const conv = app.store.ensureConversation(id, "web", "console", "控制台");
+        app.store.setConversationEffort(conv.id, effort);
+        return send(res, 200, { conversationId: conv.id, effort });
       }
       if (sub === "chat" && m === "POST") {
         const b = await readJson(req);

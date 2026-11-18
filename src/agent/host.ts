@@ -14,6 +14,7 @@ import { cuaConfig, cuaMcpEnv, discoverAppsCached, type CuaApp } from "./cua-dri
 import { pwshPatchLines, pwshProbe } from "./pwsh.js";
 import { hasEnvProxy, networkEnv, systemProxyEnv } from "./proxy-env.js";
 import { DEFAULT_SETTINGS, permissionMode, type BotSettings } from "./settings.js";
+import { pluginPatch, pluginSignature, type ResolvedPlugin } from "./plugins.js";
 import type { AccountService } from "./accounts.js";
 import { acceptsImages } from "../llm/client.js";
 import { CUA_SKILL, MEDIA_SKILL, TASK_RULES, agentPersona, botPrompt } from "./prompts/index.js";
@@ -176,6 +177,20 @@ export class ApiRejected extends Error {
   }
 }
 
+/**
+ * 回合失败，原因是上游不接受思考强度这个参数。已记下（本次运行内这个模型不再带强度）；
+ * retryable：这一轮还没有调用过工具，可以不带强度重做一遍。
+ */
+export class EffortRejected extends Error {
+  constructor(
+    message: string,
+    readonly reason: string,
+    readonly retryable: boolean,
+  ) {
+    super(message);
+  }
+}
+
 /** 后台任务的会话记录恢复不了（DSH 主目录里没有了或坏了）：任务服务换一个新会话、重新交代 */
 export class ResumeFailed extends Error {}
 
@@ -191,6 +206,8 @@ export const RECYCLE_AFTER_SESSIONS = 100;
 
 /** 换接口重做时交给模型的话（上一条用户消息已经在会话里） */
 export const RETRY_NOTE = "[系统提示]\n上一条用户消息因模型接口不兼容没有处理，现已换用其它接口。请直接处理上面那条用户消息。";
+/** 去掉思考强度重做时交给模型的话 */
+export const EFFORT_RETRY_NOTE = "[系统提示]\n上一条用户消息因模型不接受思考强度参数没有处理，现已去掉该参数。请直接处理上面那条用户消息。";
 
 export interface AgentHostOptions {
   botId: string;
@@ -222,6 +239,8 @@ export interface AgentHostOptions {
   idle?: () => boolean;
   /** 桌面版：系统给这个地址用的代理（PAC 写法，如 "PROXY 127.0.0.1:7890"）；环境里没设代理时每次拉起子进程问一次 */
   systemProxy?: (url: string) => Promise<string | undefined>;
+  /** 用户安装并启用的插件（设置 › 插件，全局一份）；集合或密钥变了，空闲的代理进程重启后生效 */
+  plugins?: () => ResolvedPlugin[];
 }
 
 export type HostState = "stopped" | "starting" | "running" | "backoff" | "error";
@@ -328,6 +347,46 @@ export function providerFor(api: AgentApi, reasoning?: boolean): string {
   return "magpie";
 }
 
+/** 用户能选的思考强度 → 发给上游的写法。没列出的档（包括 off）不提供：不选强度时请求和以前一模一样 */
+export const EFFORT_LEVELS = { low: "low", medium: "medium", high: "high" } as const;
+
+/**
+ * Claude 怎么开思考：4.6 及以后、Fable 用自适应思考（按强度），3.7 到 4.5 用思考预算；更早的和认不出的不支持。
+ * 认不出的新型号宁可不提供，也不发一个上游会拒绝的参数。
+ */
+export function claudeThinking(model: string): "adaptive" | "budget" | undefined {
+  const id = (model.split("/").pop() ?? model).toLowerCase();
+  if (!id.includes("claude")) return undefined;
+  if (id.includes("claude-fable")) return "adaptive";
+  const m = /claude-(?:opus|sonnet|haiku)-(\d+)(?:[-.](\d{1,2})(?!\d))?/.exec(id);
+  if (!m) return id.includes("claude-3-7") ? "budget" : undefined;
+  const major = Number(m[1]);
+  const minor = Number(m[2] ?? 0);
+  if (major > 4 || (major === 4 && minor >= 6)) return "adaptive";
+  return major === 4 ? "budget" : undefined;
+}
+
+/** 这条路线上能不能指定思考强度：明确不推理的模型不能；Claude 看型号；其余接口都声明，上游不认时由宿主记下并去掉 */
+export function routeTakesEffort(api: AgentApi, model: string, reasoning?: boolean): boolean {
+  if (reasoning === false) return false;
+  return api === "anthropic-messages" ? claudeThinking(model) !== undefined : true;
+}
+
+/** 错误说的是思考强度 / 思考参数本身不被接受 */
+const EFFORT_TEXT = /reasoning|effort|thinking|output_config/i;
+const EFFORT_REFUSED = /unsupported|not supported|does not support|invalid|unknown|unrecognized|unexpected|not allowed|不支持/i;
+
+/**
+ * 带着思考强度的这一轮失败，是不是因为上游不接受这个参数：返回一行原因，不是则 undefined。
+ * rejections 是 bridge 这一轮看到的本机器人的上游错误；turnError 是代理报的错误。
+ */
+export function effortRejection(rejections: Array<{ status: number; error: string }>, turnError: string): string | undefined {
+  const refused = (s: string) => EFFORT_TEXT.test(s) && EFFORT_REFUSED.test(s);
+  const hit = [...rejections].reverse().find((r) => [400, 404, 422].includes(r.status) && refused(r.error));
+  const reason = hit ? `HTTP ${hit.status}: ${hit.error}` : refused(turnError) ? turnError : undefined;
+  return reason?.replace(/\s+/g, " ").trim().slice(0, 200);
+}
+
 /** llm-pi-ai 的一个 provider（补丁和运行时更新共用这份结构） */
 export interface ProviderProfile {
   displayName: string;
@@ -352,7 +411,8 @@ export interface ProviderProfile {
  * - Responses：store:false 下推理条目要带 encrypted_content 才能回放，而 DSH 只在指定了推理强度时才要它，
  *   所以推理模型（或不知道是不是）声明 low/medium/high、默认 medium；明确不推理的不发推理参数。
  *   系统提示用 system 角色（网关转给非 OpenAI 模型时不一定认 developer）；工具显式 strict:false。
- * - Anthropic、Chat 不声明推理（和以前一样，用模型默认）。
+ * - Anthropic、Chat：能调思考强度的模型（routeTakesEffort）声明 low/medium/high，但不设默认：用户没选强度时不发任何思考参数，
+ *   请求和以前一样。Claude 4.6 起只认自适应思考；Chat 上声明推理后系统提示仍用 system 角色。
  */
 export function providerProfiles(routes: ModelRoute[], bridgeUrl: string, botId: string): Record<string, ProviderProfile> {
   const out: Record<string, ProviderProfile> = {};
@@ -377,15 +437,24 @@ export function providerProfiles(routes: ModelRoute[], bridgeUrl: string, botId:
       ...(acceptsImages(r.model) ? { input: ["text", "image"] } : {}),
       ...(api === "openai-responses"
         ? {
-            ...(reasoning !== false ? { reasoningEfforts: { low: "low", medium: "medium", high: "high" } } : {}),
+            ...(reasoning !== false ? { reasoningEfforts: { ...EFFORT_LEVELS } } : {}),
             compat: { supportsDeveloperRole: false, supportsStrictMode: true },
           }
-        : {}),
+        : routeTakesEffort(api, r.model, reasoning)
+          ? {
+              reasoningEfforts: { ...EFFORT_LEVELS },
+              ...(api === "openai-completions"
+                ? { compat: { supportsDeveloperRole: false } }
+                : claudeThinking(r.model) === "adaptive"
+                  ? { compat: { forceAdaptiveThinking: true } }
+                  : {}),
+            }
+          : {}),
     });
   };
   for (const r of routes) {
     if (r.api !== "openai-completions") add(r.provider, r.api, r, r.reasoning);
-    add("magpie", "openai-completions", r);
+    add("magpie", "openai-completions", r, r.reasoning);
   }
   return out;
 }
@@ -447,6 +516,8 @@ export interface TurnInput {
   observer?: TurnObserver;
   /** 只在模型能看图时传（acceptsImages），否则模型只拿到文字里的工作区路径 */
   images?: TurnImage[];
+  /** 思考强度（low / medium / high）；空 = 不指定。路线不能调、或上游拒绝过这个参数时不带 */
+  effort?: string;
   /** 中止这个回合（reason 为 TurnStopped）：只中止这个会话的回合；宽限期内没停下才重启子进程 */
   signal?: AbortSignal;
 }
@@ -611,6 +682,8 @@ export class AgentHost {
   private childRoutes = new Map<string, ModelRoute>();
   /** 当前子进程启动时的默认路线（会话没选模型时用它） */
   private initRoute: ModelRoute | undefined;
+  /** 上游拒绝过思考强度参数的模型：本次运行内不再给它带强度 */
+  private noEffort = new Set<string>();
   /** 会话 → 进行中的回合（插话、中止用） */
   private turns = new Map<string, HostTurn>();
   /** DSH session → 代理自己醒来的一轮 */
@@ -773,6 +846,7 @@ export class AgentHost {
       "    - id: amb-tasks",
       `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-tasks.mjs"))}`,
       ...this.computerUseLines(apps),
+      ...this.pluginLines(),
       ...this.fullAccessLines(),
       "",
     ].join("\n");
@@ -828,6 +902,14 @@ export class AgentHost {
     return st.available ? st : undefined;
   }
   private cuReadTools = "";
+  /** 这次写进补丁的插件要用的环境变量（密钥和要先问的插件名单）：和补丁同时算出，env() 带给子进程 */
+  private pluginEnv: Record<string, string> = {};
+  /** 用户安装的插件：每个是一条 mcp-client；只读机器人的插件工具一律先问。必须在 fullAccessLines 之前（都是 insert 列表项） */
+  private pluginLines(): string[] {
+    const r = pluginPatch(this.o.plugins?.() ?? [], { gate: path.join(this.o.runtimeDir, "plugins", "amb-plugin-gate.mjs"), forceAsk: this.settings().permission === "readonly" });
+    this.pluginEnv = r.env;
+    return r.lines;
+  }
   /**
    * Computer Use：插入 mcp-client（Cua Driver 经 amb-cua-mcp.mjs，或 macOS 上的 Codex 桥；都用宿主自己的
    * node/Electron 运行），并写入对应的 SKILL.md。默认所有操作自动执行；只有设置为 ask-input 时才加载审批闸门。
@@ -973,6 +1055,8 @@ exec "$REAL" "$@"
     }
     if (process.versions.electron) env.ELECTRON_RUN_AS_NODE = "1";
     if (process.env.AMB_DSH_LOG_LEVEL) env.DSH_LOG_LEVEL = process.env.AMB_DSH_LOG_LEVEL;
+    // 插件的密钥：名字带 SECRET，DSH 给命令工具和 MCP 子进程的环境会去掉它们，模型读不到
+    Object.assign(env, this.pluginEnv);
     return env;
   }
 
@@ -993,7 +1077,7 @@ exec "$REAL" "$@"
    */
   private settingsSig(pwsh = pwshProbe.cachedDshPath): string {
     const st = this.settings();
-    return `${st.permission}|${st.memory.enabled}|${st.computerUse.enabled}|${st.computerUse.backend}|${st.computerUse.approval}|${this.connectionsEnv()}|${pwsh ?? ""}`;
+    return `${st.permission}|${st.memory.enabled}|${st.computerUse.enabled}|${st.computerUse.backend}|${st.computerUse.approval}|${this.connectionsEnv()}|${pwsh ?? ""}|${pluginSignature(this.o.plugins?.() ?? [])}`;
   }
   private sig = "";
 
@@ -1411,6 +1495,11 @@ exec "$REAL" "$@"
     try {
       return await this.runOnce(input);
     } catch (e) {
+      if (e instanceof EffortRejected && e.retryable && !input.signal?.aborted) {
+        log.warn("upstream refused the thinking effort; retrying the turn once without it", { bot: this.o.botId, model: input.model, effort: input.effort, reason: e.reason });
+        this.o.onNotice?.(t("agent.effortUnsupported", { model: input.model.split("/").pop() ?? input.model }));
+        return await this.runOnce({ ...input, effort: undefined, text: EFFORT_RETRY_NOTE, images: undefined });
+      }
       if (!(e instanceof ApiRejected) || !e.retryable || input.signal?.aborted) throw e;
       log.warn("agent turn rejected on its API; retrying it once over Chat Completions", { bot: this.o.botId, model: input.model, api: e.api, reason: e.reason });
       input.observer?.onEvent?.("api/fallback", { from: e.api, to: "openai-completions", reason: e.reason }, Date.now());
@@ -1431,11 +1520,17 @@ exec "$REAL" "$@"
     }
   }
 
+  /** 这一轮实际带上的思考强度：路线能调、上游没拒绝过才带 */
+  private effortFor(route: ModelRoute, effort?: string): string | undefined {
+    if (!effort || !Object.hasOwn(EFFORT_LEVELS, effort)) return undefined;
+    return routeTakesEffort(route.api, route.model, route.reasoning) && !this.noEffort.has(route.model) ? effort : undefined;
+  }
+
   /**
-   * 让这个会话用这条路线：子进程还不认识这个模型就经插件补进 provider 配置，再按会话选定。
+   * 让这个会话用这条路线（和思考强度）：子进程还不认识这个模型就经插件补进 provider 配置，再按会话选定。
    * 插件不通、补不进去时返回 false（只有启动时的默认路线不用选）。
    */
-  private async useRoute(sessionId: string, route: ModelRoute): Promise<boolean> {
+  private async useRoute(sessionId: string, route: ModelRoute, effort?: string): Promise<boolean> {
     const key = this.routeKey(route);
     const isInit = !!this.initRoute && this.routeKey(this.initRoute) === key;
     // 插件刚起来可能还没来取指令：要靠它时等一会儿；启动时的默认路线不靠它也能用
@@ -1455,7 +1550,7 @@ exec "$REAL" "$@"
     }
     if (ready) {
       try {
-        await this.control.send("select", { sessionId, provider: route.provider, model: route.model }, 10_000);
+        await this.control.send("select", { sessionId, provider: route.provider, model: route.model, ...(effort ? { reasoningEffort: effort } : {}) }, 10_000);
         return true;
       } catch (e) {
         log.warn("model selection failed", { bot: this.o.botId, model: route.model, message: (e as Error).message.slice(0, 200) });
@@ -1477,10 +1572,11 @@ exec "$REAL" "$@"
 
   private async runClaimed(input: TurnInput): Promise<TurnResult> {
     const route = await this.routeFor(input.model);
+    const effort = this.effortFor(route, input.effort);
     let s = await this.sessionFor(await this.ensure(input.model), input.conversationId);
     // 在等进程 / 会话时就被中止了：消息还没交出去，不用动子进程
     if (input.signal?.aborted) throw stopReason(input.signal);
-    if (!(await this.useRoute(s.id, route))) {
+    if (!(await this.useRoute(s.id, route, effort))) {
       // 指令通道不通、或补不进这个模型：没有别的回合在跑时，带上这个模型重启子进程；忙的时候不能让这个会话悄悄用错模型
       if (this.active > 0 || this.taskBusy.size > 0) throw new Error(tr("agent.cantSwitchBusy", { model: input.model }));
       log.warn("restarting dsh to use a model it could not add at runtime", { bot: this.o.botId, model: input.model });
@@ -1488,7 +1584,7 @@ exec "$REAL" "$@"
       await this.closeHarness();
       this.state = "stopped";
       s = await this.sessionFor(await this.ensure(input.model), input.conversationId);
-      if (!(await this.useRoute(s.id, route))) throw new Error(tr("agent.cantUseModel", { model: input.model }));
+      if (!(await this.useRoute(s.id, route, effort))) throw new Error(tr("agent.cantUseModel", { model: input.model }));
     }
     // 代理自己醒着的一轮（后台命令结束）还没完：等它完了再发这条（它的回复由跟踪它的那一轮发出）
     const woke = this.wakes.get(s.id);
@@ -1508,9 +1604,13 @@ exec "$REAL" "$@"
     const api = route.api;
     const trk = this.tracker(s.id, route, input.observer, accept);
     const rejections: Rejection[] = [];
+    /** 这一轮里本机器人被上游拒绝的所有模型请求（判断是不是思考强度被拒，Chat 也算） */
+    const refused: Rejection[] = [];
     const offRejection =
       this.o.bridge.onRejection?.((r) => {
-        if (r.bot === this.o.botId && /\/v1\/(responses|messages)$/.test(r.path)) rejections.push(r);
+        if (r.bot !== this.o.botId) return;
+        refused.push(r);
+        if (/\/v1\/(responses|messages)$/.test(r.path)) rejections.push(r);
       }) ?? (() => {});
     try {
       const prompt = images.length ? [{ type: "text", text: input.text }, ...images.map((i) => ({ type: "image", data: i.data, mimeType: i.mimeType }))] : input.text;
@@ -1519,9 +1619,13 @@ exec "$REAL" "$@"
       const r = await this.awaitTurn(turn, run, input.signal);
       this.failures = 0;
       const { turnError, toolCalls, presented, answers, usage } = trk.st;
-      const rejected = turnError !== undefined && api !== "openai-completions" ? shapeRejection(rejections, turnError) : undefined;
+      // 带了思考强度而上游不认：记下这个模型不带强度（不算接口不兼容，不改走 Chat）
+      const effortRefused = effort && turnError !== undefined ? effortRejection(refused, turnError) : undefined;
+      if (effortRefused) this.noEffort.add(route.model);
+      const rejected = !effortRefused && turnError !== undefined && api !== "openai-completions" ? shapeRejection(rejections, turnError) : undefined;
       if (rejected) this.rememberFallback(input.model, api, rejected);
       if (!r.finalResponse && turnError) {
+        if (effortRefused) throw new EffortRejected(turnError, effortRefused, toolCalls === 0 && presented.length === 0);
         // 已经调用过工具（命令可能已经执行）就不重做，照常报错；下一轮起走 Chat
         if (rejected) throw new ApiRejected(turnError, api, rejected, toolCalls === 0 && presented.length === 0);
         throw new Error(turnError);

@@ -56,7 +56,7 @@ function LowBalance({ account }) {
   </a>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, onTeam, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, onCanvas, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
   const [q, setQ] = useState("");
   const [ctx, setCtx] = useState(null); // 行的操作菜单：右键 { bot, x, y }，或者"更多"按钮 { bot, el }
   const [groupCtx, setGroupCtx] = useState(null); // 群聊行的操作菜单：{ group, x, y } 或 { group, el }
@@ -173,7 +173,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     </nav>
     <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
-    <div class="side-foot"><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>
+    <div class="side-foot"><${IconButton} icon="users" iconSize="md" label=${t("sidebar.teamSpace")} onClick=${onTeam} /><${IconButton} icon="panel" iconSize="md" label=${t("sidebar.canvas")} onClick=${onCanvas} /><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>
     ${ctx && html`<${Menu} anchor=${ctx.el || { left: ctx.x, right: ctx.x, top: ctx.y, bottom: ctx.y, width: 0 }} align=${ctx.el ? "right" : undefined}
       width=${200} label=${t("sidebar.actionsFor", { name: ctx.bot.name })} onClose=${() => setCtx(null)}
       items=${[

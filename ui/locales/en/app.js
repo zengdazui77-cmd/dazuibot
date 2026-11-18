@@ -1,5 +1,9 @@
 // app · en
 export default {
+  teamSpace: "Team space",
+  teamSpaceKeys: "team members invitations",
+  teamSpace: "Team space",
+  teamSpaceKeys: "team members invitations",
   palette: {
     title: "Command palette",
     placeholder: "Type a command or bot name",
@@ -7,6 +11,8 @@ export default {
     empty: "No matching commands",
   },
   cmd: {
+    canvas: "Infinite canvas",
+    canvasKeys: "canvas infinite whiteboard nodes",
     needs: "Needs you ({count})",
     needsKeys: "needs attention to-do",
     tasks: "Tasks and rules",

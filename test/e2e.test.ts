@@ -362,6 +362,25 @@ describe("网页对话（流式）", () => {
     await sse("/bots/default/chat/stream", { text: "又用哪个" });
     expect(llm.calls.at(-1)!.model).toBe("mock-a");
   });
+  it("会话级思考强度：PUT /chat/effort 保存并随会话返回，/effort 命令查看、调整、恢复默认；机器人可设默认强度", async () => {
+    expect((await api("/bots/default/chat")).json.effort).toBe("");
+    expect((await api("/bots/default/chat/effort", { method: "PUT", body: { effort: "high" } })).json.effort).toBe("high");
+    expect((await api("/bots/default/chat")).json.effort).toBe("high");
+    expect((await api("/bots/default/chat/effort", { method: "PUT", body: { effort: "extreme" } })).status).toBe(400);
+    expect((await api("/bots/default/chat")).json.effort).toBe("high");
+    const say = async (text: string) => (await sse("/bots/default/chat/stream", { text })).find(([e, d]) => e === "text" && d.final)?.[1].text as string;
+    expect(await say("/effort")).toContain("高");
+    expect(await say("/effort low")).toContain("低");
+    expect((await api("/bots/default/chat")).json.effort).toBe("low");
+    expect(await say("/effort turbo")).toContain("low");
+    expect((await api("/bots/default/chat")).json.effort).toBe("low");
+    await say("/effort default");
+    expect((await api("/bots/default/chat")).json.effort).toBe("");
+    // 机器人的默认强度：会话没单独设时用它；不认识的值落回「不指定」
+    expect((await api("/bots/default/settings", { method: "PUT", body: { reasoningEffort: "medium" } })).json.settings.reasoningEffort).toBe("medium");
+    expect(await say("/effort")).toContain("中");
+    expect((await api("/bots/default/settings", { method: "PUT", body: { reasoningEffort: "nope" } })).json.settings.reasoningEffort).toBe("");
+  });
   it("命令回复也走流：/status 一次性 text(final)", async () => {
     const ev = await sse("/bots/default/chat/stream", { text: "/status" });
     expect(ev.find(([e, d]) => e === "text" && d.final)?.[1].text).toContain("当前模型");

@@ -1,5 +1,9 @@
 // app · zh-CN（ui/main.js：命令面板、全局提示）
 export default {
+  teamSpace: "团队空间",
+  teamSpaceKeys: "团队 成员 邀请",
+  teamSpace: "团队空间",
+  teamSpaceKeys: "团队 成员 邀请",
   palette: {
     title: "命令面板",
     placeholder: "输入命令或机器人名称",
@@ -7,6 +11,8 @@ export default {
     empty: "没有匹配的命令",
   },
   cmd: {
+    canvas: "无限画布",
+    canvasKeys: "画布 无限 白板 节点",
     needs: "需要你（{count}）",
     needsKeys: "needs attention 需要你 待办",
     tasks: "任务和规则",

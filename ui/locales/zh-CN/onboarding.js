@@ -4,6 +4,7 @@ export default {
   gatewayFailed: "内置模型网关没有启动：{error}。修复后重启应用再连接。",
   unknownReason: "未知原因",
   keyOnly: "请填写站点后台创建的 API Key",
+  teamLogin: "加入团队或团队账号登录",
   createKey: "在 zdzui 控制台创建 Key ↗",
   /** 首启必须讲清楚：Key 存在哪、怎么止损（白标后没有 OIDC 可撤销授权，只能手工删 Key） */
   keyStorage: "这把 API Key 只保存在本机（内置网关的配置里，靠文件权限保护，不加密）。若怀疑泄漏，请到控制台删除该 Key 后重新签发。",

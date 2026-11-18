@@ -51,7 +51,9 @@ for (const target of targets) {
   const name = `magpie-${NODE_OS[goos]}-${NODE_ARCH[goarch]}${goos === "windows" ? ".exe" : ""}`;
   const dest = path.join(out, name);
   console.log(`构建 magpie ${version} → build/bin/${name}`);
-  execFileSync("go", ["build", "-tags", "nogui", "-trimpath", "-ldflags", `-s -w -X main.version=${version}`, "-o", dest, "."], {
+  // The vendored source is a submodule and Go's automatic VCS stamping can fail
+  // in linked worktrees. The exact source version is already embedded above.
+  execFileSync("go", ["build", "-buildvcs=false", "-tags", "nogui", "-trimpath", "-ldflags", `-s -w -X main.version=${version}`, "-o", dest, "."], {
     cwd: src,
     stdio: "inherit",
     env: { ...process.env, CGO_ENABLED: "0", GOOS: goos, GOARCH: goarch },

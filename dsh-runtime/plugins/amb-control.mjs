@@ -5,7 +5,7 @@
 // bridge (POST /dsh/control/poll with AMB_CONTROL_TOKEN, a per-launch id; the bridge token is only ever sent to
 // AMB_BRIDGE_URL) and answers each command with POST /dsh/control/result. Commands:
 //
-//   select    {sessionId, provider, model}  per-conversation model: every Agent's prompt assembly and request
+//   select    {sessionId, provider, model, reasoningEffort?}  per-conversation model and thinking effort: every Agent's prompt assembly and request
 //                                            config read this map (as DSH's installModelSelection does)
 //   providers {providers}                   replace llm-pi-ai's (volatile) provider profiles, so a model the
 //                                            launch patch did not list becomes routable without a restart
@@ -47,7 +47,8 @@ function installSelection(agentCtx, current) {
     const resolved = await next()
     if (!assembled) return resolved
     const { reasoningEffort: _inherited, ...rest } = resolved
-    return { ...rest, provider: assembled.provider, model: assembled.model }
+    // the host only sends an effort the selected route declares; none selected leaves the provider default
+    return { ...rest, provider: assembled.provider, model: assembled.model, ...(assembled.reasoningEffort ? { reasoningEffort: assembled.reasoningEffort } : {}) }
   })
   const offNotice = agentCtx.on('agent/pre-step', async ({ agent, messages, signal, step }, next) => {
     const decision = await next()
@@ -208,8 +209,8 @@ export function apply(ctx) {
     async ping() {
       return {}
     },
-    async select({ sessionId, provider, model }) {
-      if (provider && model) selections.set(String(sessionId), { provider: String(provider), model: String(model) })
+    async select({ sessionId, provider, model, reasoningEffort }) {
+      if (provider && model) selections.set(String(sessionId), { provider: String(provider), model: String(model), ...(reasoningEffort ? { reasoningEffort: String(reasoningEffort) } : {}) })
       return {}
     },
     async providers({ providers }) {

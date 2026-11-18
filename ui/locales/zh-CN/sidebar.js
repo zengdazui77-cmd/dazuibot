@@ -1,5 +1,8 @@
 // sidebar · zh-CN：侧栏（screens/sidebar.js）
 export default {
+  teamSpace: "团队空间",
+  canvas: "无限画布",
+  teamSpace: "团队空间",
   /** 没登录、也没有用户名时左下角显示的名字 */
   localUser: "本机用户",
   settingsTitle: "设置（⌘,）",

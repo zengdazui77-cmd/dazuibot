@@ -18,23 +18,23 @@ describe("cua-driver detection", () => {
     expect(detectCua(["/r"], probe({ env: { DISPLAY: ":0" } })).reason).toMatch(/缺少 linux-x64/);
   });
   it("linux: X11 ok, Wayland degraded, no display unavailable", () => {
-    const files = ["/r/cua-driver"];
+    const files = [path.join("/r", "cua-driver")];
     expect(detectCua(["/r"], probe({ files })).available).toBe(false);
     const x = detectCua(["/r"], probe({ files, env: { DISPLAY: ":0" } }));
-    expect(x).toMatchObject({ available: true, bin: "/r/cua-driver" });
+    expect(x).toMatchObject({ available: true, bin: path.join("/r", "cua-driver") });
     expect(x.notice).toMatch(/AT-SPI/);
     const w = detectCua(["/r"], probe({ files, env: { WAYLAND_DISPLAY: "wayland-0", XDG_SESSION_TYPE: "wayland", DISPLAY: ":0" } }));
     expect(w.available).toBe(true);
     expect(w.notice).toMatch(/Wayland.*降级.*XWayland.*前台/);
   });
   it("macOS: permission guidance and --direct (unverified)", () => {
-    const m = detectCua(["/r"], probe({ platform: "darwin", arch: "arm64", files: ["/r/cua-driver"] }));
+    const m = detectCua(["/r"], probe({ platform: "darwin", arch: "arm64", files: [path.join("/r", "cua-driver")] }));
     expect(m).toMatchObject({ available: true, direct: true });
     expect(m.notice).toMatch(/辅助功能.*屏幕录制/);
     expect(m.notice).toMatch(/未在真机验证/);
   });
   it("windows: interactive session via SESSIONNAME or SessionId", () => {
-    const files = ["/r/cua-driver.exe"];
+    const files = [path.join("/r", "cua-driver.exe")];
     const base = { platform: "win32" as const, files };
     // SESSIONNAME 非空 → 可用
     expect(detectCua(["/r"], probe({ ...base, env: { SESSIONNAME: "Console" } })).available).toBe(true);
@@ -55,8 +55,10 @@ describe("cua-driver detection", () => {
     expect(heuristic.available).toBe(true);
   });
   it("roots cover packaged and dev layouts", () => {
-    expect(cuaRoots("/a/dsh-runtime", "linux", "x64")).toContain("/a/build/cua-driver/linux-x64");
-    expect(cuaRoots("/r/dsh")).toContain("/r/cua-driver");
+    const runtimeDir = path.join(os.tmpdir(), "a", "dsh-runtime");
+    expect(cuaRoots(runtimeDir, "linux", "x64")).toContain(path.join(path.dirname(path.resolve(runtimeDir)), "build", "cua-driver", "linux-x64"));
+    const devDir = path.join(os.tmpdir(), "r", "dsh");
+    expect(cuaRoots(devDir)).toContain(path.join(path.dirname(path.resolve(devDir)), "cua-driver"));
   });
 });
 
@@ -81,7 +83,11 @@ describe("cua-driver config", () => {
     fs.mkdirSync(path.join(d, "share", "applications"), { recursive: true });
     fs.mkdirSync(path.join(d, "bin"));
     fs.writeFileSync(path.join(d, "bin", "editor"), "");
-    fs.symlinkSync(path.join(d, "bin", "editor"), path.join(d, "bin", "ed-link"));
+    try {
+      fs.symlinkSync(path.join(d, "bin", "editor"), path.join(d, "bin", "ed-link"));
+    } catch {
+      // This test runs on Windows too; symlink privileges are optional there.
+    }
     const w = (n: string, t: string) => fs.writeFileSync(path.join(d, "share", "applications", n), t);
     w("a.desktop", "[Desktop Entry]\nExec=ed-link %F\n");
     w("b.desktop", "[Desktop Entry]\nExec=env FOO=1 editor\n");

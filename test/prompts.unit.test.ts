@@ -353,6 +353,8 @@ describe("渠道说明与第一条消息", () => {
 
 describe("机器人段：宿主写文件，amb-prompt 插件每次模型请求现读", () => {
   const plugins = path.join(findAppRoot(), "dsh-runtime", "plugins");
+const pluginPatchLine = (id: string, runtimeDir = "/rt") =>
+  `    - id: ${id}\n      name: ${JSON.stringify(path.join(runtimeDir, "plugins", `${id}.mjs`))}\n`;
   const hostFor = (settings = normalizeSettings({ computerUse: { enabled: false } })) => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-prompt-"));
     const store = new Store(":memory:");
@@ -367,7 +369,7 @@ describe("机器人段：宿主写文件，amb-prompt 插件每次模型请求�
     try {
       const text = fs.readFileSync((host as any).writePatch("m"), "utf8");
       expect(text).toContain(`- id: system-prompt\n  config:\n    personaPrefix: ${JSON.stringify(agentPersona())}\n    includeHarnessIdentity: false\n- insert:\n`);
-      expect(text).toContain('    - id: amb-prompt\n      name: "/rt/plugins/amb-prompt.mjs"\n');
+      expect(text).toContain(pluginPatchLine("amb-prompt"));
       const env = (host as any).env();
       expect(env.AMB_PROMPT_FILE).toBe(host.promptFile);
       // 文件在数据目录里、工作区和 DSH 主目录之外：代理的文件工具读不到也改不了

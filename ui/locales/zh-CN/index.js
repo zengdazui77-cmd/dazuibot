@@ -25,5 +25,7 @@ import rules from "./rules.js";
 import access from "./access.js";
 import perms from "./perms.js";
 import group from "./group.js";
+import team from "./team.js";
+import canvas from "./canvas.js";
 
-export default { group, common, app, time, settings, account, pwsh, chat, info, markdown, notify, troubleshoot, onboarding, newBot, botSettings, sidebar, avatar, models, ui, guide, activity, perms, access, tasks, needs, rules };
+export default { team, group, canvas, common, app, time, settings, account, pwsh, chat, info, markdown, notify, troubleshoot, onboarding, newBot, botSettings, sidebar, avatar, models, ui, guide, activity, perms, access, tasks, needs, rules };

@@ -10,6 +10,7 @@ export default {
     stop: "Stop the message in progress",
     tasks: "List background tasks (/stop <number> stops one)",
     model: "List or switch models",
+    effort: "Show or set the thinking effort (low / medium / high / default)",
     new: "Start a new conversation (archives the old one with a handoff note)",
     reset: "Clear this conversation's context",
     status: "Show the current model, mode and progress",
@@ -95,5 +96,21 @@ export default {
   model: {
     followBot: "Use bot default",
     setDefault: "Set as this bot's default model",
+  },
+  effort: {
+    title: "Thinking effort: how hard the same model thinks",
+    menu: "Thinking effort",
+    chip: "Thinking · {level}",
+    auto: "Default",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    followBot: "Use bot default",
+    followBotNote: "Currently \"{level}\"; a model that can't adjust it uses its own default",
+    note: {
+      low: "Faster answers, lower cost",
+      medium: "Balanced speed and depth",
+      high: "Thinks harder; slower and costs more",
+    },
   },
 };

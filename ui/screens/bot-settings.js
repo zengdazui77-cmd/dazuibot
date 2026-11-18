@@ -188,6 +188,10 @@ export function BotSettingsScreen({ bot, section, models, modelsError, reloadMod
         <${Row} id="utility" name=${t("botSettings.model.utility")} sub=${t("botSettings.model.utilitySub")}>
           ${s && html`<${ModelButton} value=${s.utilityModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels} resetLabel=${t("botSettings.model.sameAsChat")} onChange=${(m) => put({ utilityModel: m })} />`}
         <//>
+        <${Row} id="effort" name=${t("botSettings.model.effort")} sub=${t("botSettings.model.effortSub")}>
+          ${s && html`<${Seg} label=${t("botSettings.model.effort")} value=${s.reasoningEffort || ""} onChange=${(v) => put({ reasoningEffort: v })}
+            options=${[["", t("botSettings.model.effortAuto")], ["low", t("botSettings.model.effortLow")], ["medium", t("botSettings.model.effortMedium")], ["high", t("botSettings.model.effortHigh")]]} />`}
+        <//>
         ${s && account && html`<${BudgetRows} bot=${bot} budget=${s.budget} account=${account} onOpenSettings=${onOpenSettings}
           onSaved=${(settings) => setD((v) => ({ ...v, settings }))} />`}
       </div>

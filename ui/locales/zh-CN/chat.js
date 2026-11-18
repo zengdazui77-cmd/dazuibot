@@ -10,6 +10,7 @@ export default {
     stop: "中止正在处理的消息",
     tasks: "列出后台任务（/stop 编号 停止一个）",
     model: "列出或切换模型",
+    effort: "查看或调整思考强度（low / medium / high / default）",
     new: "开始新的一段对话（旧对话归档并留交接便条）",
     reset: "清空本会话上下文",
     status: "查看当前模型、运行方式和处理进度",
@@ -97,5 +98,21 @@ export default {
   model: {
     followBot: "跟随机器人默认",
     setDefault: "设为此机器人的默认模型",
+  },
+  effort: {
+    title: "思考强度：同一个模型想得深一点还是快一点",
+    menu: "思考强度",
+    chip: "思考 · {level}",
+    auto: "默认",
+    low: "低",
+    medium: "中",
+    high: "高",
+    followBot: "跟随机器人默认",
+    followBotNote: "现在是「{level}」；模型不支持调整时按它自己的默认",
+    note: {
+      low: "回答更快、花费更少",
+      medium: "速度与深度均衡",
+      high: "想得更深，更慢、花费更多",
+    },
   },
 };

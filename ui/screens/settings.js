@@ -17,6 +17,7 @@ import { prefs, setPrefs, resetAppearance, appearanceChanged, fontStack } from "
 import { canNotify, requestNotify } from "../lib/notify.js";
 import { TroubleshootPane } from "./troubleshoot.js";
 import { ConnectionSheets, connectionRows, useConnections } from "./connections.js";
+import { PluginSheets, pluginRows, usePlugins } from "./plugins.js";
 import { PwshHint } from "../components/pwsh-hint.js";
 import { t, has, useLang, getLangPref, onLangChange, changeLang, LANG_NAMES } from "../lib/i18n.js";
 import { fmtTimeOfDay } from "../lib/format.js";
@@ -28,6 +29,7 @@ export const TABS = [
   ["modelflare", "settings.tabs.modelflare", "spark"],
   ["computer", "settings.tabs.computer", "monitor"],
   ["connections", "settings.tabs.connections", "link"],
+  ["plugins", "settings.tabs.plugins", "code"],
   ["privacy", "settings.tabs.privacy", "lock"],
   ["network", "settings.tabs.network", "globe"],
   ["data", "settings.tabs.data", "database"],
@@ -277,6 +279,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       .catch(failed);
   const putSearch = (patch) => put({ webSearch: patch }, { webSearch: { ...s.webSearch, ...(patch.provider ? { provider: patch.provider } : {}) } });
   const conn = useConnections();
+  const plug = usePlugins();
   const desktop = !!(s && s.desktop);
   const pickFont = (v) => {
     setPrefs({ font: v });
@@ -420,6 +423,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "privacy", id: "screens", name: t("settings.rows.screens.name"), sub: t("settings.rows.screens.sub"), ctl: null, keys: t("settings.rows.screens.keys") },
 
       ...connectionRows(conn, bots),
+      ...pluginRows(plug),
       { tab: "network", id: "web-search", name: t("settings.rows.webSearch.name"), sub: t("settings.rows.webSearch.sub"), keys: t("settings.rows.webSearch.keys"),
         ctl: html`<${MenuButton} label=${t("settings.rows.webSearch.name")} value=${s.webSearch.provider} width=${200} options=${SEARCH_OPTIONS()} onChange=${(v) => putSearch({ provider: v })} />` },
       s.webSearch.provider === "searxng" && { tab: "network", id: "web-search-url", name: t("settings.rows.webSearchUrl.name"), keys: t("settings.rows.webSearchUrl.keys"),
@@ -451,7 +455,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "about", id: "links", name: t("common.appName"), sub: t("settings.rows.links.sub"),
         ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">zdzui.xyz ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
     ].filter(Boolean);
-  }, [s, mf, mode, p, models, modelsError, cu, status, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts]);
+  }, [s, mf, mode, p, models, modelsError, cu, status, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts, plug.state, plug.busy]);
 
   const needle = q.trim().toLowerCase();
   const shown = needle ? rows.filter((r) => `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab);
@@ -473,6 +477,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
     <//>`}
     ${notices && html`<${NoticesSheet} onClose=${() => setNotices(false)} />`}
     <${ConnectionSheets} conn=${conn} bots=${bots} />
+    <${PluginSheets} plug=${plug} />
     ${sheet === "login" && html`<${LoginSheet} onClose=${() => setSheet("")} onSignedIn=${(r) => { onAccount(r); onMfChanged(); reloadModels(); }} />`}
     ${sheet === "usage" && html`<${UsageSheet} onClose=${() => setSheet("")} />`}
     ${sheet === "notifications" && html`<${NotificationsSheet} onClose=${() => { setSheet(""); setUnread(null); }} />`}

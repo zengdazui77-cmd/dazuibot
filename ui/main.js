@@ -13,6 +13,8 @@ import { NeedsYouScreen } from "./screens/needs-you.js";
 import { GroupScreen, GroupSheet } from "./screens/group.js";
 import { BotAvatar, MAIN_CHAR, charOf } from "./components/avatar.js";
 import { Onboarding } from "./screens/onboarding.js";
+import { TeamScreen } from "./screens/team.js";
+import { CanvasScreen } from "./screens/canvas.js";
 import { CoachMark } from "./components/guide.js";
 import { api } from "./lib/api.js";
 import { loadGuide, setFocus } from "./lib/guide.js";
@@ -25,6 +27,8 @@ import { t, useLang, adoptServerLang, changeLang, getLangPref, LANG_NAMES } from
 // —— 路由：#/chat/<bot> · #/group/<群> · #/new · #/needs · #/settings/<tab>[/<row>] · #/bot/<bot>/settings[/<section>] ——
 function parseHash() {
   const [kind, a, b, c] = location.hash.replace(/^#\/?/, "").split("/").map((x) => decodeURIComponent(x || ""));
+  if (kind === "team") return { view: "team" };
+  if (kind === "canvas") return { view: "canvas" };
   if (kind === "settings") return { view: "settings", tab: TABS.some(([t]) => t === a) ? a : "general", row: b || "" };
   if (kind === "bot" && a && b === "settings") return { view: "bot-settings", botId: a, section: c || "" };
   if (kind === "group" && a) return { view: "group", groupId: a };
@@ -342,6 +346,8 @@ function App() {
   // keys：搜索用的关键词（不显示），两种语言的词典各有一份
   const setLang = (l) => changeLang(l).then(() => toast(t("common.saved"))).catch(failed);
   const commands = [
+    { label: t("app.teamSpace"), keys: t("app.teamSpaceKeys"), run: () => go("/team") },
+    { label: t("app.cmd.canvas"), keys: t("app.cmd.canvasKeys"), run: () => go("/canvas") },
     { label: t("app.cmd.settings"), kbd: isMac ? "⌘," : "Ctrl+,", keys: t("app.cmd.settingsKeys"), run: () => openSettings() },
     { label: t("app.cmd.newBot"), kbd: isMac ? "⌘N" : "Ctrl+N", keys: t("app.cmd.newBotKeys"), run: newBot },
     ...(needs.n > 0 ? [{ label: t("app.cmd.needs", { count: needs.n }), keys: t("app.cmd.needsKeys"), run: openNeeds }] : []),
@@ -362,6 +368,8 @@ function App() {
   ];
 
   // —— 渲染 ——
+  if (route.view === "team") return html`<${TeamScreen} onBack=${() => go("/chat/")} /><${Toasts} />`;
+  if (route.view === "canvas") return html`<${CanvasScreen} onBack=${() => go("/chat/")} /><${Toasts} />`;
   if (!mf) {
     return html`<main class="onboard" data-screen=${mfErr ? "error" : "loading"}>
       ${mfErr
@@ -372,7 +380,7 @@ function App() {
   }
   if (!connected) {
     return html`<${Onboarding} status=${mf} gateway=${status && status.gateway} defaultModel=${settings && settings.defaultModel}
-        onDone=${() => { reloadMf(); reloadSettings(); go("/chat/"); }} />
+        onDone=${() => { reloadMf(); reloadSettings(); go("/chat/"); }} onTeam=${() => go("/team")} />
       <${Toasts} />`;
   }
 
@@ -391,7 +399,7 @@ function App() {
           username=${status && status.username} account=${managed ? account : null} />`
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
           previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null}
-          onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
+          onTeam=${() => go("/team")} onCanvas=${() => go("/canvas")} onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
           groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
     <main class="main">

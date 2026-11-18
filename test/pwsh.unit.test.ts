@@ -286,8 +286,11 @@ describe("界面接口与诊断（force=missing 模拟未安装）", () => {
     expect(loadConfig({ dataDir: app.config.dataDir, env: {} }).agent.pwsh).toBe("system");
     await api("/pwsh/mode", { method: "PUT", body: { mode: "auto" } });
     expect(loadConfig({ dataDir: app.config.dataDir, env: {} }).agent.pwsh).toBe("auto");
-    const r = await api("/pwsh/install", { method: "POST", body: {} });
-    expect(r.status).toBe(400);
-    expect(r.json.error).toContain("只在 Windows 上");
+    // Windows 上该端点会启动安装流程；此断言只验证非 Windows 的拒绝路径。
+    if (process.platform !== "win32") {
+      const r = await api("/pwsh/install", { method: "POST", body: {} });
+      expect(r.status).toBe(400);
+      expect(r.json.error).toContain("只在 Windows 上");
+    }
   });
 });

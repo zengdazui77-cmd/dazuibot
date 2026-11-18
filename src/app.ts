@@ -48,6 +48,7 @@ import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
 import { ConnectionService } from "./agent/connections.js";
+import { PluginService } from "./agent/plugins.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
 import type { BotSettings } from "./agent/settings.js";
 import { TaskService } from "./tasks/service.js";
@@ -165,10 +166,12 @@ export class App {
   private webSearch: WebSearchSettings;
   /** 已授权账号：全局一份，所有机器人共用（设置 › 连接） */
   readonly connections: ConnectionService;
+  readonly plugins: PluginService;
   web: WebServer | undefined;
   desktop: DesktopHooks | undefined;
   /** zdzui 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
   account!: AccountManager;
+  /** 云端团队身份；会话仅由 Electron safeStorage 加密保存 */
   /** 故障排查页最近一次"测试模型 / 测试代理"的结果（复制诊断信息时带上） */
   lastDiagnostics: { model?: import("./diagnostics.js").ModelTestResult; agent?: import("./diagnostics.js").AgentTestResult } = {};
   private notices: Array<{ at: number; level: "info" | "warn"; text: string }> = [];
@@ -223,6 +226,7 @@ export class App {
     // 桌面版搜索走 Chromium 的网络栈（系统代理、PAC、系统证书）；命令行 / Docker 用 Node 的 fetch
     this.search = new SearchService({ settings: () => this.webSearch, fetch: () => this.desktop?.fetch });
     this.connections = new ConnectionService({ kv: this.store, fetch: () => this.desktop?.fetch });
+    this.plugins = new PluginService({ kv: this.store, runtimeDir: () => (config.agent.mode === "dsh" ? locateDshRuntime(findAppRoot()) : undefined), fetch: () => this.desktop?.fetch });
     this.agent = new AgentManager({
       store: this.store,
       dataDir: config.dataDir,
@@ -268,6 +272,7 @@ export class App {
         : undefined,
       search: this.search,
       connections: this.connections,
+      plugins: this.plugins,
       onNotice: (text) => this.notice("warn", text),
     });
     this.attention = new Attention({ store: this.store });
@@ -430,6 +435,8 @@ export class App {
     this.account ??= this.createAccount();
     return this.account;
   }
+
+
 
   private createAccount(): AccountManager {
     const account = new AccountManager({
@@ -816,6 +823,20 @@ export class App {
     } catch (e) {
       return { ...empty, error: (e as Error).message };
     }
+  }
+
+  /**
+   * 给无限画布用：生成一张图并直接返回字节。
+   * 与 agent 工具那条路径共用同一个 MediaService，但不走工作区、不落盘。
+   */
+  async generateCanvasImage(botId: string, input: { prompt: unknown; model?: unknown; size?: unknown }): Promise<{ data: Buffer; mime: string; model: string }> {
+    const media = this.agent.media;
+    if (!media) throw new Error("还没有连接 zdzui，无法生成图片");
+    const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
+    if (!prompt) throw new Error("请先写下想生成什么");
+    const model = typeof input.model === "string" && input.model.trim() ? input.model.trim() : undefined;
+    const size = typeof input.size === "string" && input.size.trim() ? input.size.trim() : undefined;
+    return media.generateImageBytes(botId, { prompt, ...(model ? { model } : {}), ...(size ? { size } : {}) });
   }
 
   private seedDefaultBot(): void {

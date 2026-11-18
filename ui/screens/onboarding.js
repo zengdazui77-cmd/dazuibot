@@ -276,7 +276,7 @@ function LangSwitch() {
   </div>`;
 }
 
-export function Onboarding({ status, gateway, defaultModel, onDone }) {
+export function Onboarding({ status, gateway, defaultModel, onDone, onTeam }) {
   const [models, setModels] = useState(null);
   // Docker / 远程部署：浏览器登录的回调到不了本程序，只能用 API Key
   const [useKey, setUseKey] = useState(false);
@@ -315,6 +315,7 @@ export function Onboarding({ status, gateway, defaultModel, onDone }) {
               <a href=${MF_KEYS} target="_blank" rel="noopener noreferrer">${t("onboarding.createKey")}</a>
             </div>`
           : html`<${AccountLogin} onFace=${onFace} onSignedIn=${loadModels} />`}
+      ${onTeam && html`<button type="button" class="text team-onboard-link" onClick=${onTeam}>${t("onboarding.teamLogin")}</button>`}
     </div>
   </main>`;
 }

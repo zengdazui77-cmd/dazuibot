@@ -1,0 +1,188 @@
+/* 无限画布（ui/screens/canvas.js）：一块可以放节点、连线的白板 */
+.canvas-page {
+  position: fixed;
+  inset: 0;
+  /* 用弹性列而不是固定行数的网格：工具条、提示、生图栏、属性栏都是「有就显示」的，
+     固定行数会在其中某条缺席时把画布挤到错误的行里。画布本身占满剩下的空间。 */
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+
+/* —— 顶部工具条 —— */
+.canvas-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--page-gutter);
+  border-bottom: 1px solid var(--line-2);
+  background: var(--glass-chrome);
+  backdrop-filter: var(--glass-filter);
+}
+.canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-inline-start: auto;
+}
+.canvas-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--space-1);
+  background: var(--line-2);
+}
+.canvas-zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.canvas-zoom-label {
+  min-width: 52px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--ctl-edge); /* 描边：按钮 */
+  border-radius: var(--r-well);
+  background: var(--surface);
+  color: var(--fg-2);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.canvas-zoom-label:hover { border-color: var(--ctl-edge-hover); }
+
+/* —— 画布区 —— */
+.canvas-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0) 0 0 / 24px 24px,
+    var(--bg);
+  cursor: grab;
+  user-select: none;
+}
+.canvas-stage:active { cursor: grabbing; }
+.canvas-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.canvas-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.canvas-links line {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.canvas-links circle { fill: var(--muted); }
+.canvas-link-live line {
+  stroke: var(--primary);
+  stroke-dasharray: 4 3;
+}
+
+/* —— 节点 —— */
+.canvas-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--r-pane);
+  background: var(--well);
+  box-shadow: var(--shadow-sm);
+  cursor: move;
+}
+.canvas-node.sel {
+  background: var(--accent-soft);
+  box-shadow: var(--shadow-md);
+}
+.canvas-node-text {
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.canvas-node img {
+  max-width: 100%;
+  border-radius: var(--r-well);
+  object-fit: contain;
+}
+.canvas-node-shape .canvas-shape {
+  width: 100%;
+  height: 56px;
+  border-radius: var(--r-well);
+  background: var(--accent-soft);
+}
+.canvas-node-shape .canvas-shape:where(.canvas-shape[data-color="brand"]) { background: var(--accent-soft); }
+
+/* 右侧连线把手 */
+.canvas-handle {
+  position: absolute;
+  right: calc(var(--space-1) * -1);
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: calc(var(--space-1) * -1);
+  padding: 0;
+  border: 1px solid var(--ctl-edge); /* 描边：图形本身 */
+  border-radius: 50%;
+  background: var(--surface-solid);
+  cursor: crosshair;
+}
+.canvas-handle:hover { border-color: var(--primary); background: var(--primary); }
+
+/* —— 空状态 / 忙碌态 —— */
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-1);
+  pointer-events: none;
+  color: var(--muted);
+}
+.canvas-busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: var(--space-2);
+  justify-items: center;
+  background: var(--scrim-soft);
+  color: var(--fg-2);
+}
+
+/* —— 右侧属性区 —— */
+.canvas-inspector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--page-gutter);
+  border-top: 1px solid var(--line-2);
+  background: var(--glass-chrome);
+}.canvas-inspector .k { flex: none; }
+.canvas-inspector .field { flex: 1; }
+
+/* —— AI 生图栏 —— */
+.canvas-gen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--page-gutter);
+  border-bottom: 1px solid var(--line-2);
+  background: var(--glass-chrome);
+}
+.canvas-gen .field { flex: 1; min-width: 0; }
+.canvas-gen select.field { flex: 0 1 220px; }
+.canvas-gen .btn { flex: none; }

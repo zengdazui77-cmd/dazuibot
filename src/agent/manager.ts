@@ -12,6 +12,7 @@ import type { MediaModel, MediaPlan, MediaService } from "./media.js";
 import { SearchAborted, type SearchService, type WebSource } from "./search.js";
 import { ConnectionError } from "./accounts.js";
 import type { ConnectionService } from "./connections.js";
+import type { PluginService } from "./plugins.js";
 import { APPROVAL_TTL_MS, ApprovalCenter, TASK_APPROVAL_TTL_MS, type QuestionItem } from "./approvals.js";
 import { MemoryError, MemoryStore, type Scope } from "./memory.js";
 import type { TaskHost, TaskService } from "../tasks/service.js";
@@ -56,6 +57,8 @@ export interface AgentManagerOptions {
   search?: SearchService;
   /** 已授权账号（全局，amb-connections 插件经 bridge 调用）；缺省时机器人没有这些工具 */
   connections?: ConnectionService;
+  /** 用户安装的插件（设置 › 插件）；缺省时没有插件 */
+  plugins?: PluginService;
   /** 需要让用户看到的提示（代理进程起不来等） */
   onNotice?: (text: string) => void;
   /** 模型的上下文长度（zdzui 模型资料），写进 DSH 补丁 */
@@ -252,6 +255,7 @@ export class AgentManager {
         onTaskEvent: (root, n) => this.tasks?.onEvent(botId, root, n),
         idle: () => this.idle(botId),
         systemProxy: this.o.systemProxy,
+        plugins: () => this.o.plugins?.runtime() ?? [],
       });
       // 代理进程退出（中止宽限期内没停下、设置变化、崩溃、重启、停止）：进程里的压缩跟着没了，不再等它；跑着的后台任务记为中断、排恢复。
       // 空闲时换掉的（recycled）上面什么都没在跑：之后才开始的 run 已经在用新的进程，不能当成被打断

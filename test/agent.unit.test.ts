@@ -6,7 +6,7 @@ import { Store } from "../src/store/db.js";
 import { ApprovalCenter, isOptionReply, parseAnswer, promptText, taskPromptText } from "../src/agent/approvals.js";
 import { WeixinReply } from "../src/channels/weixin/channel.js";
 import { WeixinQuota } from "../src/channels/weixin/quota.js";
-import { AgentHost, SHELL_LIMITS, agentApi, modelLimits, providerFor, providerProfiles, type AgentApi, type ModelRoute } from "../src/agent/host.js";
+import { AgentHost, SHELL_LIMITS, agentApi, claudeThinking, effortRejection, modelLimits, providerFor, providerProfiles, routeTakesEffort, type AgentApi, type ModelRoute } from "../src/agent/host.js";
 import { AgentBridge, BOT_HEADER, type ProxyEvent, type Rejection } from "../src/agent/bridge.js";
 import { ApiFallbacks, shapeRejection } from "../src/agent/api-fallback.js";
 import { ActivityLog } from "../src/agent/activity.js";
@@ -25,6 +25,8 @@ afterEach(() => {
 });
 
 const base = { botId: "b", conversationId: "b:weixin:u1", sessionId: "s", tool: "bash", detail: "rm -rf build", reason: "" };
+const pluginPatchLine = (id: string, runtimeDir = "/rt") =>
+  `    - id: ${id}\n      name: ${JSON.stringify(path.join(runtimeDir, "plugins", `${id}.mjs`))}\n`;
 
 describe("ApprovalCenter", () => {
   it("formats the WeChat prompt and accepts 'y CODE' once", async () => {
@@ -298,11 +300,21 @@ describe("WeChat media delivery", () => {
   it("deliverables() keeps only regular files inside the workspace", async () => {
     const { deliverables, presentPaths } = await import("../src/agent/host.js");
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), "amb-ws-"));
+    const outside = path.join(ws, "..", "amb-outside-secret.txt");
     fs.writeFileSync(path.join(ws, "ok.txt"), "x");
     fs.writeFileSync(path.join(ws, "empty.txt"), "");
-    fs.symlinkSync("/etc/hostname", path.join(ws, "link.txt"));
-    const args = JSON.stringify({ files: [{ path: "ok.txt" }, { path: path.join(ws, "ok.txt") }, { path: "../../etc/passwd" }, { path: "/etc/hostname" }, { path: "link.txt" }, { path: "empty.txt" }, { path: "missing" }] });
+    fs.writeFileSync(outside, "secret");
+    let linked = false;
+    try {
+      fs.symlinkSync(outside, path.join(ws, "link.txt"));
+      linked = true;
+    } catch {
+      // Windows without Developer Mode may not permit symlink creation; the other escape cases remain covered.
+    }
+    const files = [{ path: "ok.txt" }, { path: path.join(ws, "ok.txt") }, { path: "../../etc/passwd" }, { path: "/etc/hostname" }, ...(linked ? [{ path: "link.txt" }] : []), { path: "empty.txt" }, { path: "missing" }];
+    const args = JSON.stringify({ files });
     expect(deliverables(ws, presentPaths(args))).toEqual([path.join(fs.realpathSync(ws), "ok.txt")]);
+    fs.rmSync(outside, { force: true });
   });
 });
 
@@ -403,12 +415,41 @@ describe("agent API per model", () => {
     expect(chat).toContain('        api: openai-completions\n        baseURL: "http://127.0.0.1:1/v1"\n');
     // 每个模型请求都标明机器人（bridge 用来归属上游错误）
     expect(chat).toContain(`        apiKeyEnv: AMB_MAGPIE_KEY\n        headers:\n          ${BOT_HEADER}: "b"\n`);
-    expect(chat).not.toMatch(/reasoning|compat/);
+    // 没有默认强度：用户不选思考强度时不发任何思考参数（请求和以前一样）
+    expect(chat).not.toMatch(/\n {8}reasoning: /);
     const claude = patchFor("mfb-b/claude-sonnet-5", "anthropic-messages", true);
     expect(claude).toContain('        api: anthropic-messages\n        baseURL: "http://127.0.0.1:1"\n');
     expect(claude).toContain("            input: [text, image]\n");
-    // Claude 不开思考（和以前一样用模型默认）
-    expect(claude).not.toMatch(/reasoning|compat/);
+    expect(claude).not.toMatch(/\n {8}reasoning: /);
+  });
+
+  it("thinking effort is selectable per model: Chat and Claude declare low/medium/high without a default; models that cannot think declare nothing", () => {
+    const efforts = "            reasoningEfforts:\n              low: low\n              medium: medium\n              high: high\n";
+    // Chat：声明可选强度，系统提示仍用 system 角色
+    expect(patchFor("mfb-b/gemini-3.6-flash", "openai-completions")).toContain(`${efforts}            compat:\n              supportsDeveloperRole: false\n`);
+    // 明确不推理的模型：什么都不声明
+    expect(patchFor("mfb-b/gpt-mini", "openai-completions", false)).not.toMatch(/reasoning|compat/);
+    // Claude 4.6 起只认自适应思考；4.5 及更早的 4 系用思考预算；更早的和认不出的不提供
+    expect(patchFor("mfb-b/claude-sonnet-5", "anthropic-messages", true)).toContain(`${efforts}            compat:\n              forceAdaptiveThinking: true\n`);
+    const budget = patchFor("mfb-b/claude-opus-4-5", "anthropic-messages", true);
+    expect(budget).toContain(efforts);
+    expect(budget).not.toContain("forceAdaptiveThinking");
+    expect(patchFor("mfb-b/claude-3-5-sonnet", "anthropic-messages")).not.toMatch(/reasoning|compat/);
+    expect(["claude-fable-5", "claude-opus-4-6", "claude-haiku-5-5", "mf/claude-sonnet-4-6"].map(claudeThinking)).toEqual(["adaptive", "adaptive", "adaptive", "adaptive"]);
+    expect(["claude-sonnet-4-5-20250929", "claude-opus-4-1", "claude-3-7-sonnet", "claude-sonnet-4-20250514"].map(claudeThinking)).toEqual(["budget", "budget", "budget", "budget"]);
+    expect(["claude-3-5-haiku", "claude-next", "gpt-6.1-terra"].map(claudeThinking)).toEqual([undefined, undefined, undefined]);
+    expect(routeTakesEffort("openai-responses", "gpt-mini", false)).toBe(false);
+    expect(routeTakesEffort("openai-responses", "gpt-6.1-terra")).toBe(true);
+  });
+
+  it("a refused thinking effort is told apart from other upstream errors", () => {
+    expect(effortRejection([{ status: 400, error: '{"error":{"message":"Unsupported parameter: reasoning_effort"}}' }], "boom")).toContain("HTTP 400");
+    expect(effortRejection([], "model does not support reasoning effort \"high\"")).toContain("does not support");
+    expect(effortRejection([{ status: 400, error: "thinking.type: adaptive is not supported for this model" }], "")).toBeTruthy();
+    // 限流、余额、上下文太长、普通参数错误都不算
+    expect(effortRejection([{ status: 429, error: "rate limit reached for reasoning models" }], "rate limited")).toBeUndefined();
+    expect(effortRejection([{ status: 400, error: "maximum context length exceeded" }], "context too long")).toBeUndefined();
+    expect(effortRejection([{ status: 400, error: "invalid tool schema" }], "invalid tool schema")).toBeUndefined();
   });
 
   it("one agent process serves every model: a provider per API (Responses split by reasoning), every model also under Chat for the fallback", () => {
@@ -424,12 +465,12 @@ describe("agent API per model", () => {
     expect(text).toContain('          - id: "mfb-b/gemini-3.6-flash"\n            name: "gemini-3.6-flash"\n            contextWindow: 64000\n            maxTokens: 16000\n');
     expect(text).toContain('          - id: "mfb-b/gpt-6.1-terra"\n            name: "gpt-6.1-terra"\n            contextWindow: 1050000\n            maxTokens: 32000\n');
     // 指令通道插件
-    expect(text).toContain('    - id: amb-control\n      name: "/rt/plugins/amb-control.mjs"\n');
+    expect(text).toContain(pluginPatchLine("amb-control"));
   });
 
   it("web_search searches through the host: the amb-web-search plugin, and a top-level web row selecting it (fetch stays http)", () => {
     const text = patchOf([route("m", "openai-completions")]);
-    expect(text).toContain('    - id: amb-web-search\n      name: "/rt/plugins/amb-web-search.mjs"\n');
+    expect(text).toContain(pluginPatchLine("amb-web-search"));
     // 顶层的行补丁在插件 insert 列表之前；补丁整体替换 config，所以网页抓取的 http 也要写上。DeepSeek 自带的搜索不会被选中
     expect(text).toContain("\n- id: web\n  config:\n    searchProvider: amb\n    fetchProvider: http\n- id: ");
     expect(text.indexOf("\n- id: web\n")).toBeLessThan(text.indexOf("\n- insert:\n"));
@@ -619,7 +660,7 @@ describe("full access patch", () => {
     const { text, env } = patch("full");
     expect(env.DSH_PERMISSION_MODE).toBe("danger-full-access");
     // 闸门是插件 insert 列表的最后一项，后面是顶层的行补丁
-    expect(text).toContain('    - id: amb-delete-gate\n      name: "/rt/plugins/amb-delete-gate.mjs"\n- id: approval\n  config:\n    policy: ask\n- id: permission\n');
+    expect(text).toContain(`${pluginPatchLine("amb-delete-gate")}- id: approval\n  config:\n    policy: ask\n- id: permission\n`);
     expect(text).toContain("danger-full-access: { sandbox: danger-full-access, approval: ask }");
     expect(text).not.toMatch(/approval: never/);
     // 网页/渠道的审批、读围栏照旧
@@ -644,7 +685,7 @@ describe("full access patch", () => {
     expect(JSON.parse((hostFor("readonly", () => ({ notion: true, feishu: true })) as any).env().AMB_CONNECTIONS)).toEqual({ notion: "read", feishu: "read" });
     fs.mkdirSync(host.home, { recursive: true });
     const text = fs.readFileSync((host as any).writePatch("m", []), "utf8");
-    expect(text).toContain('    - id: amb-connections\n      name: "/rt/plugins/amb-connections.mjs"\n');
+    expect(text).toContain(pluginPatchLine("amb-connections"));
   });
   it("other presets keep DSH's own permission rows", () => {
     for (const p of ["workspace", "readonly"] as const) {

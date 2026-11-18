@@ -1,5 +1,8 @@
 // sidebar · en: sidebar (screens/sidebar.js)
 export default {
+  teamSpace: "Team space",
+  canvas: "Infinite canvas",
+  teamSpace: "Team space",
   localUser: "Local user",
   settingsTitle: "Settings (⌘,)",
   openSettings: "Open Settings",

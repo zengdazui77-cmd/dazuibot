@@ -10,9 +10,12 @@ export class ApiError extends Error {
 }
 
 export async function api(path, opts = {}) {
+  const method = opts.method || "GET";
+  // 写操作一律声明 JSON，没有请求体也一样：后端按 content-type 拦跨站表单（没带就是 415）
+  const json = opts.body !== undefined || method === "POST" || method === "PUT" || method === "PATCH";
   const res = await fetch("/amb/api" + path, {
-    method: opts.method || "GET",
-    headers: { "x-amb-lang": getLang(), ...(opts.body !== undefined ? { "content-type": "application/json" } : {}) },
+    method,
+    headers: { "x-amb-lang": getLang(), ...(json ? { "content-type": "application/json" } : {}) },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     signal: opts.signal,
   });
@@ -117,4 +120,8 @@ export function attachGroup(groupId, handlers, signal) {
 /** 接上进行中的那条消息（切走再切回、刷新后）：先 snapshot（到目前为止的样子），之后的事件同 streamChat，最后 done */
 export function attachChat(botId, turnId, handlers, signal) {
   return readEvents(fetch(`/amb/api/bots/${encodeURIComponent(botId)}/chat/live?turn=${encodeURIComponent(turnId)}`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);
+}
+
+export function watchTeamConversation(teamId, conversationId, handlers, signal) {
+  return readEvents(fetch(`/amb/api/team/teams/${encodeURIComponent(teamId)}/conversations/${encodeURIComponent(conversationId)}/events`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);
 }
