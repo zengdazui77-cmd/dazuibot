@@ -14,22 +14,22 @@
 #     workflow on that tag with `targets`.
 #
 # Outputs (<version> = package.json version)
-#   anymodel-bot-<version>-mac-arm64.dmg            macos-15 (Apple Silicon)
-#   anymodel-bot-<version>-mac-x64.dmg              macos-15-intel
-#   anymodel-bot-<version>-win-x64.exe              windows-2025    (NSIS)
-#   anymodel-bot-<version>-win-arm64.exe            windows-11-arm  (NSIS)
-#   anymodel-bot-<version>-linux-x86_64.AppImage    ubuntu-24.04    (smoke-tested under Xvfb)
-#   anymodel-bot-<version>-linux-arm64.AppImage     ubuntu-24.04-arm (smoke-tested under Xvfb)
+#   dazuibot-<version>-mac-arm64.dmg            macos-15 (Apple Silicon)
+#   dazuibot-<version>-mac-x64.dmg              macos-15-intel
+#   dazuibot-<version>-win-x64.exe              windows-2025    (NSIS)
+#   dazuibot-<version>-win-arm64.exe            windows-11-arm  (NSIS)
+#   dazuibot-<version>-linux-x64.AppImage       ubuntu-24.04    (smoke-tested under Xvfb)
+#   dazuibot-<version>-linux-arm64.AppImage     ubuntu-24.04-arm (smoke-tested under Xvfb)
 #   Each installer is built on a runner of its own OS *and* CPU: dsh-runtime/node_modules is full of
 #   per-arch native packages (node-pty, koffi, sharp, ripgrep, ...) and scripts/prepare-dsh.mjs
 #   installs and prunes them for exactly one os-cpu. scripts/bundle-dsh.mjs then packs the runtime
 #   into resources/dsh: one dsh.asar (all JavaScript, ~10k files) plus a node_modules/ with only the
 #   native packages (~55 files), which keeps the Windows installer fast (few files to extract and scan).
 #
-# Code signing / notarization: optional repository secrets. Without them the build still succeeds:
-#   macOS is ad-hoc signed (Apple Silicon refuses to launch unsigned code) but not notarized, so
-#   Gatekeeper asks users to allow it in System Settings > Privacy & Security; Windows is unsigned,
-#   so SmartScreen warns.
+# Code signing / notarization use repository secrets. Manual test builds can run without them;
+# a tagged Windows release fails unless Authenticode signing succeeds. Without the macOS secrets,
+# macOS is ad-hoc signed (Apple Silicon refuses to launch unsigned code) but not notarized, so
+# Gatekeeper asks users to allow it in System Settings > Privacy & Security.
 #     CSC_LINK                     macOS: Developer ID Application certificate, base64 of the .p12
 #     CSC_KEY_PASSWORD             macOS: password of that .p12
 #     APPLE_ID                     notarization: Apple ID e-mail                 \ used only together
@@ -88,8 +88,16 @@ jobs:
             package.json
             CHANGELOG.md
             CHANGELOG_en.md
+            README.md
+            README_en.md
+            site/scripts/releases-from-github.ts
+            .github/workflows/release.yml
             scripts/release-notes.mjs
+            scripts/check-release-contract.mjs
           sparse-checkout-cone-mode: false
+
+      - name: Validate installer naming and signing contract
+        run: node scripts/check-release-contract.mjs
 
       - name: Read package.json version and match it against the tag
         id: version
@@ -103,7 +111,7 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Building anymodel-bot $version"
+          echo "Building dazuibot $version"
 
       - name: This version has a changelog entry
         if: github.ref_type == 'tag'
@@ -116,12 +124,12 @@ jobs:
         run: |
           # app: the unpacked app electron-builder leaves next to the installer (checked before upload)
           all='[
-            {"name":"mac-arm64","runner":"macos-15","os":"darwin","arch":"arm64","goos":"darwin","goarch":"arm64","targets":"--mac dmg","file":"mac-arm64.dmg","app":"release/mac-arm64/anymodel bot.app/Contents/MacOS/anymodel bot"},
-            {"name":"mac-x64","runner":"macos-15-intel","os":"darwin","arch":"x64","goos":"darwin","goarch":"amd64","targets":"--mac dmg","file":"mac-x64.dmg","app":"release/mac/anymodel bot.app/Contents/MacOS/anymodel bot"},
-            {"name":"win-x64","runner":"windows-2025","os":"win32","arch":"x64","goos":"windows","goarch":"amd64","targets":"--win nsis","file":"win-x64.exe","app":"release/win-unpacked/anymodel bot.exe"},
-            {"name":"win-arm64","runner":"windows-11-arm","os":"win32","arch":"arm64","goos":"windows","goarch":"arm64","targets":"--win nsis","file":"win-arm64.exe","app":"release/win-arm64-unpacked/anymodel bot.exe"},
-            {"name":"linux-x64","runner":"ubuntu-24.04","os":"linux","arch":"x64","goos":"linux","goarch":"amd64","targets":"--linux AppImage","file":"linux-x86_64.AppImage","app":"release/linux-unpacked/anymodel-bot"},
-            {"name":"linux-arm64","runner":"ubuntu-24.04-arm","os":"linux","arch":"arm64","goos":"linux","goarch":"arm64","targets":"--linux AppImage","file":"linux-arm64.AppImage","app":"release/linux-arm64-unpacked/anymodel-bot"}
+            {"name":"mac-arm64","runner":"macos-15","os":"darwin","arch":"arm64","goos":"darwin","goarch":"arm64","targets":"--mac dmg","file":"mac-arm64.dmg","app":"release/mac-arm64/dazuibot.app/Contents/MacOS/dazuibot"},
+            {"name":"mac-x64","runner":"macos-15-intel","os":"darwin","arch":"x64","goos":"darwin","goarch":"amd64","targets":"--mac dmg","file":"mac-x64.dmg","app":"release/mac/dazuibot.app/Contents/MacOS/dazuibot"},
+            {"name":"win-x64","runner":"windows-2025","os":"win32","arch":"x64","goos":"windows","goarch":"amd64","targets":"--win nsis","file":"win-x64.exe","app":"release/win-unpacked/dazuibot.exe"},
+            {"name":"win-arm64","runner":"windows-11-arm","os":"win32","arch":"arm64","goos":"windows","goarch":"arm64","targets":"--win nsis","file":"win-arm64.exe","app":"release/win-arm64-unpacked/dazuibot.exe"},
+            {"name":"linux-x64","runner":"ubuntu-24.04","os":"linux","arch":"x64","goos":"linux","goarch":"amd64","targets":"--linux AppImage","file":"linux-x64.AppImage","app":"release/linux-unpacked/dazuibot"},
+            {"name":"linux-arm64","runner":"ubuntu-24.04-arm","os":"linux","arch":"arm64","goos":"linux","goarch":"arm64","targets":"--linux AppImage","file":"linux-arm64.AppImage","app":"release/linux-arm64-unpacked/dazuibot"}
           ]'
           if [ "$TARGETS" = all ]; then
             selected=$(jq -c . <<<"$all")
@@ -150,8 +158,8 @@ jobs:
         shell: bash
     env:
       EXPECTED_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
-      # artifactName in package.json: anymodel-bot-${version}-${os}-${arch}.${ext}
-      INSTALLER: release/anymodel-bot-${{ needs.meta.outputs.version }}-${{ matrix.file }}
+      # artifactName in package.json: dazuibot-${version}-${os}-${arch}.${ext}
+      INSTALLER: release/dazuibot-${{ needs.meta.outputs.version }}-${{ matrix.file }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -232,6 +240,17 @@ jobs:
       - name: Fetch cua-driver
         run: node scripts/fetch-cua-driver.mjs --target "${{ matrix.os }}/${{ matrix.arch }}"
 
+      - name: Require signing secrets for a tagged Windows release
+        if: matrix.os == 'win32' && github.ref_type == 'tag'
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if [ -z "${WIN_CSC_LINK:-}" ] || [ -z "${WIN_CSC_KEY_PASSWORD:-}" ]; then
+            echo "::error::Tagged Windows releases require WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD"
+            exit 1
+          fi
+
       - name: Package ${{ matrix.file }}
         env:
           # Secrets are handed only to the OS that uses them; empty ones are unset below.
@@ -271,6 +290,18 @@ jobs:
             exit 1
           fi
           ls -la "$INSTALLER"
+
+      - name: Require a valid Authenticode signature for Windows tag releases
+        if: matrix.os == 'win32' && github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          INSTALLER: release/dazuibot-${{ needs.meta.outputs.version }}-${{ matrix.file }}
+        run: |
+          $signature = Get-AuthenticodeSignature -LiteralPath $env:INSTALLER
+          if ($signature.Status -ne 'Valid') {
+            throw "Tag releases require a valid Authenticode signature; got $($signature.Status). Configure WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD."
+          }
+          Write-Host "Signed by $($signature.SignerCertificate.Subject)"
 
       # The packaged executable in Node mode (as the app runs DSH): SDK client and DSH from dsh.asar, native
       # modules from resources/dsh/node_modules, and one agent turn through a mock model.
@@ -321,7 +352,7 @@ jobs:
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: anymodel-bot-${{ needs.meta.outputs.version }}-*
+          pattern: dazuibot-${{ needs.meta.outputs.version }}-*
           path: installers
           merge-multiple: true
 

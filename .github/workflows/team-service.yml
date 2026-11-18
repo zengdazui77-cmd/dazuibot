@@ -1,0 +1,161 @@
+name: Team service
+
+on:
+  pull_request:
+    paths:
+      - "team-service/**"
+      - "dsh-runtime/package.json"
+      - "dsh-runtime/package-lock.json"
+      - "dsh-runtime/plugins/**"
+      - ".github/workflows/team-service.yml"
+  push:
+    branches: [master]
+    paths:
+      - "team-service/**"
+      - "dsh-runtime/package.json"
+      - "dsh-runtime/package-lock.json"
+      - "dsh-runtime/plugins/**"
+      - ".github/workflows/team-service.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: team-service-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build and test with PostgreSQL 17
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: team_test
+          POSTGRES_USER: team_test
+          POSTGRES_PASSWORD: team_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U team_test -d team_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: team-service/package-lock.json
+
+      - name: Install team service dependencies
+        working-directory: team-service
+        run: npm ci --no-audit --no-fund
+
+      - name: Build team service
+        working-directory: team-service
+        run: npm run build
+
+      - name: Install Nginx for edge config validation
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx
+
+      - name: Validate bootstrap and production Nginx configurations
+        working-directory: team-service
+        run: bash scripts/check-nginx-config.sh
+
+      - name: Run team service tests
+        working-directory: team-service
+        run: npm test
+
+      - name: Test and build executor control plane
+        working-directory: team-service
+        run: |
+          npm exec -- vitest run executor/test
+          npm exec -- tsc -p executor/tsconfig.json
+          node --check executor/run-task.mjs
+          node --check executor/archive.mjs
+          # archive.mjs 是从 src/archive.ts 转译出来的：重新生成后必须与仓库里那份一致，
+          # 否则说明有人改了 TS 源却没重新生成，runner 镜像里跑的就不是最新逻辑。
+          node executor/build-archive.mjs
+          git diff --exit-code executor/archive.mjs
+
+      - name: Verify real PostgreSQL behavior (notifications, migrations, full suite)
+        working-directory: team-service
+        env:
+          TEAM_TEST_DATABASE_URL: postgres://team_test:team_test@127.0.0.1:5432/team_test
+        run: npm run test:postgres
+
+  local-pilot:
+    name: Local end-to-end pilot (cross-process revocation)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      # 演练脚本同时用到根目录的桌面端源码和 team-service 的源码，两边的依赖都要装。
+      - name: Install desktop app dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install team service dependencies
+        working-directory: team-service
+        run: npm ci --no-audit --no-fund
+
+      # 演练脚本要 import team-service/src/*.ts，这些文件要能被 tsx 直接加载。
+      - name: Run the local end-to-end pilot
+        run: npx tsx scripts/local-pilot.ts
+
+  executor-images:
+    name: Build team and isolated executor images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build Linux team API image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: team-service
+          file: team-service/Dockerfile
+          platforms: linux/amd64
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=team-api
+          cache-to: type=gha,mode=max,scope=team-api
+
+      - name: Build Linux task runner and verify native DSH runtime
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: team-service/executor/Dockerfile
+          platforms: linux/amd64
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=team-executor-runner
+          cache-to: type=gha,mode=max,scope=team-executor-runner
+
+      - name: Build controller from source
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: team-service/executor/Dockerfile.control
+          platforms: linux/amd64
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=team-executor-control
+          cache-to: type=gha,mode=max,scope=team-executor-control

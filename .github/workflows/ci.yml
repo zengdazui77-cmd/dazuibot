@@ -4,6 +4,7 @@
 # button for a full packaging test.
 # Changes to the agent host, the gateway supervisor, the desktop shell or dsh-runtime also run a
 # Windows end-to-end job (~6 min) with the real DSH host against a mock model.
+# Changes to the team UI / Electron invitation path run a focused Windows Electron smoke test.
 
 name: CI
 
@@ -48,15 +49,17 @@ jobs:
       - run: npm run build
       # README 自检（scripts/check-readme.mjs）：素材是否存在与体积、中英结构一致、链接与锚点、禁用词、alt
       - run: npm run docs:check
+      # Keep installer names and the release matrix aligned on every PR, not only at release time.
+      - run: npm run release:check
 
-  # Does this change touch the agent host, the gateway or the desktop shell? Only then run the
-  # Windows end-to-end job below (it needs a Windows runner and ~6 minutes).
+  # Identify changes that need the more expensive Windows integration checks below.
   changes:
-    name: Agent paths changed?
+    name: Windows integration paths changed?
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       agent: ${{ steps.diff.outputs.agent }}
+      team: ${{ steps.diff.outputs.team }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,6 +72,7 @@ jobs:
         run: |
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo "agent=true" >> "$GITHUB_OUTPUT"
+            echo "team=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           files=$(git diff --name-only "$BASE" HEAD)
@@ -78,6 +82,45 @@ jobs:
           else
             echo "agent=false" >> "$GITHUB_OUTPUT"
           fi
+          if echo "$files" | grep -qE '^(electron/|src/team/|ui/|scripts/(electron-smoke|build-magpie)\.mjs$|vendor/magpie/|package(-lock)?\.json$|\.github/workflows/ci\.yml$)'; then
+            echo "team=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "team=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The invitation deep-link path spans Electron protocol handling and the team screen. Keep this
+  # focused smoke separate from the full DSH agent end-to-end run.
+  windows-team-invite-smoke:
+    name: Windows desktop team invitation smoke
+    needs: changes
+    if: needs.changes.outputs.team == 'true'
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch magpie
+        run: git submodule update --init --depth 1 vendor/magpie
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: vendor/magpie/go.mod
+          cache-dependency-path: vendor/magpie/go.sum
+
+      - run: npm ci --no-audit --no-fund
+      - run: node scripts/build-magpie.mjs --target windows/amd64
+      - run: npm run electron:team-invite-smoke
 
   # Windows end-to-end: the real app (electron .) with the bundled magpie gateway and the real DSH
   # agent host, "Modelflare" pointed at a scripted mock model. One chat through the UI's SSE path
