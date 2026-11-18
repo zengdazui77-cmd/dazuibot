@@ -1,7 +1,7 @@
 // 所有页面共用的交互：主题、语言提示、导航、菜单、对话框、复制、Toast、下载识别、入场动画、埋点。
 // 每块都先判断元素在不在；本地存储一律 try/catch（隐私模式下可能抛错）。
 import { mountEyes } from "../lib/eyes";
-import { detectPlatform } from "../lib/platform";
+import { detectPlatform, downloadPlatformId } from "../lib/platform";
 import { initBanner } from "./banner";
 import "./stars";
 import "./sections";
@@ -226,7 +226,7 @@ const platform = detectPlatform().then((p) => {
   if (!groups.length || !data.platforms) return;
   const p = await platform;
   const label = p.os === "win" ? data.i18n.win : p.os === "mac" ? data.i18n.mac : p.os === "linux" ? data.i18n.linux : p.os === "mobile" ? data.i18n.mobile : data.i18n.generic;
-  const pid = p.os === "win" ? "win-x64" : p.os === "mac" ? (p.arch === "x64" ? "mac-x64" : "mac-arm64") : p.os === "linux" ? "linux-x64" : null;
+  const pid = downloadPlatformId(p);
   groups.forEach((g) => {
     const main = g.querySelector<HTMLAnchorElement>("[data-dl-main]")!;
     const lab = g.querySelector<HTMLElement>("[data-dl-label]")!;

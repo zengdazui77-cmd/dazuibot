@@ -1,6 +1,6 @@
 // 顶部公告条的交互（components/SiteBanner.astro）：轮播、翻页 / 滑动、关闭、按系统换下载直链、倒计时、埋点。
 // 显示哪些条目已由组件里的内联脚本在首帧前决定（带 data-on 的是当前这条），这里接着往下做。
-import type { Platform } from "../lib/platform";
+import { downloadPlatformId, type Platform } from "../lib/platform";
 
 type Deps = {
   track: (name: string, props?: Record<string, unknown>) => void;
@@ -119,7 +119,7 @@ export function initBanner({ track, platform, data, store }: Deps) {
   // —— 发版条的下载按钮：识别出系统、且有安装包地址时，直接下载对应安装包（点击埋点和提示走 client.ts 的下载逻辑） ——
   const dl = [...bar.querySelectorAll<HTMLAnchorElement>("a[data-dl-auto]")];
   if (dl.length) platform.then((p) => {
-    const pid = p.os === "win" ? "win-x64" : p.os === "mac" ? (p.arch === "x64" ? "mac-x64" : "mac-arm64") : p.os === "linux" ? "linux-x64" : null;
+    const pid = downloadPlatformId(p);
     const url = pid ? data.platforms?.[pid]?.url : undefined;
     if (!pid || !url || /\{[A-Z][A-Z0-9_]*\}/.test(url)) return; // 识别不出或还没有安装包：留在 /download
     dl.forEach((a) => {

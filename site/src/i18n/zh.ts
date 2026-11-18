@@ -6,7 +6,7 @@ export const zh = {
     title: "dazuibot｜本地运行的 AI 机器人，任意模型，按量付费",
     description:
       "开源、本地运行的 Grok Bot / OpenAI dots / Claude Duet 替代。在自己的电脑或服务器上运行 AI 机器人：名字、人设、模型都由你定；对话、记忆、文件、密钥留在你的设备上；一个 zdzui Key 接入 GPT、Claude、Gemini 等模型；App 免费，按用量付费，价格表公开。桌面、Docker、微信、飞书可用。",
-    ogImage: "/og/og-zh.png",
+    ogImage: "/og/og-zh.jpg",
   },
   nav: {
     main: "主导航",
@@ -406,9 +406,9 @@ export const zh = {
     mobile: "手机上通过微信 / 飞书使用",
     generic: "下载",
     more: "其它平台",
-    items: { "win-x64": "Windows 安装包（NSIS）", "mac-arm64": "macOS Apple 芯片", "mac-x64": "macOS Intel", "linux-x64": "Linux AppImage", docker: "Docker 命令", changelog: "更新日志" },
-    platform: { "win-x64": "Windows", "mac-arm64": "macOS", "mac-x64": "macOS", "linux-x64": "Linux" },
-    arch: { "win-x64": "x64", "mac-arm64": "Apple 芯片", "mac-x64": "Intel", "linux-x64": "x64 · AppImage" },
+    items: { "win-x64": "Windows 安装包（NSIS）", "win-arm64": "Windows ARM64 安装包（NSIS）", "mac-arm64": "macOS Apple 芯片", "mac-x64": "macOS Intel", "linux-x64": "Linux x64 AppImage", "linux-arm64": "Linux ARM64 AppImage", docker: "Docker 命令", changelog: "更新日志" },
+    platform: { "win-x64": "Windows", "win-arm64": "Windows", "mac-arm64": "macOS", "mac-x64": "macOS", "linux-x64": "Linux", "linux-arm64": "Linux" },
+    arch: { "win-x64": "x64", "win-arm64": "ARM64", "mac-arm64": "Apple 芯片", "mac-x64": "Intel", "linux-x64": "x64 · AppImage", "linux-arm64": "ARM64 · AppImage" },
     meta: "版本 {version} · 发布于 {publishedAt}",
     sha: "SHA-256",
     started: "已开始下载，可在浏览器下载列表查看。",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { osFromStrings } from "../src/lib/platform";
+import { architectureFromUAData, downloadPlatformId, osFromStrings } from "../src/lib/platform";
 import { fmt, fmtDate, href } from "../src/i18n";
 
 describe("系统识别", () => {
@@ -12,6 +12,21 @@ describe("系统识别", () => {
     ["", "", "unknown"],
   ])("%s → %s", (p, ua, os) => expect(osFromStrings(p, ua)).toBe(os));
   it("iPadOS 伪装成 Mac 时按手机处理", () => expect(osFromStrings("MacIntel", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", true)).toBe("mobile"));
+  it.each([
+    ["x86", "64", "x64"],
+    ["arm", "64", "arm64"],
+    ["arm64", "64", "arm64"],
+    ["arm", "32", "unknown"],
+    [undefined, undefined, "unknown"],
+  ] as const)("UA architecture %s/%s → %s", (arch, bitness, expected) => expect(architectureFromUAData(arch, bitness)).toBe(expected));
+  it.each([
+    [{ os: "win", arch: "x64" }, "win-x64"],
+    [{ os: "win", arch: "arm64" }, "win-arm64"],
+    [{ os: "win", arch: "unknown" }, "win-x64"],
+    [{ os: "linux", arch: "arm64" }, "linux-arm64"],
+    [{ os: "mac", arch: "x64" }, "mac-x64"],
+    [{ os: "mobile", arch: "unknown" }, null],
+  ] as const)("direct-download target for %o is %s", (platform, expected) => expect(downloadPlatformId(platform)).toBe(expected));
 });
 
 describe("i18n 工具", () => {

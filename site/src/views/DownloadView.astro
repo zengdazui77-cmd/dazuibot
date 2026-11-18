@@ -1,7 +1,7 @@
 ---
 // 下载页。版式和首页同一套：居中的页头 + 一个主操作，下面是等宽的卡片，层次靠留白和细线。样式在 pages.css 的"下载"。
 //   页头：标记 → 标题 → 一句话 → 按系统识别的下载按钮（client.ts 的 [data-dl]）→ 版本、更新日志、发布页。
-//   平台：Windows、macOS、Linux 三张卡，结构相同（macOS 一张卡两颗按钮：Apple 芯片、Intel）；识别出的系统标"你的系统"。
+//   平台：Windows、macOS、Linux 三张卡，结构相同（每张卡含对应的 x64/ARM64 按钮）；识别出的系统标"你的系统"。
 //   其它安装方式：Docker、命令行两张卡，每张三步。首页的 Docker 入口链到 #docker。
 //   校验：完整的 SHA-256 只放在这一节，不进平台卡。
 import Base from "../layouts/Base.astro";
@@ -24,9 +24,9 @@ type Build = (typeof PLATFORMS)[number];
 type Group = { id: "win" | "mac" | "linux"; icon: "windows" | "apple" | "linux"; builds: Build[]; tip?: string; cmd?: string };
 // id 和 lib/platform.ts 的 os 同名，页面底下的脚本靠它找到识别出的那张卡
 const groups: Group[] = [
-  { id: "win", icon: "windows", builds: ["win-x64"], tip: d.winHint },
+  { id: "win", icon: "windows", builds: ["win-x64", "win-arm64"], tip: d.winHint },
   { id: "mac", icon: "apple", builds: ["mac-arm64", "mac-x64"], tip: d.macHint },
-  { id: "linux", icon: "linux", builds: ["linux-x64"], cmd: d.linuxHint },
+  { id: "linux", icon: "linux", builds: ["linux-x64", "linux-arm64"], cmd: d.linuxHint },
 ];
 const docker = [
   { label: d.dockerSteps.run, code: releases.platforms.docker.command, track: "docker_cmd_copy", trackCommand: "docker-run" },

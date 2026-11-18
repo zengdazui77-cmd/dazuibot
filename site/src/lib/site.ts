@@ -4,6 +4,7 @@ import releasesJson from "../data/releases.json";
 import snapshotJson from "../data/pricing.snapshot.json";
 import githubJson from "../data/github.json";
 import type { Snapshot } from "./pricing";
+import { RELEASE_PLATFORMS, type ReleasePlatform } from "./release-assets";
 
 const env = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || `{${k}}`;
 /** 可选配置：没配时为空串（不产生占位符，也不会渲染出半截链接） */
@@ -44,15 +45,17 @@ const Releases = z.object({
   publishedAt: z.string().min(1),
   platforms: z.object({
     "win-x64": Bin,
+    "win-arm64": Bin,
     "mac-arm64": Bin,
     "mac-x64": Bin,
     "linux-x64": Bin,
+    "linux-arm64": Bin,
     docker: z.object({ image: z.string().min(1), command: z.string().min(1) }),
   }),
 });
 export const releases = Releases.parse(releasesJson);
-export type PlatformId = "win-x64" | "mac-arm64" | "mac-x64" | "linux-x64";
-export const PLATFORMS: PlatformId[] = ["win-x64", "mac-arm64", "mac-x64", "linux-x64"];
+export type PlatformId = ReleasePlatform;
+export const PLATFORMS: PlatformId[] = [...RELEASE_PLATFORMS];
 
 /** 上游历史价格快照（2026-10-30 抓取，不是本站定价）。页面上只用它的非价格事实：
  *  模型清单、厂商、上下文长度、分档阈值；任何具体价格数字都不展示（本站定价以站点后台为准）。 */

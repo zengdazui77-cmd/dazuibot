@@ -1,4 +1,4 @@
-# 生成静态图形资源：favicon / App 图标（Eyes 标记，静态居中）与 OG 分享图（zh / en，1200×630）。
+# 生成静态图形资源：favicon / App 图标（Eyes 标记，静态居中）与 OG 分享图（zh / en，1200×630 JPEG）。
 # 产物提交到 public/；改了文案或标记后手动运行：python3 scripts/make-og.py（需要 Pillow 与 Noto Sans SC）。
 import os
 import sys
@@ -42,18 +42,23 @@ def font(path, size, weight=None):
     return f
 
 
+def save_icon(im, path):
+    # 图标的颜色有限；调色板 PNG 保留透明度，避免 512px 图标超出站点体积预算。
+    im.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.FLOYDSTEINBERG).save(path, optimize=True)
+
+
 def icons():
     for name, size in [("favicon-32.png", 32), ("apple-touch-icon.png", 180), ("icon-192.png", 192), ("icon-512.png", 512)]:
         bg = Image.new("RGBA", (size, size), (0, 0, 0, 0) if name.startswith("favicon") else BG + (255,))
         m = mark(size if name.startswith("favicon") else int(size * 0.78))
         bg.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
-        bg.save(os.path.join(PUB, name), optimize=True)
+        save_icon(bg, os.path.join(PUB, name))
     # maskable：内容在中心 80% 安全区内
     size = 512
     bg = Image.new("RGBA", (size, size), BG + (255,))
     m = mark(int(size * 0.62))
     bg.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
-    bg.save(os.path.join(PUB, "icon-maskable-512.png"), optimize=True)
+    save_icon(bg, os.path.join(PUB, "icon-maskable-512.png"))
 
 
 def og(lang):
@@ -106,9 +111,9 @@ def og(lang):
         b.thumbnail((size, size), Image.LANCZOS)
         pos = [(860, 150), (770, 300), (960, 300), (760, 440), (900, 430), (1040, 440)][i]
         im.alpha_composite(b, pos)
-    out = os.path.join(PUB, "og", f"og-{lang}.png")
+    out = os.path.join(PUB, "og", f"og-{lang}.jpg")
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    im.convert("RGB").save(out, optimize=True)
+    im.convert("RGB").save(out, "JPEG", quality=92, optimize=True, progressive=True, subsampling=0)
     print(out, os.path.getsize(out) // 1024, "KB")
 
 

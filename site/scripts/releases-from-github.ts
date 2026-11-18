@@ -1,5 +1,5 @@
 // 从 GitHub 最新 Release 生成 src/data/releases.json：下载按钮直达 GitHub 上的安装包，官网服务器不提供下载。
-// 文件名按应用 electron-builder 的 artifactName：anymodel-bot-<版本>-<系统>-<架构>.<扩展名>
+// 文件名按应用 electron-builder 的 artifactName：dazuibot-<版本>-<系统>-<架构>.<扩展名>
 //   win-x64 ← *-win-x64.exe（NSIS）   mac-arm64 / mac-x64 ← *-mac-<架构>.dmg   linux-x64 ← *-linux-(x64|x86_64).AppImage
 // SHA-256 取 Release 里的 SHA256SUMS；没有时用 GitHub 给每个文件算的 digest。缺平台时保留占位符（生产构建会因此失败）。
 //   GITHUB_URL     仓库地址（必填），如 https://github.com/<your-org>/dazuibot
@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseReleaseInstaller, RELEASE_PLATFORMS } from "../src/lib/release-assets";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoUrl = (process.env.GITHUB_URL || "").replace(/\/+$/, "").replace(/\.git$/, "");
@@ -46,9 +47,6 @@ try {
   process.exit(1);
 }
 
-const RE = /^dazuibot-(\d+\.\d+\.\d+(?:-[\w.]+)?)-(win|mac|linux)-(x64|arm64|x86_64)\.(exe|dmg|AppImage)$/;
-const PLATFORM: Record<string, string> = { "win-x64-exe": "win-x64", "mac-arm64-dmg": "mac-arm64", "mac-x64-dmg": "mac-x64", "linux-x64-AppImage": "linux-x64", "linux-x86_64-AppImage": "linux-x64" };
-
 // SHA256SUMS：每行 "<64 位十六进制>  <文件名>"
 const sums = new Map<string, string>();
 const sumsAsset = release.assets.find((a) => a.name === "SHA256SUMS");
@@ -69,17 +67,14 @@ const placeholder = (id: string) => {
 };
 const platforms: Record<string, unknown> = {};
 let version = release.tag_name.replace(/^v/, "");
-for (const id of ["win-x64", "mac-arm64", "mac-x64", "linux-x64"]) {
-  const a = release.assets.find((x) => {
-    const r = RE.exec(x.name);
-    return r && PLATFORM[`${r[2]}-${r[3]}-${r[4]}`] === id;
-  });
+for (const id of RELEASE_PLATFORMS) {
+  const a = release.assets.find((x) => parseReleaseInstaller(x.name)?.platform === id);
   const sha = a && (sums.get(a.name) || (a.digest?.startsWith("sha256:") ? a.digest.slice(7) : ""));
   if (!a || !sha) {
     platforms[id] = placeholder(id);
     continue;
   }
-  version = RE.exec(a.name)![1];
+  version = parseReleaseInstaller(a.name)!.version;
   platforms[id] = { url: a.browser_download_url, sha256: sha, sizeMB: Math.round((a.size / 1048576) * 10) / 10 };
 }
 
@@ -99,4 +94,4 @@ const out = {
 };
 fs.writeFileSync(path.join(root, "src/data/releases.json"), JSON.stringify(out, null, 2) + "\n");
 const missing = Object.entries(platforms).filter(([, v]) => /\{[A-Z0-9_]+\}/.test(JSON.stringify(v))).map(([k]) => k);
-console.log(`releases.json：${release.tag_name}（${release.html_url}）${missing.length ? `，缺少 ${missing.join("、")}` : "，四个平台齐全"}`);
+console.log(`releases.json：${release.tag_name}（${release.html_url}）${missing.length ? `，缺少 ${missing.join("、")}` : "，六种架构齐全"}`);

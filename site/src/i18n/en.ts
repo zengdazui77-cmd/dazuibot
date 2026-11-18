@@ -7,7 +7,7 @@ export const en: Dict = {
     title: "dazuibot — Local AI bots, any model, pay per use",
     description:
       "An open-source, local-first alternative to Grok Bot, OpenAI dots and Claude Duet. Run AI bots on your own computer or server, with the name, persona and model up to you. Chats, memory, files and keys stay on your device; one zdzui key unlocks GPT, Claude, Gemini and more. The app is free and you pay per use, with a public price list. Desktop, Docker, Slack, Telegram and Discord.",
-    ogImage: "/og/og-en.png",
+    ogImage: "/og/og-en.jpg",
   },
   nav: {
     main: "Main",
@@ -401,9 +401,9 @@ export const en: Dict = {
     mobile: "Use it from your chat apps",
     generic: "Download",
     more: "Other platforms",
-    items: { "win-x64": "Windows installer (NSIS)", "mac-arm64": "macOS Apple silicon", "mac-x64": "macOS Intel", "linux-x64": "Linux AppImage", docker: "Docker command", changelog: "Changelog" },
-    platform: { "win-x64": "Windows", "mac-arm64": "macOS", "mac-x64": "macOS", "linux-x64": "Linux" },
-    arch: { "win-x64": "x64", "mac-arm64": "Apple silicon", "mac-x64": "Intel", "linux-x64": "x64 · AppImage" },
+    items: { "win-x64": "Windows x64 installer (NSIS)", "win-arm64": "Windows ARM64 installer (NSIS)", "mac-arm64": "macOS Apple silicon", "mac-x64": "macOS Intel", "linux-x64": "Linux x64 AppImage", "linux-arm64": "Linux ARM64 AppImage", docker: "Docker command", changelog: "Changelog" },
+    platform: { "win-x64": "Windows", "win-arm64": "Windows", "mac-arm64": "macOS", "mac-x64": "macOS", "linux-x64": "Linux", "linux-arm64": "Linux" },
+    arch: { "win-x64": "x64", "win-arm64": "ARM64", "mac-arm64": "Apple silicon", "mac-x64": "Intel", "linux-x64": "x64 · AppImage", "linux-arm64": "ARM64 · AppImage" },
     meta: "Version {version} · Published {publishedAt}",
     sha: "SHA-256",
     started: "Download started — check your browser's downloads.",

@@ -10,13 +10,12 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseReleaseInstaller, RELEASE_PLATFORMS } from "../src/lib/release-assets";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dir = process.env.DOWNLOADS_DIR;
 if (!dir) { console.error("缺少 DOWNLOADS_DIR"); process.exit(1); }
 
-const RE = /^dazuibot-(\d+\.\d+\.\d+(?:-[\w.]+)?)-(win|mac|linux)-(x64|arm64|x86_64)\.(exe|dmg|AppImage)$/;
-const PLATFORM: Record<string, string> = { "win-x64-exe": "win-x64", "mac-arm64-dmg": "mac-arm64", "mac-x64-dmg": "mac-x64", "linux-x64-AppImage": "linux-x64", "linux-x86_64-AppImage": "linux-x64" };
 // 先比数字三元组，再比预发布后缀：正式版 > 预发布版；都是预发布时按字典序
 const cmpVer = (a: string, b: string) => {
   const parse = (v: string) => { const m = /^(\d+\.\d+\.\d+)(?:-(.+))?$/.exec(v)!; return { nums: m[1].split(".").map(Number), pre: m[2] }; };
@@ -29,9 +28,8 @@ const cmpVer = (a: string, b: string) => {
 
 const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
 const found = files.flatMap((name) => {
-  const m = RE.exec(name);
-  const id = m && PLATFORM[`${m[2]}-${m[3]}-${m[4]}`];
-  return m && id ? [{ name, version: m[1], id }] : [];
+  const parsed = parseReleaseInstaller(name);
+  return parsed ? [{ name, ...parsed }] : [];
 });
 const version = found.map((f) => f.version).sort(cmpVer).at(-1);
 
@@ -47,8 +45,8 @@ const placeholder = (id: string) => {
 };
 const platforms: Record<string, unknown> = {};
 let newest = 0;
-for (const id of ["win-x64", "mac-arm64", "mac-x64", "linux-x64"]) {
-  const f = found.find((x) => x.id === id && x.version === version);
+for (const id of RELEASE_PLATFORMS) {
+  const f = found.find((x) => x.platform === id && x.version === version);
   if (!f) { platforms[id] = placeholder(id); continue; }
   const full = path.join(dir, f.name);
   const st = fs.statSync(full);
