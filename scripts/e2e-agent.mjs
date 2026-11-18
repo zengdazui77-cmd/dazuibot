@@ -4,7 +4,7 @@
 // one chat message through the local HTTP API, and a hard timeout. Everything is written to --out
 // (app stdout/stderr, model requests, agent status polls, the data dir) so CI can upload it.
 //
-//   node scripts/e2e-agent.mjs --out <dir> [--timeout-ms 180000] [--procmon] [--tool] [--managed] [--stream]
+//   node scripts/e2e-agent.mjs --out <dir> [--timeout-ms 180000] [--procmon] [--tool] [--stream]
 //                              [--reasoning] [--observe-ms N] [--max-console-windows N] -- <app exe> [args...]
 //
 // --procmon (Windows): also log every process start and every visible console window while the app
