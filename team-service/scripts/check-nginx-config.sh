@@ -27,6 +27,11 @@ pid $tmp/nginx.pid;
 error_log $tmp/error.log;
 events {}
 http {
+    # nginx -t 会真的去打开 access_log 指定的文件。
+    # 不显式指定的话就用编译时的默认值（通常是 /var/log/nginx/access.log），
+    # 而 CI 里跑这个检查的不是 root，写不到那个目录 —— 配置本身没问题，
+    # 检查却因为权限失败。指到临时目录里，测的就是配置本身。
+    access_log $tmp/access.log;
     include $rendered;
 }
 EOF
