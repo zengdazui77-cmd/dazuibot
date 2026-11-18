@@ -17,26 +17,32 @@ openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
 check_config() {
   local source=$1
   local rendered="$tmp/$(basename "$source")"
+  # nginx -t 不只是读配置：它会真的去打开 access_log 指定的文件、真的去 bind
+  # listen 的端口。所以要把它当成「这份配置在 CI 机器上能不能起来」来准备：
+  #   - access_log 指到临时目录（默认是 /var/log/nginx/access.log，非 root 写不了）
+  #   - listen 80/443 换成高位端口（80/443 是特权端口，CI 里非 root 绑不了）
+  # 换端口不影响要验的东西：这个检查要确认的是配置语法与引用完整。
   sed \
     -e "s|/etc/nginx/snippets/team-proxy-headers.conf|$deploy_dir/team-proxy-headers.conf|g" \
     -e "s|/etc/letsencrypt/live/team.example.com|$tmp/certs|g" \
     -e "s|/var/log/nginx/team-access.log|$tmp/team-access.log|g" \
+    -e "s|listen 80;|listen $port;|" \
+    -e "s|listen 443 ssl http2;|listen $((port + 1)) ssl http2;|" \
     "$source" >"$rendered"
   cat >"$tmp/nginx.conf" <<EOF
 pid $tmp/nginx.pid;
 error_log $tmp/error.log;
 events {}
 http {
-    # nginx -t 会真的去打开 access_log 指定的文件。
-    # 不显式指定的话就用编译时的默认值（通常是 /var/log/nginx/access.log），
-    # 而 CI 里跑这个检查的不是 root，写不到那个目录 —— 配置本身没问题，
-    # 检查却因为权限失败。指到临时目录里，测的就是配置本身。
     access_log $tmp/access.log;
     include $rendered;
 }
 EOF
   nginx -t -p "$tmp/" -c "$tmp/nginx.conf"
 }
+
+# 高位端口，避免和 CI 机器上已有的服务撞上
+port=${TEAM_NGINX_CHECK_PORT:-18080}
 
 check_config "$deploy_dir/nginx-team-bootstrap.conf"
 check_config "$deploy_dir/nginx-team.conf"
