@@ -9,7 +9,7 @@ on:
       - "dsh-runtime/plugins/**"
       - ".github/workflows/team-service.yml"
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "team-service/**"
       - "dsh-runtime/package.json"
