@@ -193,7 +193,18 @@ fs.writeFileSync(
     2,
   ) + "\n",
 );
-const env = { ...process.env, AMB_LOG_LEVEL: "debug", AMB_MEMORY_REVIEW_DELAY_MS: "600000" };
+// AMB_ELECTRON_SMOKE 指向「截图路径」，应用会把它的父目录当数据目录
+// （见 electron/main.ts 的 boot()）。不设这个变量，应用读的是
+// <userData>/data —— 也就是 %APPDATA%\zdzui-assistant\data，跟这里写的
+// config.json 不是同一个地方：配置读不到，应用就按默认配置起来
+// （magpie 走 managed，指向真实站点），跑的就不是这个脚本想测的东西了。
+// 截图路径放在 dataDir 里面，父目录才正好是 dataDir。
+const env = {
+  ...process.env,
+  AMB_LOG_LEVEL: "debug",
+  AMB_MEMORY_REVIEW_DELAY_MS: "600000",
+  AMB_ELECTRON_SMOKE: path.join(dataDir, "shot.png"),
+};
 if (privatePwsh) fs.rmSync(pwshHome, { recursive: true, force: true });
 const launch = opt("launch", "node");
 say("launching", launch, JSON.stringify(cmd));
@@ -202,7 +213,11 @@ let appExit;
 if (launch === "node" || launch === "broken-pipe") {
   const appOut = fs.openSync(path.join(out, "app.stdout.log"), "w");
   const appErr = fs.openSync(path.join(out, "app.stderr.log"), "w");
-  app = spawn(cmd[0], cmd.slice(1), { env, cwd: appCwd, stdio: launch === "node" ? ["ignore", appOut, appErr] : ["ignore", "pipe", "pipe"] });
+  // Electron 要在项目目录里跑（那里才有 package.json 与 main 入口）。
+  // --cwd 指定的就是这个；不给就用当前目录，而不是数据目录的父目录——
+  // 那儿只有 config.json，Electron 起不来，界面永远不出现。
+  const nodeCwd = opt("cwd", process.cwd());
+  app = spawn(cmd[0], cmd.slice(1), { env, cwd: nodeCwd, stdio: launch === "node" ? ["ignore", appOut, appErr] : ["ignore", "pipe", "pipe"] });
   if (launch === "broken-pipe") {
     app.stdout.destroy();
     app.stderr.destroy();
