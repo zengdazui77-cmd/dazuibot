@@ -50,6 +50,10 @@ const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
 const opts = dash >= 0 ? argv.slice(0, dash) : argv;
 const cmd = dash >= 0 ? argv.slice(dash + 1) : [];
+// CI 的 Windows runner 与本地开发机都没有可用的 GPU：Electron 建窗口时会报
+// UnknownVizError，boot() 抛错退出，界面永远起不来（scripts/electron-smoke.mjs
+// 早就为同一件事加过 --disable-gpu）。这里统一加上，别让每个调用方都记得。
+if (cmd.length && !cmd.includes("--disable-gpu")) cmd.push("--disable-gpu");
 const opt = (k, d) => {
   const i = opts.indexOf(`--${k}`);
   return i >= 0 ? opts[i + 1] : d;
