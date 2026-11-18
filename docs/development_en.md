@@ -4,7 +4,7 @@
 
 This guide is for people who want to run dazuibot from source, package it, or contribute. If you only want to use the app, download an installer; see the [README](../README_en.md#-download).
 
-- A bot is a persona, a default model and its memory. Accounts are global (Settings › Connections) and shared by all bots, with as many per service as you like. Built for personal use by one person.
+- Personal space remains single-user and local: a bot is a persona, a default model and its memory, and local bots share the configured channel accounts. Team space uses a separate team-email sign-in inside the same desktop app; a separate cloud service owns membership, shared data and cloud text jobs.
 - Models come from this site's [relay](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme): **in the white-label build the first run only asks for an API key** (account sign-in is off, see `ACCOUNT_LOGIN_ENABLED`), and the models are listed once `GET https://api.zdzui.xyz/v1/models` succeeds. Requests go through the bundled [magpie](https://github.com/yetone/magpie) gateway.
 - Three ways to run, one codebase: **desktop app (Electron)**, **command line `npm start`**, **Docker**.
 
@@ -33,6 +33,7 @@ ui/              console UI (Preact + htm, no build step)
   locales/       UI strings: zh-CN/ and en/, one file per namespace
   css/ lib/ components/ screens/ assets/ main.js
 dsh-runtime/     dependency manifest for the DSH agent runtime and dazuibot plugins (plugins/)
+team-service/    PostgreSQL team API, email identity, roles, shared workspace, text worker and deployment config
 scripts/         setup / build-magpie / fetch-cua-driver / prepare-dsh / bundle-dsh / electron-smoke / check-readme and more
 vendor/          git submodules: magpie (compiled at build time), deepseek-harness, kimi-computer-use
 site/            website (Astro static site); see site/README.md
@@ -59,6 +60,7 @@ npm run electron:dev     # run in development mode
 npm run electron:smoke   # smoke test (uses xvfb-run automatically on headless Linux)
 npm run dist             # package for the current platform (magpie ships in resources/magpie/)
 npm run dist:linux | dist:mac | dist:win
+npm run release:check    # verify artifact names, release matrix, download docs, and Windows signing gate
 npm run test:dsh-bundle  # real DSH integration test under Electron against the packed build/dsh (run prepare:dsh + bundle:dsh first)
 ```
 
@@ -71,7 +73,29 @@ npm run test:dsh-bundle  # real DSH integration test under Electron against the 
 - The console listens on 127.0.0.1 only and generates a random access token on every launch, so other local programs cannot call the management API directly.
 - On quit, channels stop first, then magpie. If a previous run was killed and left a magpie process behind, the next launch cleans it up (Linux/macOS).
 
-Releases: write this version's entry in `CHANGELOG.md` and `CHANGELOG_en.md` (changes users will notice, not the website or internals; the English site page leaves out lines that mention WeChat or Feishu), bump `version` in `package.json`, commit, and push a `v<version>` tag. Without an entry the release workflow fails at the start. With one, it becomes the GitHub Release notes and appears on the site's changelog page. `.github/workflows/release.yml` builds on each of the six OS / architecture runners and publishes the installers plus `SHA256SUMS` to a GitHub Release. The repository secrets needed for signing and notarization are described in the comment at the top of that file. The same tag also starts `.github/workflows/docker.yml`, which publishes the x64 + arm64 image to `ghcr.io/modelflare-ai/anymodel-bot` (tagged `<version>` and `latest`).
+## Cloud team service
+
+Team members keep using the same desktop app. `src/team/` is the client; `team-service/` provides team identity and shared cloud data. It is separate from local personal space: the team API does not start local bots or run shells or code. If enabled, code tasks may only be sent to a separate executor through the signed protocol. Deployment settings, SMTP, database backups and outstanding production validation are in [team-service/README.md](../team-service/README.md).
+
+After changing the team client or service, run the focused checks:
+
+```bash
+npm run electron:team-invite-smoke
+npx vitest run test/team.integration.test.ts test/team.invitation-link.test.ts test/team.workspace.test.ts
+npm --prefix team-service ci
+npm --prefix team-service run build
+npm --prefix team-service test
+```
+
+The normal service suite uses PGlite. The real PostgreSQL notification test uses a disposable database and connects through three independent pools:
+
+```bash
+TEAM_TEST_DATABASE_URL=postgres://user:password@127.0.0.1:5432/team_test npm --prefix team-service run test:postgres
+```
+
+GitHub Actions runs this check against a PostgreSQL 17 container. When no local test database is available, do not report the skipped PostgreSQL test as passed.
+
+Releases: write this version's entry in `CHANGELOG.md` and `CHANGELOG_en.md` (changes users will notice, not the website or internals; the English site page leaves out lines that mention WeChat or Feishu), bump `version` in `package.json`, commit, and push a `v<version>` tag. `npm run release:check` verifies the artifact names, release matrix, download docs, and website parser agree; it also runs in regular PR/push CI. The release workflow fails at the start if the version has no changelog entry. The entry becomes the GitHub Release notes and appears on the site's changelog page. `.github/workflows/release.yml` builds on each of the six OS / architecture runners and publishes the installers plus `SHA256SUMS` to a GitHub Release. A tagged Windows release requires a valid Authenticode signature; the repository signing and notarization secrets are described in the comment at the top of that file. The same tag also starts `.github/workflows/docker.yml`, which publishes the x64 + arm64 image to `ghcr.io/modelflare-ai/anymodel-bot` (tagged `<version>` and `latest`).
 
 ## Docker
 

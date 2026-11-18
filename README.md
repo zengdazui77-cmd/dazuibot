@@ -54,6 +54,12 @@ dazuibot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 
 
 充值在[账单页](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme)；用量、余额和令牌都在[控制台](https://zdzui.xyz/dashboard?utm_source=zdzui&utm_campaign=amb_readme)。
 
+## 团队空间（桌面 App 原型）
+
+团队成员继续使用同一个 Windows/macOS/Linux 桌面 App，不需要下载成员专用版，也不需要共享个人中转站 API Key。团队入口使用邮箱验证码登录；Owner/Admin 在云端团队服务中配置团队模型凭据，成员会话和模型 Key 是两套独立凭据。邀请链接可唤起现有 App，未注册协议时也可以把邀请码粘贴回团队页面。
+
+团队空间提供共享 Bot、团队/私人讨论、成员角色、审计、云端文字任务和 Git 项目协作。每位成员在自己的电脑上使用独立仓库副本和分支，提交与推送仍由成员自己的 Git 权限完成。代码任务目前提供审批、签名投递和结果回调协议；团队 API 不运行 Shell 或代码，真正的隔离执行器需要单独部署和验证。个人空间仍保留本地数据和原有 API Key 流程。
+
 **dazuibot 怎么用本站中转站**
 
 - **只要一把 Key。** 白标版不提供应用内账户登录：首次启动粘贴 API Key 即可，之后应用自己记住。Docker 或服务器上跑也一样。
@@ -67,16 +73,16 @@ dazuibot 的模型全部来自本站的中转站：<https://zdzui.xyz>。一个 
 
 选择你的平台。每个版本都会附上全部安装包和 `SHA256SUMS` 校验文件。
 
-> 安装包与 `SHA256SUMS` 由分发方提供；本仓库不发布构建产物。
+> 下载页从 GitHub Releases 获取安装包；官网服务器不存放安装文件。
 
 | 平台 | 架构 | 安装包 |
 | :--- | :--- | :--- |
-| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` |
-| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` |
-| ![macOS][mac-badge] | Apple 芯片 | `anymodel-bot-<version>-mac-arm64.dmg` |
-| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
-| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
-| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
+| ![Windows][win-badge] | x64 | `dazuibot-<version>-win-x64.exe` |
+| ![Windows][win-badge] | arm64 | `dazuibot-<version>-win-arm64.exe` |
+| ![macOS][mac-badge] | Apple 芯片 | `dazuibot-<version>-mac-arm64.dmg` |
+| ![macOS][mac-badge] | Intel | `dazuibot-<version>-mac-x64.dmg` |
+| ![Linux][linux-badge] | x64 | `dazuibot-<version>-linux-x64.AppImage` |
+| ![Linux][linux-badge] | arm64 | `dazuibot-<version>-linux-arm64.AppImage` |
 
 **首次打开。** 如果系统提示这是从网上下载的应用：Windows 点「更多信息 → 仍要运行」，macOS 在「系统设置 → 隐私与安全性」里点「仍要打开」。Linux 先给 AppImage 加可执行权限（`chmod +x`）再运行。关闭窗口会把 dazuibot 收到托盘，要退出请用托盘菜单或设置里的选项。
 
@@ -244,8 +250,8 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布，"常驻的个人 AI 智能体"成了热门：它替你盯着事情、在后台干活，需要你决定时再来找你。dazuibot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
 
 | | dazuibot | Grok Bot | OpenAI dots | Claude Duet |
-| :--- | :--- | :--- | :--- |
-| 开源 | ✅ MIT | — | — |
+| :--- | :--- | :--- | :--- | :--- |
+| 开源 | ✅ MIT | — | — | — |
 | 智能体跑在哪 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
 | 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 68 个（经本站中转站） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
 | 费用 | 应用免费，模型按 token 计费 | 订阅 | ChatGPT Pro / Business Premium 订阅 | Claude Pro / Max 订阅 |

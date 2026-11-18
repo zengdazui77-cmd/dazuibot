@@ -34,11 +34,11 @@ dazuibot is a local-first AI agent app for Windows, macOS and Linux. A bot is a 
 
 Your conversations, memory, files and API keys live on your device. Models come from this site's relay ([zdzui.xyz](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)): one API key, any model, priced per token. dazuibot itself has no subscription.
 
-Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: dazuibot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
+Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: dazuibot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-dazuibot-vs-grok-bot-openai-dots-and-claude-duet)).
 
 It is a Super Agent out of the box: background tasks, scheduled rules and Needs you need no extra setup. The design draws on DeepSeek's [super-agent prototype](https://github.com/deepseek-ai/dsh-superagent-prototype), and the agent runs on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ([the full story, in Chinese](./docs/blog/superagent.md)).
 
-📥 [Download](#-download) · 🌠 [Screenshots](#-screenshots) · 🌟 [Features](#-key-features) · 🆚 [Compare](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet) · 🔐 [Privacy](#-how-it-works--privacy)
+📥 [Download](#-download) · 🌠 [Screenshots](#-screenshots) · 🌟 [Features](#-key-features) · 🆚 [Compare](#-dazuibot-vs-grok-bot-openai-dots-and-claude-duet) · 🔐 [Privacy](#-how-it-works--privacy)
 
 ---
 
@@ -54,6 +54,12 @@ Every model in dazuibot comes from this site's relay: <https://zdzui.xyz>. One A
 
 Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_campaign=amb_readme); usage, balance and keys live in the [console](https://zdzui.xyz/dashboard?utm_source=zdzui&utm_campaign=amb_readme).
 
+## Team space (desktop App prototype)
+
+Team members keep using the same Windows/macOS/Linux desktop App. They do not need a separate member build or a shared relay API key. The team entry uses email-code sign-in; owners and admins configure the team model credential in the cloud service, while member sessions and model keys remain separate credentials. Invitation links can open the existing App, with copy-and-paste fallback when the protocol is not registered.
+
+Team space provides shared bots, team/private discussions, member roles, audit records, cloud text jobs and Git project collaboration. Each member works in a separate local clone and branch; commits and pushes use that member's own Git permissions. Code tasks currently provide an approval, signed-dispatch and result-callback protocol; the team API never runs shell or code, and a real isolated executor still needs separate deployment and verification. Personal space keeps its local data and original API-key flow.
+
 **How dazuibot uses this relay**
 
 - **One key is all it takes.** The white-label build has no in-app account sign-in: paste an API key on first launch and the app remembers it. Same in Docker or on a server.
@@ -67,16 +73,16 @@ Top up on the [billing page](https://zdzui.xyz/billing?utm_source=zdzui&utm_camp
 
 Pick your platform. Every version ships with all installers and a `SHA256SUMS` file.
 
-> Installers and `SHA256SUMS` are provided by the distributor; this repository does not publish build artifacts.
+> The download page reads installers from GitHub Releases; the website server does not store installer files.
 
 | Platform | Architecture | Installer |
 | :--- | :--- | :--- |
-| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` |
-| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` |
-| ![macOS][mac-badge] | Apple silicon | `anymodel-bot-<version>-mac-arm64.dmg` |
-| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` |
-| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` |
-| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` |
+| ![Windows][win-badge] | x64 | `dazuibot-<version>-win-x64.exe` |
+| ![Windows][win-badge] | arm64 | `dazuibot-<version>-win-arm64.exe` |
+| ![macOS][mac-badge] | Apple silicon | `dazuibot-<version>-mac-arm64.dmg` |
+| ![macOS][mac-badge] | Intel | `dazuibot-<version>-mac-x64.dmg` |
+| ![Linux][linux-badge] | x64 | `dazuibot-<version>-linux-x64.AppImage` |
+| ![Linux][linux-badge] | arm64 | `dazuibot-<version>-linux-arm64.AppImage` |
 
 **First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides dazuibot to the tray; quit from the tray menu or from Settings.
 
@@ -244,8 +250,8 @@ The full story, in Chinese: [dazuibot 超级智能体](./docs/blog/superagent.md
 In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet made the always-on personal AI agent the thing to watch: it keeps an eye on things, works in the background and comes to you when a decision is yours. dazuibot does the same kind of job a different way: open source, on your own device, with any model.
 
 | | dazuibot | Grok Bot | OpenAI dots | Claude Duet |
-| :--- | :--- | :--- | :--- |
-| Open source | ✅ MIT | — | — |
+| :--- | :--- | :--- | :--- | :--- |
+| Open source | ✅ MIT | — | — | — |
 | Where the agent runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
 | Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, 68 in total (through this relay) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
 | Cost | Free app, models billed per token | Subscription | ChatGPT Pro / Business Premium subscription | Claude Pro / Max subscription |

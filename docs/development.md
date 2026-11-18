@@ -4,7 +4,7 @@
 
 这份文档给想从源码运行、打包或参与开发的人看。普通用户直接下载安装包即可，见 [README](../README.md#-下载)。
 
-- 一个机器人 = 人设 + 默认模型 + 记忆。账号是全局的（设置 › 连接），所有机器人共用，同一个服务可以加多个。定位：自用、单用户。
+- 个人空间仍按单机模式工作：一个机器人 = 人设 + 默认模型 + 记忆，账号由本地机器人共用。团队空间在现有桌面 App 中另走团队邮箱登录，团队成员、共享数据和云端文字任务由独立团队服务处理。
 - 模型来自本站的[中转站](https://zdzui.xyz/?utm_source=zdzui&utm_campaign=amb_readme)：**白标版首次启动只填 API Key**（账户登录已关闭，见 `ACCOUNT_LOGIN_ENABLED`），校验 `GET https://api.zdzui.xyz/v1/models` 通过后模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。
 - 三种运行方式，同一套代码：**桌面版（Electron）**、**命令行 `npm start`**、**Docker**。
 
@@ -33,6 +33,7 @@ ui/              管理界面（Preact + htm，无构建步骤）
   locales/       界面文案：zh-CN/ 与 en/，每个命名空间一个文件
   css/ lib/ components/ screens/ assets/ main.js
 dsh-runtime/     DSH 代理运行时的依赖清单与 dazuibot 插件（plugins/）
+team-service/    PostgreSQL 团队 API、邮箱身份、团队权限、共享空间、文字 Worker 与部署配置
 scripts/         setup / build-magpie / fetch-cua-driver / prepare-dsh / bundle-dsh / electron-smoke / check-readme 等
 vendor/          git 子模块：magpie（构建时编译）、deepseek-harness、kimi-computer-use
 site/            官网（Astro 静态站），说明见 site/README.md
@@ -59,6 +60,7 @@ npm run electron:dev     # 开发运行
 npm run electron:smoke   # 冒烟测试（Linux 无显示器时自动用 xvfb-run）
 npm run dist             # 打包当前平台（magpie 随附在 resources/magpie/）
 npm run dist:linux | dist:mac | dist:win
+npm run release:check    # 检查安装包名、发布矩阵、下载文档与 Windows 签名门禁
 npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打包后的 build/dsh（需先 prepare:dsh + bundle:dsh）
 ```
 
@@ -71,7 +73,29 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 - 界面只监听 127.0.0.1，且每次启动生成随机访问令牌，其他本机程序无法直接调用管理接口。
 - 退出时先停渠道、再停 magpie；若上次被强杀残留 magpie 进程，下次启动会自动清理（Linux/macOS）。
 
-发布：在 `CHANGELOG.md` 和 `CHANGELOG_en.md` 写好这个版本的更新日志（用户能感受到的变化，不写网站和内部改动。官网英文页不显示提到微信、飞书的行），改 `package.json` 的版本号并提交，推送 `v<版本>` 标签。这个版本没写更新日志时，发布流程开始就会失败；写了就作为 GitHub Release 的说明，官网更新日志页也显示它。`.github/workflows/release.yml` 会在六种系统 / 架构上各自打包，并把安装包和 `SHA256SUMS` 发到 GitHub Release。签名与公证所需的仓库密钥见该文件开头的注释。同一个标签还会触发 `.github/workflows/docker.yml`，把 x64 + arm64 镜像发布到 `ghcr.io/modelflare-ai/anymodel-bot`（`<版本>` 和 `latest` 两个标签）。
+## 云端团队服务
+
+团队成员继续使用同一个桌面 App；`src/team/` 是客户端，团队身份和共享数据由 `team-service/` 提供。团队服务与本地个人空间分开：团队 API 不启动本地 Bot，不运行 Shell 或代码；团队代码任务如启用，只能通过签名协议交给独立执行器。部署设置、SMTP、数据库备份以及仍未完成的生产验证见 [team-service/README.md](../team-service/README.md)。
+
+改动团队客户端或服务端后，可运行针对性检查：
+
+```bash
+npm run electron:team-invite-smoke
+npx vitest run test/team.integration.test.ts test/team.invitation-link.test.ts test/team.workspace.test.ts
+npm --prefix team-service ci
+npm --prefix team-service run build
+npm --prefix team-service test
+```
+
+服务端常规测试使用 PGlite。真实 PostgreSQL 通知测试使用一次性测试库，并连接三个独立连接池：
+
+```bash
+TEAM_TEST_DATABASE_URL=postgres://user:password@127.0.0.1:5432/team_test npm --prefix team-service run test:postgres
+```
+
+GitHub Actions 会在 PostgreSQL 17 容器中执行该检查。本地没有测试数据库时，不要把跳过的 PostgreSQL 测试报告成已通过。
+
+发布：在 `CHANGELOG.md` 和 `CHANGELOG_en.md` 写好这个版本的更新日志（用户能感受到的变化，不写网站和内部改动。官网英文页不显示提到微信、飞书的行），改 `package.json` 的版本号并提交，推送 `v<版本>` 标签。`npm run release:check` 会检查安装包名、发布矩阵、下载文档与网站解析器一致，并已加入常规 PR/push CI；这个版本没写更新日志时，发布流程也会在开始阶段失败。更新日志会作为 GitHub Release 的说明，官网更新日志页也显示它。`.github/workflows/release.yml` 会在六种系统 / 架构上各自打包，并把安装包和 `SHA256SUMS` 发到 GitHub Release；带版本标签的 Windows 发布要求有效 Authenticode 签名，所需仓库密钥见该文件开头的注释。同一个标签还会触发 `.github/workflows/docker.yml`，把 x64 + arm64 镜像发布到 `ghcr.io/modelflare-ai/anymodel-bot`（`<版本>` 和 `latest` 两个标签）。
 
 ## Docker
 
