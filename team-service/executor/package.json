@@ -1,0 +1,19 @@
+{
+  "name": "@dazuibot/team-code-executor",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node build-archive.mjs && tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "vitest run test",
+    "build:archive": "node build-archive.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

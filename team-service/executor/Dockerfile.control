@@ -1,0 +1,21 @@
+FROM node:22-bookworm-slim AS build
+
+WORKDIR /build/team-service
+COPY team-service/package.json team-service/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY team-service/tsconfig.json ./tsconfig.json
+COPY team-service/src ./src
+COPY team-service/executor/tsconfig.json ./executor/tsconfig.json
+COPY team-service/executor/src ./executor/src
+RUN ./node_modules/.bin/tsc -p executor/tsconfig.json
+
+FROM node:22-bookworm-slim
+
+RUN groupadd --system --gid 65532 runner \
+  && useradd --system --uid 65532 --gid 65532 --home-dir /home/runner --create-home runner
+
+WORKDIR /opt/dazuibot-executor
+COPY --from=build --chown=65532:65532 /build/team-service/executor/dist ./dist
+USER 65532:65532
+ENTRYPOINT ["node", "/opt/dazuibot-executor/dist/main.js"]
