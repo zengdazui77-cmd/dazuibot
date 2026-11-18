@@ -20,6 +20,7 @@ import { findAppRoot } from "../src/magpie/supervisor.js";
 import { initFileLog, logFilePath, logger, registerSecret, setConsoleLog } from "../src/log.js";
 import { normalizeLang, onLangChange, setLangPref, setSystemLang, t } from "../src/i18n/index.js";
 import { notificationOf, trayTitle, type AttentionItem } from "../src/tasks/attention.js";
+import { parseTeamInvitationLink, teamInvitationLink } from "../src/team/invitation-link.js";
 
 const log = logger("desktop");
 // 冒烟测试：截图到该路径后退出。只在不打包的运行里认（scripts/electron-smoke.mjs 用），
@@ -32,6 +33,37 @@ let tray: Tray | undefined;
 let entryUrl = "";
 let quitting = false;
 let stopped = false;
+let pendingTeamInvite: string | undefined;
+
+function receiveTeamInvitationLink(value: string): void {
+  const token = parseTeamInvitationLink(value);
+  if (!token) return;
+  pendingTeamInvite = token;
+  if (entryUrl) {
+    const alreadyOpen = !!win;
+    showWindow();
+    if (alreadyOpen) deliverTeamInvitation();
+  }
+}
+
+function deliverTeamInvitation(attempt = 0): void {
+  if (!pendingTeamInvite || !win || win.isDestroyed()) return;
+  const token = pendingTeamInvite;
+  const script = `(() => { const token = ${JSON.stringify(token)}; window.__DAZUI_TEAM_INVITE__ = token; window.location.hash = "#/team"; window.dispatchEvent(new CustomEvent("dazuibot:team-invitation", { detail: token })); })()`;
+  let localPage = false;
+  try { localPage = !!entryUrl && new URL(win.webContents.getURL()).origin === new URL(entryUrl).origin; } catch { /* wait for the local page */ }
+  if (win.webContents.isLoading() || !localPage) {
+    if (attempt < 50) setTimeout(() => deliverTeamInvitation(attempt + 1), 100).unref();
+    else log.warn("team invitation waited too long for the local UI");
+    return;
+  }
+  void win.webContents.executeJavaScript(script).then(() => {
+    if (pendingTeamInvite === token) pendingTeamInvite = undefined;
+  }).catch(() => log.warn("could not deliver a team invitation to the window"));
+}
+
+const startupTeamInvite = process.argv.map(parseTeamInvitationLink).find(Boolean);
+if (startupTeamInvite) pendingTeamInvite = startupTeamInvite;
 
 // 图标由 scripts/build-app-icons.py 生成。窗口在 Windows 用多尺寸 ico，系统按当前缩放挑对应的帧；
 // 其他系统窗口用 icon.png（macOS 忽略，Dock 用包里的 icns）。
@@ -103,7 +135,10 @@ function createWindow(): void {
       if (/^https?:/i.test(url)) void shell.openExternal(url);
     }
   });
-  win.webContents.on("did-finish-load", () => win?.webContents.setZoomFactor(core?.config.ui.zoom ?? 1));
+  win.webContents.on("did-finish-load", () => {
+    win?.webContents.setZoomFactor(core?.config.ui.zoom ?? 1);
+    deliverTeamInvitation();
+  });
   win.on("close", (e) => {
     if (!quitting && tray && core?.config.ui.closeToTray !== false) {
       e.preventDefault();
@@ -262,7 +297,7 @@ async function boot(): Promise<void> {
   // 「需要你」：托盘、角标、系统通知
   if (!SMOKE) core.attention.onChange(onAttention);
   const atLogin = process.argv.includes("--hidden") || (process.platform === "darwin" && app.getLoginItemSettings().wasOpenedAtLogin);
-  if (!atLogin || SMOKE) createWindow();
+  if (!atLogin || SMOKE || pendingTeamInvite) createWindow();
   if (SMOKE) await smoke(SMOKE);
 }
 
@@ -272,16 +307,21 @@ async function smoke(out: string): Promise<void> {
     await new Promise<void>((r) => (wc.isLoading() ? wc.once("did-finish-load", () => r()) : r()));
     // 未连接 Modelflare 时是引导页，已连接时是对话页；两者都带 data-screen
     let screen = "";
+    const expectInvite = process.env.AMB_ELECTRON_SMOKE_TEAM_INVITE === "1";
     for (let i = 0; i < 50; i++) {
       screen = String(await wc.executeJavaScript("document.querySelector('[data-screen]')?.getAttribute('data-screen') || ''"));
-      if (screen) break;
+      const invitePrefilled = expectInvite && await wc.executeJavaScript("document.querySelector('[data-screen=team]')?.getAttribute('data-invite-prefilled') === 'true'");
+      if (screen && (!expectInvite || invitePrefilled)) break;
       await new Promise((r) => setTimeout(r, 200));
     }
     const img = await wc.capturePage();
     fs.writeFileSync(out, img.toPNG());
     const status = await wc.executeJavaScript("fetch('/amb/api/status').then(r=>r.status)");
     const magpie = await wc.executeJavaScript("fetch('/magpie/').then(r=>r.status)");
-    console.log(`SMOKE ${JSON.stringify({ hasUi: !!screen, screen, status, magpie, magpieState: core?.magpie?.state })}`);
+    const teamInvitePrefilled = await wc.executeJavaScript("document.querySelector('[data-screen=team]')?.getAttribute('data-invite-prefilled') === 'true'");
+    const teamInviteArgument = process.argv.some((argument) => !!parseTeamInvitationLink(argument));
+    const locationHash = await wc.executeJavaScript("location.hash");
+    console.log(`SMOKE ${JSON.stringify({ hasUi: !!screen, screen, status, magpie, magpieState: core?.magpie?.state, teamInvitePrefilled, teamInviteArgument, locationHash })}`);
   } finally {
     app.quit(); // 任何一步失败也退出，不让冒烟测试挂到超时
   }
@@ -319,7 +359,16 @@ if (!app.requestSingleInstanceLock()) {
   app.setPath("userData", path.join(app.getPath("appData"), "zdzui-assistant"));
   // Windows 的系统通知（设置 › 常规 › 回复完成时通知）要求进程的 AppUserModelID 和安装器建的快捷方式一致（= build.appId）
   if (process.platform === "win32") app.setAppUserModelId("xyz.zdzui.assistant");
-  app.on("second-instance", () => showWindow());
+  if (app.isPackaged && (process.platform === "win32" || process.platform === "linux")) app.setAsDefaultProtocolClient("dazuibot");
+  app.on("second-instance", (_event, commandLine) => {
+    const invitation = commandLine.map(parseTeamInvitationLink).find(Boolean);
+    if (invitation) receiveTeamInvitationLink(teamInvitationLink(invitation));
+    else showWindow();
+  });
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    receiveTeamInvitationLink(url);
+  });
   for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => app.quit());
   app.on("window-all-closed", () => {
     if (!tray) app.quit(); // 有托盘时常驻

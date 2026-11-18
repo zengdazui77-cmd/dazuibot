@@ -44,6 +44,8 @@ export interface AppConfig {
   llm: { defaultModel: string; contextMessages: number; contextChars: number };
   /** 默认的图片 / 视频模型（生成前确认时默认选中）；空 = 按推荐顺序的第一个 */
   media: { imageModel: string; videoModel: string };
+  /** 云端团队 API 根地址；空 = 当前安装包尚未配置团队服务 */
+  team: { apiBaseUrl: string };
   feishu: { throttleMs: number };
   /** cdnBaseUrl：收发图片/文件的微信 CDN（测试时指向假服务） */
   weixin: { apiBaseUrl: string; cdnBaseUrl: string };
@@ -113,6 +115,7 @@ export function loadConfig(overrides: { dataDir?: string; env?: NodeJS.ProcessEn
       imageModel: typeof file.media?.imageModel === "string" ? file.media.imageModel : "",
       videoModel: typeof file.media?.videoModel === "string" ? file.media.videoModel : "",
     },
+    team: { apiBaseUrl: typeof file.team?.apiBaseUrl === "string" ? file.team.apiBaseUrl.trim() : "" },
     feishu: { throttleMs: num(env.AMB_FEISHU_THROTTLE_MS, file.feishu?.throttleMs ?? 400) },
     weixin: {
       apiBaseUrl: env.AMB_WEIXIN_API_BASE || file.weixin?.apiBaseUrl || "https://ilinkai.weixin.qq.com",

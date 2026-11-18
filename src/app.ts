@@ -43,6 +43,7 @@ import {
 } from "./modelflare.js";
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
+import { TeamClient } from "./team/client.js";
 import { loadModelInfoWithStatus, type ModelInfo, type ModelInfoResult, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
@@ -172,6 +173,7 @@ export class App {
   /** zdzui 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
   account!: AccountManager;
   /** 云端团队身份；会话仅由 Electron safeStorage 加密保存 */
+  team!: TeamClient;
   /** 故障排查页最近一次"测试模型 / 测试代理"的结果（复制诊断信息时带上） */
   lastDiagnostics: { model?: import("./diagnostics.js").ModelTestResult; agent?: import("./diagnostics.js").AgentTestResult } = {};
   private notices: Array<{ at: number; level: "info" | "warn"; text: string }> = [];
@@ -436,7 +438,22 @@ export class App {
     return this.account;
   }
 
+  ensureTeam(): TeamClient {
+    this.team ??= new TeamClient({
+      apiBaseUrl: this.config.team.apiBaseUrl,
+      dataDir: this.config.dataDir,
+      secretBox: () => this.desktop?.secretBox,
+      fetch: (input, init) => this.desktop?.fetch ? this.desktop.fetch(input, init) : fetch(input, init),
+    });
+    return this.team;
+  }
 
+  async configureTeamApiUrl(value: string): Promise<string> {
+    const apiBaseUrl = await this.ensureTeam().configureApiBaseUrl(value);
+    saveConfigFile(this.config.dataDir, (file) => { file.team = { ...(file.team ?? {}), apiBaseUrl }; });
+    this.config.team.apiBaseUrl = apiBaseUrl;
+    return apiBaseUrl;
+  }
 
   private createAccount(): AccountManager {
     const account = new AccountManager({
@@ -620,6 +637,7 @@ export class App {
     }
     this.agent.start();
     this.ensureAccount();
+    this.ensureTeam();
     this.seedDefaultBot();
     // 上次退出或崩溃时没处理完的消息：渠道开始收新消息之前取走标记，渠道起来后告诉用户
     const interrupted = takeInterrupted(this.store);

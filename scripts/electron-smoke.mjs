@@ -7,11 +7,15 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const exe = process.argv[2];
+const teamInviteMode = process.argv.includes("--team-invite");
+const exe = process.argv.slice(2).find((arg) => arg !== "--team-invite");
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-electron-"));
 const shot = path.join(dataDir, "smoke.png");
 let cmd = exe ?? require("electron");
 let args = exe ? [] : ["."];
+if (!exe && teamInviteMode) {
+  args.push("dazuibot://invite?token=smoke-invite-token-0123456789ABCDEF");
+}
 if (process.platform === "linux") args.push("--no-sandbox");
 if (process.platform === "linux" && !process.env.DISPLAY) {
   // Xvfb 没有 GPU：不关 GPU 时 capturePage 会报 UnknownVizError
@@ -20,7 +24,7 @@ if (process.platform === "linux" && !process.env.DISPLAY) {
 }
 // 白标版不读 AMB_DATA_DIR / AMB_UI_PORT：冒烟运行的数据目录就是截图路径的父目录（见 electron/main.ts），
 // 端口用 config.json 的默认值（3600，被占用时自动换随机端口）。
-const r = spawnSync(cmd, args, { env: { ...process.env, AMB_ELECTRON_SMOKE: shot }, encoding: "utf8", timeout: 120_000 });
+const r = spawnSync(cmd, args, { env: { ...process.env, AMB_ELECTRON_SMOKE: shot, ...(teamInviteMode ? { AMB_ELECTRON_SMOKE_TEAM_INVITE: "1" } : {}) }, encoding: "utf8", timeout: 120_000 });
 const out = (r.stdout || "") + (r.stderr || "");
 const line = out.split("\n").find((l) => l.startsWith("SMOKE "));
 if (!line) {
@@ -29,5 +33,8 @@ if (!line) {
 }
 const res = JSON.parse(line.slice(6));
 console.log(res, "截图：", shot);
-const ok = res.hasUi && res.status === 200 && res.magpie === 404 && res.magpieState === "running" && fs.existsSync(shot);
+const appOk = res.hasUi && res.status === 200 && fs.existsSync(shot);
+const ok = teamInviteMode
+  ? appOk && res.screen === "team" && res.teamInvitePrefilled
+  : appOk && res.magpie === 404 && res.magpieState === "running";
 process.exit(ok ? 0 : 1);

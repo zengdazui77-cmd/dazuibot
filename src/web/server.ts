@@ -34,6 +34,7 @@ import { exportFileName } from "../tasks/export.js";
 import type { StageGroup } from "../tasks/stage.js";
 import { GUIDE_STEPS, deriveGuide, isGuideStep, mergeGuide, normalizeGuide, type GuideState } from "../guide.js";
 import { normalizeLang, requestLang, setLangPref, t, withLang, type LangPref, t as tr } from "../i18n/index.js";
+import { TeamApiError } from "../team/client.js";
 
 const log = logger("web");
 const require = createRequire(import.meta.url);
@@ -392,6 +393,231 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       const b = await readJson(req);
       await app.setModelflareLine(normalizeLine(b.line));
       return send(res, 200, app.modelflareStatus());
+    }
+    if (seg[0] === "team") {
+      const sub = seg.slice(1).map((x) => {
+        try { return decodeURIComponent(x); } catch { throw new HttpError(400, "Invalid team API path"); }
+      });
+      const team = app.ensureTeam();
+      const call = async <T>(fn: () => Promise<T>): Promise<T> => {
+        try { return await fn(); }
+        catch (error) {
+          if (error instanceof TeamApiError) throw new HttpError(error.status, error.message);
+          throw error;
+        }
+      };
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "conversations" && sub[4] === "events" && m === "GET") {
+        const controller = new AbortController();
+        res.on("close", () => controller.abort());
+        const stream = await call(() => team.openConversationEvents(sub[1]!, sub[3]!, controller.signal));
+        if (!stream.body) throw new HttpError(502, "Team service did not return an event stream");
+        res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-transform", connection: "keep-alive", "x-accel-buffering": "no" });
+        const reader = stream.body.getReader();
+        try {
+          for (;;) {
+            const part = await reader.read();
+            if (part.done) break;
+            if (!res.write(Buffer.from(part.value))) await new Promise<void>((resolve) => res.once("drain", resolve));
+          }
+        } catch {
+          // 上游断了或窗口关了：照样把这条流结束掉，界面才会重连（不结束的话它会一直挂着，实时更新就此失效）
+        } finally { await reader.cancel().catch(() => undefined); }
+        if (!res.writableEnded) res.end();
+        return;
+      }
+      if (sub.join("/") === "config" && m === "GET") {
+        return send(res, 200, { apiBaseUrl: cfg.team.apiBaseUrl, ...(team.configurationError ? { error: team.configurationError } : {}) });
+      }
+      if (sub.join("/") === "config" && m === "PUT") {
+        const b = await readJson(req);
+        const apiBaseUrl = await call(() => app.configureTeamApiUrl(String(b.apiBaseUrl ?? "")));
+        return send(res, 200, { apiBaseUrl });
+      }
+      if (sub.join("/") === "status" && m === "GET") return send(res, 200, await call(() => team.status()));
+      if (sub.join("/") === "auth/codes" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 202, await call(() => team.requestCode(b.email)));
+      }
+      if (sub.join("/") === "auth/sessions" && m === "POST") {
+        const b = await readJson(req);
+        await call(() => team.signIn(b.email, b.code));
+        return send(res, 201, await call(() => team.status()));
+      }
+      if (sub.join("/") === "auth/sessions/current" && m === "DELETE") {
+        await call(() => team.signOut());
+        return send(res, 200, { ok: true });
+      }
+      if (sub.join("/") === "me" && m === "GET") return send(res, 200, await call(() => team.status()));
+      if (sub.join("/") === "teams" && m === "GET") return send(res, 200, await call(() => team.listTeams()));
+      if (sub.join("/") === "teams" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createTeam(b.name)));
+      }
+      if (sub.length === 2 && sub[0] === "teams" && m === "DELETE") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.deleteTeam(sub[1]!, String(b.confirmName ?? ""))));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "bots" && m === "GET") {
+        return send(res, 200, await call(() => team.listBots(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-config" && m === "GET") {
+        return send(res, 200, await call(() => team.getModelConfig(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-config" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.saveModelConfig(sub[1]!, { model: b.model, apiKey: b.apiKey })));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-config" && m === "DELETE") {
+        return send(res, 200, await call(() => team.deleteModelConfig(sub[1]!)));
+      }
+      // 团队模型授权策略：owner/admin 设置范围，成员在自己范围内自主选择模型
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-policy" && m === "GET") {
+        return send(res, 200, await call(() => team.getModelPolicy(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-policy" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.saveModelPolicy(sub[1]!, { mode: b.mode, allowedModels: b.allowedModels })));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "model-policy" && sub[3] === "model" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.saveMemberModel(sub[1]!, b.model)));
+      }
+      // 叠加限制层：多条规则，与基线授权一起生效
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-policy-rules" && m === "GET") {
+        return send(res, 200, await call(() => team.listPolicyRules(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-policy-rules" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createPolicyRule(sub[1]!, b)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "model-policy-rules" && sub[3] === "enabled" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.setPolicyRulesEnabled(sub[1]!, Array.isArray(b.ruleIds) ? b.ruleIds : [], b.enabled === true)));
+      }
+      // 单条规则启停：/model-policy-rules/:ruleId/enabled
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "model-policy-rules" && sub[4] === "enabled" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.setPolicyRulesEnabled(sub[1]!, [sub[3]!], b.enabled === true)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "model-policy-rules" && m === "GET") {
+        return send(res, 200, await call(() => team.getPolicyRule(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "model-policy-rules" && m === "PUT") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.updatePolicyRule(sub[1]!, sub[3]!, b)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "model-policy-rules" && m === "DELETE") {
+        return send(res, 200, await call(() => team.deletePolicyRule(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "model-policy-violations" && m === "GET") {
+        return send(res, 200, await call(() => team.listPolicyViolations(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "usage" && m === "GET") {
+        return send(res, 200, await call(() => team.getUsage(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "audit" && m === "GET") {
+        return send(res, 200, await call(() => team.listAuditEvents(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "git-credentials" && m === "GET") {
+        return send(res, 200, await call(() => team.getGitCredentialStatus(sub[1]!)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "git-credentials" && m === "PUT") {
+        const b = await readJson(req);
+        if (sub[3] !== "github" && sub[3] !== "gitlab") return send(res, 400, { error: "Choose GitHub or GitLab" });
+        return send(res, 200, await call(() => team.saveGitCredential(sub[1]!, sub[3] as "github" | "gitlab", b.token)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "git-credentials" && m === "DELETE") {
+        if (sub[3] !== "github" && sub[3] !== "gitlab") return send(res, 400, { error: "Choose GitHub or GitLab" });
+        return send(res, 200, await call(() => team.deleteGitCredential(sub[1]!, sub[3] as "github" | "gitlab")));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "projects" && m === "GET") {
+        return send(res, 200, await call(() => team.listProjects(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "projects" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createProject(sub[1]!, { name: b.name, repositoryUrl: b.repositoryUrl, defaultBranch: b.defaultBranch })));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "projects" && m === "GET" && !url.searchParams.has("head")) {
+        return send(res, 200, await call(() => team.getProject(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "projects" && m === "DELETE") {
+        return send(res, 200, await call(() => team.deleteProject(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "code-tasks" && m === "GET") {
+        return send(res, 200, await call(() => team.listCodeTasks(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "code-tasks" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createCodeTask(sub[1]!, sub[3]!, { branch: b.branch, instructions: b.instructions })));
+      }
+      if (sub.length === 7 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "code-tasks" && (sub[6] === "approve" || sub[6] === "reject") && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.decideCodeTask(sub[1]!, sub[3]!, sub[5]!, sub[6] as "approve" | "reject", String(b.reason ?? ""))));
+      }
+      if (sub.length === 7 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "code-tasks" && sub[6] === "cancel" && m === "POST") {
+        return send(res, 200, await call(() => team.cancelCodeTask(sub[1]!, sub[3]!, sub[5]!)));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "reviews" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createProjectReview(sub[1]!, sub[3]!, { head: b.head, title: b.title, body: b.body })));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "diff" && m === "GET" && url.searchParams.has("head")) {
+        return send(res, 200, await call(() => team.getProjectDiff(sub[1]!, sub[3]!, url.searchParams.get("head") ?? "")));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "checkout" && m === "POST") {
+        const workspace = await call(() => team.checkoutProject(sub[1]!, sub[3]!));
+        if (app.desktop?.openPath) app.desktop.openPath(workspace.path);
+        return send(res, 200, { branch: workspace.branch, path: workspace.path, reused: workspace.reused, opened: !!app.desktop?.openPath });
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "projects" && sub[4] === "inspect" && m === "GET") {
+        return send(res, 200, await call(() => team.inspectProject(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "bots" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createBot(sub[1]!, { name: b.name, description: b.description, instructions: b.instructions })));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "conversations" && m === "GET") {
+        return send(res, 200, await call(() => team.listConversations(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "conversations" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createConversation(sub[1]!, { botId: String(b.botId ?? ""), title: b.title, visibility: b.visibility as "team" | "private" })));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "conversations" && sub[4] === "messages" && m === "GET") {
+        return send(res, 200, await call(() => team.listMessages(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "conversations" && sub[4] === "messages" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.postMessage(sub[1]!, sub[3]!, b.content)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "members" && m === "GET") {
+        return send(res, 200, await call(() => team.listMembers(sub[1]!)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "members" && sub[3] === "me" && m === "DELETE") {
+        return send(res, 200, await call(() => team.leaveTeam(sub[1]!)));
+      }
+      if (sub.length === 5 && sub[0] === "teams" && sub[2] === "members" && sub[4] === "role" && m === "PATCH") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.updateMemberRole(sub[1]!, sub[3]!, b.role)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "members" && m === "DELETE") {
+        return send(res, 200, await call(() => team.removeMember(sub[1]!, sub[3]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "invitations" && m === "GET") {
+        return send(res, 200, await call(() => team.listInvitations(sub[1]!)));
+      }
+      if (sub.length === 3 && sub[0] === "teams" && sub[2] === "invitations" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 201, await call(() => team.createInvitation(sub[1]!, b.email, b.role)));
+      }
+      if (sub.length === 4 && sub[0] === "teams" && sub[2] === "invitations" && m === "DELETE") {
+        return send(res, 200, await call(() => team.revokeInvitation(sub[1]!, sub[3]!)));
+      }
+      if (sub.join("/") === "invitations/accept" && m === "POST") {
+        const b = await readJson(req);
+        return send(res, 200, await call(() => team.acceptInvitation(b.token)));
+      }
+      throw new HttpError(404, "not found");
     }
     if (p === "/media/models" && m === "GET") return send(res, 200, await app.mediaModels());
     // 无限画布生图：直接返回图片字节，界面拿到就能贴到节点上
