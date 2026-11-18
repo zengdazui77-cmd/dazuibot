@@ -197,17 +197,18 @@ fs.writeFileSync(
     2,
   ) + "\n",
 );
-// AMB_ELECTRON_SMOKE 指向「截图路径」，应用会把它的父目录当数据目录
-// （见 electron/main.ts 的 boot()）。不设这个变量，应用读的是
-// <userData>/data —— 也就是 %APPDATA%\zdzui-assistant\data，跟这里写的
-// config.json 不是同一个地方：配置读不到，应用就按默认配置起来
-// （magpie 走 managed，指向真实站点），跑的就不是这个脚本想测的东西了。
-// 截图路径放在 dataDir 里面，父目录才正好是 dataDir。
+// 应用的数据目录是 <userData>/data（%APPDATA%\zdzui-assistant\data），
+// 不是 cwd/data —— 见 electron/main.ts 的 boot()。不告诉它用哪个目录的话，
+// 这里写的 config.json 应用根本没读到，应用就按默认配置起来：
+// magpie 走 managed、指向真实站点，跑的就不是这个脚本想测的东西了。
+//
+// 用 AMB_ELECTRON_DATA_DIR（只指定目录），不用 AMB_ELECTRON_SMOKE ——
+// 后者的语义是「截完图就退出」，会把这一轮对话直接掐断。
 const env = {
   ...process.env,
   AMB_LOG_LEVEL: "debug",
   AMB_MEMORY_REVIEW_DELAY_MS: "600000",
-  AMB_ELECTRON_SMOKE: path.join(dataDir, "shot.png"),
+  AMB_ELECTRON_DATA_DIR: dataDir,
 };
 if (privatePwsh) fs.rmSync(pwshHome, { recursive: true, force: true });
 const launch = opt("launch", "node");

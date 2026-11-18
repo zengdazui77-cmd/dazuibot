@@ -26,6 +26,10 @@ const log = logger("desktop");
 // 冒烟测试：截图到该路径后退出。只在不打包的运行里认（scripts/electron-smoke.mjs 用），
 // 打包后的产物里 app.isPackaged 为 true，这个分支永远走不到——不能成为"设置一个环境变量就改启动行为"的口子
 const SMOKE = app.isPackaged ? undefined : process.env.AMB_ELECTRON_SMOKE;
+// 只指定数据目录，不截图也不退出：给要跑完整流程的端到端测试用
+// （scripts/e2e-agent.mjs 要真的跟应用聊几轮，冒烟那种「截完图就退」会把它掐断）。
+// 同样只认不打包的运行；打包后的产物里 app.isPackaged 为 true，这个分支永远走不到。
+const DATA_DIR_OVERRIDE = app.isPackaged ? undefined : process.env.AMB_ELECTRON_DATA_DIR;
 
 let core: App | undefined;
 let win: BrowserWindow | undefined;
@@ -243,8 +247,14 @@ function setAutostart(on: boolean): void {
 }
 
 async function boot(): Promise<void> {
-  // 冒烟测试跑在自己的临时目录里（截图路径的父目录），别把开发机的真实数据搅进去；正式运行固定 <userData>/data
-  const dataDir = SMOKE ? path.dirname(path.resolve(SMOKE)) : path.join(app.getPath("userData"), "data");
+  // 冒烟测试跑在自己的临时目录里（截图路径的父目录），别把开发机的真实数据搅进去；
+  // 端到端测试用 AMB_ELECTRON_DATA_DIR 指定数据目录（但不截图、不退出）；
+  // 正式运行固定 <userData>/data
+  const dataDir = SMOKE
+    ? path.dirname(path.resolve(SMOKE))
+    : DATA_DIR_OVERRIDE
+      ? path.resolve(DATA_DIR_OVERRIDE)
+      : path.join(app.getPath("userData"), "data");
   fs.mkdirSync(dataDir, { recursive: true });
   // 尽早打开日志文件：配置读取失败、启动失败也能留下记录
   initFileLog(path.join(dataDir, "logs"));
