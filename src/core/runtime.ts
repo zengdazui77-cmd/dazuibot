@@ -16,6 +16,7 @@ import { segmentInput, type ChatPlace } from "../agent/prompts/index.js";
 import { clearInflight, markInflight, takeNotice } from "./recovery.js";
 import { pwshProbe, pwshStatusLine } from "../agent/pwsh.js";
 import { isBotProviderModel } from "../modelflare.js";
+import { normalizeEffort } from "../agent/settings.js";
 import type { ApprovalRow, Conversation } from "../store/db.js";
 import type { AccessControl } from "./access.js";
 import { takeTaskNotes } from "../tasks/service.js";
@@ -367,8 +368,9 @@ export class BotRuntime {
       }
       await prior;
     }
-    // 前面的消息可能换了模型（/model）
-    const conv = { id: convId, model: store.getConversation(convId)?.model ?? "" };
+    // 前面的消息可能换了模型（/model）或思考强度（/effort）
+    const stored = store.getConversation(convId);
+    const conv = { id: convId, model: stored?.model ?? "", effort: stored?.effort ?? "" };
 
     // 排队时就被停止了：不再处理（命令也不执行），留一句"已中止"
     if (signal.aborted) {
@@ -401,7 +403,8 @@ export class BotRuntime {
     let note = "";
     if (agent?.available) {
       const place: ChatPlace = { channel: ev.channel, kind: ev.conversation.kind === "group" ? "group" : "dm" };
-      const handled = await this.handleAgent(agent, bot.id, conv.id, text, routed, place, out, seen, run);
+      // 思考强度：会话自己的优先，否则用机器人的默认
+      const handled = await this.handleAgent(agent, bot.id, conv.id, text, routed, place, out, seen, run, normalizeEffort(conv.effort) || bot.settings.reasoningEffort);
       if (handled === true) return;
       // 应用正在退出：代理进程没了不是该改用纯对话的时候，留给下次启动提醒
       if (this.closing) {
@@ -593,6 +596,7 @@ export class BotRuntime {
     out: ReplySession,
     images: TurnImage[],
     inflight: Inflight,
+    effort = "",
   ): Promise<boolean | "starting"> {
     const { store } = this.opts;
     const signal = inflight.abort.signal;
@@ -672,6 +676,7 @@ export class BotRuntime {
           text: input,
           model,
           ...(images.length ? { images } : {}),
+          ...(effort ? { effort } : {}),
           onStep,
           observer: {
             // 工具调用不进入聊天：只用于判断代理已开始工作（不再回退到纯对话），正在输入状态由渠道维持
@@ -907,6 +912,22 @@ export class BotRuntime {
         if (!target) return t("runtime.modelNotFound", { name: arg });
         this.opts.store.setConversationModel(convId, target);
         return t("runtime.modelSwitched", { model: target });
+      }
+      case "/effort": {
+        const word = arg.trim().toLowerCase();
+        const name = (e: string) => t(e === "low" ? "runtime.effortLow" : e === "medium" ? "runtime.effortMedium" : e === "high" ? "runtime.effortHigh" : "runtime.effortDefault");
+        if (!word) {
+          const own = normalizeEffort(this.opts.store.getConversation(convId)?.effort);
+          return t("runtime.effortCurrent", { level: name(own || (this.opts.store.getBot(botId)?.settings.reasoningEffort ?? "")) });
+        }
+        if (["default", "reset", "auto", "默认"].includes(word)) {
+          this.opts.store.setConversationEffort(convId, "");
+          return t("runtime.effortReset");
+        }
+        const picked = normalizeEffort(({ 低: "low", 中: "medium", 高: "high" } as Record<string, string>)[word] ?? word);
+        if (!picked) return t("runtime.effortUnknown");
+        this.opts.store.setConversationEffort(convId, picked);
+        return t("runtime.effortSet", { level: name(picked) });
       }
       default:
         return null;

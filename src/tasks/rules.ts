@@ -33,7 +33,7 @@ export const RULE_DENY: Readonly<Record<"observe" | "act", string[]>> = {
   act: COMMON_DENY,
 };
 /** 按前缀拒绝的工具（MCP 的电脑操作，名字随平台变化，没法列全） */
-export const RULE_DENY_PREFIX = ["mcp__computer-use__"];
+export const RULE_DENY_PREFIX = ["mcp__computer-use__", "mcp__plg-"]; // mcp__plg-：用户安装的插件（agent/plugins.ts 的 PLUGIN_TOOL_PREFIX）
 
 /** 这次运行用的模式：提醒总是执行；检查照规则的模式（改了原话也不再先观察，产品负责人 2026-11-01） */
 export function runMode(rule: Pick<RuleRow, "mode" | "kind">): "observe" | "act" {

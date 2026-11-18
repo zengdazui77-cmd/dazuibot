@@ -30,6 +30,8 @@ export interface Conversation {
   peerId: string;
   title: string;
   model: string;
+  /** 这个会话的思考强度（low / medium / high）；空 = 跟随机器人的默认 */
+  effort: string;
   /** dm 或 group（群聊使用群记忆） */
   kind: "dm" | "group";
   /** 最近一条消息从哪个渠道账号进来，回复和主动消息走它；空 = 账号 key 就是机器人 id（升级前的会话） */
@@ -580,6 +582,7 @@ const COLUMNS: Array<[string, string, string]> = [
   ["conversations", "kind", "TEXT NOT NULL DEFAULT 'dm'"],
   // 全局渠道账号（core/routes.ts）
   ["conversations", "account", "TEXT NOT NULL DEFAULT ''"],
+  ["conversations", "effort", "TEXT NOT NULL DEFAULT ''"],
   ["outbox", "account", "TEXT NOT NULL DEFAULT ''"],
   // 代理回合的活动记录（JSON 数组，见 agent/activity.ts）；只在助手消息上
   ["messages", "activity", "TEXT NOT NULL DEFAULT ''"],
@@ -767,6 +770,7 @@ export class Store {
       peerId: String(r.peer_id),
       title: String(r.title),
       model: String(r.model),
+      effort: String(r.effort ?? ""),
       kind: String(r.kind ?? "dm") === "group" ? "group" : "dm",
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at),
@@ -844,6 +848,9 @@ export class Store {
   }
   setConversationModel(id: string, model: string): void {
     this.db.prepare("UPDATE conversations SET model = ?, updated_at = ? WHERE id = ?").run(model, Date.now(), id);
+  }
+  setConversationEffort(id: string, effort: string): void {
+    this.db.prepare("UPDATE conversations SET effort = ? WHERE id = ?").run(effort, id);
   }
 
   // ---------- 应用内群聊（core/groups.ts） ----------

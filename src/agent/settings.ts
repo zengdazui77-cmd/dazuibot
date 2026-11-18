@@ -5,6 +5,10 @@ export type CuBackend = "cua" | "codex";
 export type CuApproval = "auto" | "ask-input";
 /** auto = 只在预计花费超过上限时问（视频算不出花费也问）；always = 每次生成前都问 */
 export type MediaConfirm = "auto" | "always";
+/** 思考强度：空 = 不指定，用模型（或接口）自己的默认 */
+export const REASONING_EFFORTS = ["low", "medium", "high"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+export const normalizeEffort = (v: unknown): ReasoningEffort | "" => ((REASONING_EFFORTS as readonly unknown[]).includes(v) ? (v as ReasoningEffort) : "");
 /** 内置头像角色（ui/components/avatar.js 的 BOT_CHARS）；blue 是默认头像 */
 export const BOT_AVATARS = ["blue", "yellow", "green", "red", "purple", "orange"] as const;
 export type BotAvatarKey = (typeof BOT_AVATARS)[number];
@@ -40,6 +44,8 @@ export interface BotSettings {
   };
   /** 后台小任务（记忆整理、上下文管家、交接摘要）用的模型；空 = 用对话模型 */
   utilityModel: string;
+  /** 对话的默认思考强度（会话里可以单独改；后台任务和规则不带强度）；空 = 不指定，用模型自己的默认 */
+  reasoningEffort: ReasoningEffort | "";
   /** 头像角色；空 = 由机器人 id 决定 */
   avatar: BotAvatarKey | "";
   /**
@@ -69,6 +75,7 @@ export const DEFAULT_SETTINGS: BotSettings = {
   computerUse: { enabled: false, backend: "cua", approval: "ask-input" },
   media: { confirm: "auto" },
   utilityModel: "",
+  reasoningEffort: "",
   avatar: "",
   budget: { enabled: false, limitUsd: 5 },
   taskSlots: 2,
@@ -107,6 +114,7 @@ export function normalizeSettings(raw: unknown): BotSettings {
     // 以前每次都问；升级后默认只在花费高时问
     media: { confirm: md.confirm === "always" ? "always" : "auto" },
     utilityModel: typeof r.utilityModel === "string" ? r.utilityModel.trim().slice(0, 200) : "",
+    reasoningEffort: normalizeEffort(r.reasoningEffort),
     avatar: (BOT_AVATARS as readonly string[]).includes(r.avatar) ? r.avatar : "",
     budget: {
       enabled: b(bg.enabled, DEFAULT_SETTINGS.budget.enabled),
