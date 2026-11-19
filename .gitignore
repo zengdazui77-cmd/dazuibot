@@ -17,3 +17,7 @@ test-results/
 .DS_Store
 # 在仓库根目录误跑 Astro 时生成的类型文件（官网的在 site/.astro，由 site/.gitignore 忽略）
 .astro/
+
+# 团队服务试点源码包（打包产物，不入库；发布到「03-团队服务部署」目录）
+dazuibot-team-service-pilot-ready-*.zip
+dazuibot-team-service-pilot-ready-*.zip.sha256

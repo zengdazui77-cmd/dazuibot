@@ -1086,7 +1086,12 @@ export class TeamService {
     const name = typeof input.name === "string" ? input.name.trim() : "";
     if (name.length < 1 || name.length > 80) throw new HttpError(400, "Project name must be between 1 and 80 characters");
     const repository = normalizeRepositoryUrl(input.repositoryUrl);
-    const defaultBranch = normalizeBranch(input.defaultBranch ?? "main");
+    // 未显式指定默认分支时，向代码托管方探测真实默认分支；
+    // 探测失败（私有仓库、无凭据、网络不通）则回落到 main，不阻断建项目。
+    const explicitBranch = typeof input.defaultBranch === "string" && input.defaultBranch.trim().length > 0;
+    const defaultBranch = explicitBranch
+      ? normalizeBranch(input.defaultBranch)
+      : await this.detectDefaultBranch(repository.provider, repository.repositoryUrl);
     const projectId = id();
     try {
       return await this.store.transaction(async (client) => {
@@ -1139,14 +1144,19 @@ export class TeamService {
   }
 
   async createCodeTask(principal: Principal, teamId: string, projectId: string, input: { branch?: unknown; instructions?: unknown }): Promise<TeamCodeTask> {
-    const branch = normalizeBranch(input.branch);
+    // 未指定分支时用项目的默认分支，而不是直接报错 —— 前端不必知道每个仓库的默认分支。
+    const requested = typeof input.branch === "string" && input.branch.trim().length > 0 ? input.branch : undefined;
     const instructions = typeof input.instructions === "string" ? input.instructions.trim() : "";
     if (!instructions || instructions.length > 20_000) throw new HttpError(400, "Code task instructions must be between 1 and 20000 characters");
     const taskId = id();
     return this.store.transaction(async (client) => {
       await this.requireRoleIn(client, principal, teamId, new Set(["owner", "admin", "developer"]));
-      const project = await client.query<{ id: string }>("SELECT id FROM team_projects WHERE team_id=$1 AND id=$2 FOR SHARE", [teamId, projectId]);
+      const project = await client.query<{ id: string; default_branch: string }>(
+        "SELECT id, default_branch FROM team_projects WHERE team_id=$1 AND id=$2 FOR SHARE",
+        [teamId, projectId],
+      );
       if (!project.rows[0]) throw new HttpError(404, "Team project not found");
+      const branch = normalizeBranch(requested ?? project.rows[0].default_branch);
       const result = await client.query<CodeTaskRow>(
         `INSERT INTO team_code_tasks(id, team_id, project_id, created_by, branch, instructions, created_at, updated_at)
          VALUES($1,$2,$3,$4,$5,$6,$7,$7)
@@ -1355,6 +1365,87 @@ export class TeamService {
       await this.audit(client, row.team_id, null, row.status === "failed" ? "code_task.failed" : "code_task.dispatch_retry", "code_task", row.id, { jobId, error });
       return this.toCodeTask(row);
     });
+  }
+
+  /**
+   * 探测代码托管方的真实默认分支。
+   *
+   * 之前默认分支硬编码为 "main"，但大量仓库（尤其老仓库）默认分支是 "master"，
+   * 会导致代码任务在取快照时 502。
+   *
+   * 探测顺序：
+   *  1) git smart-HTTP 的 info/refs 响应里带 `symref=HEAD:refs/heads/<branch>`，
+   *     不消耗 REST API 配额，公开仓库无需凭据，是首选方式；
+   *  2) REST API（私有仓库 / git 协议不可用时兜底，可能吃到速率限制）；
+   *  3) 都失败则回落到 "main"，不阻断建项目流程。
+   */
+  private async detectDefaultBranch(provider: TeamProject["provider"], repositoryUrl: string): Promise<string> {
+    const repoParts = new URL(repositoryUrl).pathname.split("/").filter(Boolean);
+    if (repoParts.length < 2) return "main";
+    const encodedPath = repoParts.map(encodeURIComponent).join("/");
+
+    // 1) git smart-HTTP：直接问托管方 HEAD 指向哪个分支
+    const smartHttp = await this.detectBranchViaSmartHttp(provider, repositoryUrl);
+    if (smartHttp) return smartHttp;
+
+    // 2) REST API 兜底
+    const url = provider === "github"
+      ? new URL(`/repos/${encodedPath}`, "https://api.github.com")
+      : new URL(`/api/v4/projects/${encodeURIComponent(repoParts.join("/"))}`, "https://gitlab.com");
+    try {
+      const response = await this.fetcher(url, {
+        method: "GET",
+        headers: { accept: provider === "github" ? "application/vnd.github+json" : "application/json" },
+        redirect: "error",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined);
+        return "main";
+      }
+      const payload = await response.json() as { default_branch?: unknown };
+      return this.sanitizeDetectedBranch(payload.default_branch);
+    } catch {
+      return "main";
+    }
+  }
+
+  /** git smart-HTTP 探测：info/refs 响应首行含 `symref=HEAD:refs/heads/<branch>` */
+  private async detectBranchViaSmartHttp(
+    provider: TeamProject["provider"],
+    repositoryUrl: string,
+  ): Promise<string | undefined> {
+    // 注意：不能用 new URL("/info/refs", base) —— 那会把仓库路径整个替换掉，
+    // 必须挂在 <repo>.git 之后。
+    const url = new URL(`${repositoryUrl}.git/info/refs?service=git-upload-pack`);
+    try {
+      const response = await this.fetcher(url, {
+        method: "GET",
+        headers: { accept: "application/x-git-upload-pack-advertisement", "user-agent": "dazuibot-team" },
+        redirect: "error",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined);
+        return undefined;
+      }
+      const text = await response.text();
+      const match = /symref=HEAD:refs\/heads\/([^\s\x00]+)/.exec(text);
+      if (!match) return undefined;
+      return this.sanitizeDetectedBranch(match[1]);
+    } catch {
+      void provider;
+      return undefined;
+    }
+  }
+
+  /** 校验托管方返回的分支名，非法就回落 main */
+  private sanitizeDetectedBranch(raw: unknown): string {
+    const branch = typeof raw === "string" ? raw.trim() : "";
+    if (!branch || branch.length > 120) return "main";
+    if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,119}$/.test(branch)) return "main";
+    if (branch.includes("..") || branch.includes("//") || branch.endsWith("/") || branch.endsWith(".") || branch.endsWith(".lock")) return "main";
+    return branch;
   }
 
   async getCodeTaskSnapshot(jobId: string, rawCapability: string): Promise<CodeTaskSnapshot> {

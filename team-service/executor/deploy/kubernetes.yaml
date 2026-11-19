@@ -78,7 +78,9 @@ spec:
       containers:
         - name: controller
           # Replace with a registry digest after building Dockerfile.control.
-          image: registry.example.invalid/dazuibot-code-executor@sha256:REPLACE_WITH_64_HEX_DIGEST
+          # 说明：本清单默认指向本地 registry（k3s 通过 172.17.0.2:5000 访问）。
+          # 换成生产 registry 时，只需替换地址，digest 必须保持不可变。
+          image: 172.17.0.2:5000/dazuibot-code-executor@sha256:61df2d65b94bfe5a94045008eaa45d277b5c8f7719a0343d3e5dc1da474bd5f2
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_ENV
@@ -97,7 +99,7 @@ spec:
             - name: EXECUTOR_API_NAMESPACE
               value: dazuibot-team
             - name: EXECUTOR_RUNNER_IMAGE
-              value: registry.example.invalid/dazuibot-code-runner@sha256:REPLACE_WITH_64_HEX_DIGEST
+              value: 172.17.0.2:5000/dazuibot-code-runner@sha256:0f75535bb7bc2cdbad44e89c3ea59dce6e6286ee3ae20577ab91375c9ff98d3e
           ports:
             - name: http
               containerPort: 9888
@@ -142,6 +144,64 @@ spec:
     - name: http
       port: 9888
       targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dazuibot-team-api-ingress
+  namespace: dazuibot-team
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: dazuibot-team-api
+  policyTypes: [Ingress]
+  ingress:
+    # 团队网关（nginx）转发外部请求
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: team-nginx
+        # ipBlock 与上面的选择器是并集关系。k3s 自带的 network policy 控制器
+        # （v1.31）不解析 namespaceSelector/podSelector 对端，只认 ipBlock，
+        # 因此必须同时写出 ipBlock，否则 runner 回连 broker 会被拒绝
+        # （表现为 ECONNREFUSED，任务以 "repository snapshot request failed" 收场）。
+        # 这里的网段需与集群 Pod CIDR 一致，由部署脚本按实际值改写。
+        - ipBlock:
+            cidr: 10.42.0.0/16
+      ports:
+        - protocol: TCP
+          port: 8787
+    # 代码执行器的 runner Pod 需要回连 broker，读取快照并上报结果。
+    # 缺少这一条时 runner 的 fetch 会被 k3s 拒绝（表现为 ECONNREFUSED），
+    # 任务必然以 "repository snapshot request failed" 结束。
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: dazuibot-tasks
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: dazuibot-code-task
+        - ipBlock:
+            cidr: 10.42.0.0/16
+      ports:
+        - protocol: TCP
+          port: 8787
+    # 集群内其它受信组件
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: dazuibot-team
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: dazuibot-team-api
+        - ipBlock:
+            cidr: 10.42.0.0/16
+      ports:
+        - protocol: TCP
+          port: 8787
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

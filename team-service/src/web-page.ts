@@ -72,7 +72,7 @@ const SCRIPT = String.raw`
 const $ = (sel, root) => (root || document).querySelector(sel);
 const state = { token: localStorage.getItem("team-token") || "", user: null, teams: [], teamId: localStorage.getItem("team-id") || "",
   tab: "chat", policy: null, members: [], usage: null, audit: [], conversations: [], bots: [],
-  rules: [], violations: [],
+  rules: [], violations: [], modelConfig: null,
   activeConversation: "", messages: [], jobs: [], notice: "" };
 
 function say(text, kind) {
@@ -119,7 +119,7 @@ async function login(email, code) {
 async function loadTeam() {
   if (!state.teamId) { render(); return; }
   const id = encodeURIComponent(state.teamId);
-  const [policy, members, usage, audit, convos, bots, rules, violations] = await Promise.all([
+  const [policy, members, usage, audit, convos, bots, rules, violations, modelConfig] = await Promise.all([
     api("/v1/teams/" + id + "/model-policy").catch(() => null),
     api("/v1/teams/" + id + "/members").then((r) => r.members || []).catch(() => []),
     api("/v1/teams/" + id + "/usage").then((r) => r.usage).catch(() => null),
@@ -128,11 +128,13 @@ async function loadTeam() {
     api("/v1/teams/" + id + "/bots").then((r) => r.bots || []).catch(() => []),
     api("/v1/teams/" + id + "/model-policy-rules").then((r) => r.rules || []).catch(() => []),
     api("/v1/teams/" + id + "/model-policy-violations").then((r) => r.violations || []).catch(() => []),
+    api("/v1/teams/" + id + "/model-config").then((r) => r.modelConfig).catch(() => null),
   ]);
   state.policy = policy ? policy.modelPolicy : null;
   state.members = members; state.usage = usage; state.audit = audit;
   state.rules = rules; state.violations = violations;
   state.conversations = convos; state.bots = bots;
+  state.modelConfig = modelConfig;
   if (!state.conversations.some((c) => c.id === state.activeConversation)) state.activeConversation = state.conversations[0] ? state.conversations[0].id : "";
   if (state.activeConversation) await loadMessages();
   else state.messages = []; state.jobs = [];
@@ -164,9 +166,31 @@ function renderTeams() {
 }
 
 function renderTabs() {
-  const tabs = [["chat", "共享聊天"], ["members", "成员"], ["policy", "模型授权"], ["rules", "额外限制"], ["usage", "用量"], ["audit", "审计"]];
+  const tabs = [["chat", "共享聊天"], ["members", "成员"], ["model", "模型接入"], ["policy", "模型授权"], ["rules", "额外限制"], ["usage", "用量"], ["audit", "审计"]];
   return '<div class="tabs">' + tabs.map(([k, label]) =>
     '<button role="tab" data-tab="' + k + '" aria-selected="' + (state.tab === k) + '">' + label + "</button>").join("") + "</div>";
+}
+
+// 团队模型接入：没有它，团队发消息会被服务端挡下来（"The team model is not configured"）。
+function renderModel() {
+  const cfg = state.modelConfig;
+  const canManage = ["owner", "admin"].includes((state.teams.find((t) => t.id === state.teamId) || {}).role);
+  if (!cfg) return '<div class="card"><h2>模型接入</h2><div class="empty">读不到模型接入状态</div></div>';
+  const endpoint = cfg.modelBaseUrl ? '<div class="pill">模型网关：' + esc(cfg.modelBaseUrl) + "</div>" : "";
+  if (cfg.configured) {
+    const rotate = canManage
+      ? '<div class="row" style="margin-top:12px"><input id="model-key" type="password" class="grow" placeholder="换新的 API Key（留空表示不改）">' +
+        '<button class="btn" id="rotate-key">更新 Key</button></div>'
+      : "";
+    return '<div class="card"><h2>模型接入</h2>' + endpoint +
+      '<div class="row" style="margin-top:12px"><span class="grow">默认模型 <strong>' + esc(cfg.model) + "</strong></span>" +
+      (cfg.keyTail ? '<span class="pill">Key ····' + esc(cfg.keyTail) + "</span>" : "") + "</div>" + rotate + "</div>";
+  }
+  if (!canManage) return '<div class="card"><h2>模型接入</h2>' + endpoint + '<div class="empty">团队还没配置模型，请让团队创建者接入</div></div>';
+  return '<div class="card"><h2>模型接入</h2>' + endpoint +
+    '<div class="row" style="margin-top:12px"><input id="model-name" class="grow" placeholder="模型标识，例如 gpt-4o">' +
+    '<input id="model-key" type="password" class="grow" placeholder="模型 API Key"></div>' +
+    '<div class="row" style="margin-top:8px"><button class="btn primary" id="save-model-config">保存</button></div></div>';
 }
 
 function renderChat() {
@@ -179,10 +203,30 @@ function renderChat() {
   const jobs = state.jobs.length
     ? '<div class="row" style="margin-top:8px">' + state.jobs.slice(0, 3).map((j) => '<span class="pill">' + esc(j.status) + (j.errorCode ? " · " + esc(j.errorCode) : "") + "</span>").join("") + "</div>"
     : "";
+  // 讨论必须挂在一个团队机器人上：没有机器人时，聊天这条路走不通，
+  // 所以这里把「新建机器人」摆在最前面，而不是让人卡在一句报错上。
+  const canManage = ["owner", "admin"].includes((state.teams.find((t) => t.id === state.teamId) || {}).role);
+  const botPanel = state.bots.length
+    ? '<div class="row"><select id="bot" style="max-width:200px">' + bots + "</select>" +
+      (canManage ? '<button class="btn" id="new-bot">新建机器人</button>' : "") + "</div>"
+    : '<div class="row">' +
+      (canManage
+        ? '<div class="grow"><input id="bot-name" placeholder="机器人名称，例如「代码助手」"><input id="bot-instructions" placeholder="给它的指令（可留空）"></div>' +
+          '<button class="btn primary" id="new-bot">新建机器人</button>'
+        : '<span class="pill">团队还没有机器人，请让团队创建者先建一个</span>') + "</div>";
+  // 新建讨论用行内输入框，不用系统 prompt 对话框：
+  // 对话框在浏览器里会打断操作，也没法在自动化测试里填。
+  const convoPanel = state.conversations.length
+    ? '<div class="row"><select id="convo" class="grow">' + convos + '</select>' +
+      (canManage ? '<button class="btn" id="new-convo">新建讨论</button>' : "") + "</div>"
+    : '<div class="row">' +
+      (canManage && state.bots.length
+        ? '<div class="grow"><input id="convo-title" placeholder="讨论标题"></div>' +
+          '<button class="btn primary" id="new-convo">新建讨论</button>'
+        : '<span class="pill">还没有讨论，先新建一个机器人</span>') + "</div>";
   return '<div class="card"><h2>共享聊天</h2>' +
-    '<div class="row"><select id="convo" class="grow">' + convos + '</select>' +
-    (state.bots.length ? '<select id="bot" style="max-width:180px">' + bots + "</select>" : "") +
-    '<button class="btn" id="new-convo">新建讨论</button></div>' +
+    botPanel +
+    '<div class="row" style="margin-top:10px">' + convoPanel + "</div>" +
     '<div class="chat" id="chat">' + msgs + "</div>" + jobs +
     '<div class="row" style="margin-top:10px"><input id="draft" class="grow" placeholder="说点什么…"><button class="btn primary" id="send-msg">发送</button></div></div>';
 }
@@ -202,17 +246,24 @@ function renderPolicy() {
   const modes = [["all", "不限制"], ["catalog", "部署模型目录"], ["allowlist", "指定模型"]];
   const canManage = ["owner", "admin"].includes((state.teams.find((t) => t.id === state.teamId) || {}).role);
   const opts = modes.map(([k, label]) => '<option value="' + k + '"' + (p.mode === k ? " selected" : "") + ">" + label + "</option>").join("");
+  // 部署目录里的模型给勾选框；目录为空时，「指定模型」必须还能手填，
+  // 否则这个模式在没配部署目录的团队里根本没法用。
   const models = (p.catalogModels || []).map((m) => '<label class="chk"><input type="checkbox" data-model="' + esc(m) + '"' +
     ((p.allowedModels || []).includes(m) ? " checked" : "") + ">" + esc(m) + "</label>").join("");
   const avail = (p.availableModels || []).map((m) => '<option value="' + esc(m) + '"' + (p.memberModel === m ? " selected" : "") + ">" + esc(m) + "</option>").join("");
+  const allowListPanel = '<div style="margin-top:10px">' +
+    (models || '<div class="empty">部署目录为空，直接在下面手填模型标识</div>') +
+    '<input id="policy-models" style="margin-top:8px" placeholder="模型标识，多个用逗号分隔">' +
+    '<div class="pill" style="margin-top:8px">已选：' + ((p.allowedModels || []).length ? esc((p.allowedModels || []).join("、")) : "无") + "</div></div>";
   const manage = canManage
     ? '<div class="row"><select id="policy-mode" style="max-width:200px">' + opts + "</select>" +
       '<button class="btn primary" id="save-policy">保存</button></div>' +
-      (p.mode === "allowlist" ? '<div style="margin-top:10px">' + models + "</div>" : "")
+      (p.mode === "allowlist" ? allowListPanel : "")
     : '<p class="pill">' + esc(p.mode) + "</p>";
   return '<div class="card"><h2>模型授权</h2>' + manage +
     '<div class="row" style="margin-top:12px"><select id="my-model" class="grow"><option value="">跟随团队默认</option>' + avail +
-    '</select><button class="btn" id="save-model">保存我的选择</button></div>' +
+    '</select><input id="my-model-text" style="max-width:220px" placeholder="或手输模型标识" value="' + esc(p.memberModel || "") + '">' +
+    '<button class="btn" id="save-model">保存我的选择</button></div>' +
     (p.memberModel ? '<p class="pill" style="margin-top:8px">当前使用：' + esc(p.memberModel) + "</p>" : "") + "</div>";
 }
 
@@ -282,7 +333,7 @@ function render() {
     bindLogin();
     return;
   }
-  const panels = { chat: renderChat, members: renderMembers, policy: renderPolicy, rules: renderRules, usage: renderUsage, audit: renderAudit };
+  const panels = { chat: renderChat, members: renderMembers, model: renderModel, policy: renderPolicy, rules: renderRules, usage: renderUsage, audit: renderAudit };
   app.innerHTML = '<div class="wrap">' +
     '<header class="top"><h1>大嘴助手 · 团队空间</h1><span class="sp"></span>' +
     '<span class="pill">' + esc(state.user ? state.user.email : "") + "</span>" +
@@ -326,9 +377,18 @@ function bindApp() {
   for (const b of document.querySelectorAll("[data-tab]")) b.onclick = async () => { state.tab = b.dataset.tab; render(); };
   const convo = $("#convo");
   if (convo) convo.onchange = async () => { state.activeConversation = convo.value; await loadMessages(); render(); };
+  $("#new-bot") && ($("#new-bot").onclick = async () => {
+    const name = ($("#bot-name") ? $("#bot-name").value : "").trim();
+    if (!name) return say("先给机器人起个名字", "err");
+    const instructions = ($("#bot-instructions") ? $("#bot-instructions").value : "").trim();
+    try {
+      await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/bots", "POST", { name, instructions });
+      await loadTeam(); render(); say("机器人已创建");
+    } catch (e) { say(e.message, "err"); }
+  });
   $("#new-convo") && ($("#new-convo").onclick = async () => {
-    const title = prompt("讨论标题");
-    if (!title) return;
+    const title = ($("#convo-title") ? $("#convo-title").value : "").trim();
+    if (!title) return say("先给讨论起个标题", "err");
     const bot = $("#bot") ? $("#bot").value : (state.bots[0] || {}).id;
     if (!bot) return say("先创建一个机器人", "err");
     try { await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/conversations", "POST", { botId: bot, title, visibility: "team" }); await loadTeam(); render(); say("讨论已创建"); }
@@ -337,6 +397,7 @@ function bindApp() {
   $("#send-msg") && ($("#send-msg").onclick = async () => {
     const draft = $("#draft").value.trim();
     if (!draft) return;
+    if (!state.activeConversation) return say("先新建一个讨论", "err");
     try {
       await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/conversations/" + encodeURIComponent(state.activeConversation) + "/messages", "POST", { content: draft });
       await loadMessages(); render();
@@ -352,12 +413,34 @@ function bindApp() {
   });
   $("#save-policy") && ($("#save-policy").onclick = async () => {
     const mode = $("#policy-mode").value;
-    const allowed = [...document.querySelectorAll("[data-model]:checked")].map((c) => c.dataset.model);
+    // 勾选框里的 + 手输的都要算进去：部署目录为空时只剩手输这一条路。
+    const checked = [...document.querySelectorAll("[data-model]:checked")].map((c) => c.dataset.model);
+    const typed = ($("#policy-models") ? $("#policy-models").value : "").split(/[,，\s]+/).map((s) => s.trim()).filter(Boolean);
+    const allowed = [...new Set([...checked, ...typed])];
     try { await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-policy", "PUT", { mode, allowedModels: allowed }); await loadTeam(); render(); say("授权范围已保存"); }
     catch (e) { say(e.message, "err"); }
   });
+  // 切到「指定模型」时把模型输入区露出来，否则用户看不到在哪填。
+  $("#policy-mode") && ($("#policy-mode").onchange = () => {
+    const mode = $("#policy-mode").value;
+    const card = $("#policy-mode").closest(".card");
+    let panel = $("#policy-allowlist");
+    if (mode === "allowlist" && !panel) {
+      panel = document.createElement("div");
+      panel.id = "policy-allowlist";
+      panel.style.marginTop = "10px";
+      panel.innerHTML = '<input id="policy-models" placeholder="模型标识，多个用逗号分隔">';
+      card.insertBefore(panel, $("#save-policy").parentElement.nextSibling);
+    } else if (mode !== "allowlist" && panel) {
+      panel.remove();
+    }
+  });
   $("#save-model") && ($("#save-model").onclick = async () => {
-    try { await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-policy/model", "PUT", { model: $("#my-model").value }); await loadTeam(); render(); say("已保存"); }
+    // 下拉没得选时（授权目录为空），手输框是唯一入口，两个一起读。
+    const picked = $("#my-model").value;
+    const typed = ($("#my-model-text") ? $("#my-model-text").value : "").trim();
+    const model = picked || typed;
+    try { await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-policy/model", "PUT", { model }); await loadTeam(); render(); say(model ? "已保存" : "已改为跟随团队默认"); }
     catch (e) { say(e.message, "err"); }
   });
   $("#add-rule") && ($("#add-rule").onclick = async () => {
@@ -384,12 +467,36 @@ function bindApp() {
     const id = b.dataset.ruleDel;
     const rule = (state.rules || []).find((r) => r.id === id);
     if (!rule) return;
-    if (!confirm("删除规则「" + rule.ruleName + "」？")) return;
+    // 不用系统 confirm 对话框：第一次点击把按钮变成「确认删除」，再点一次才真删。
+    if (b.dataset.armed !== "1") {
+      b.dataset.armed = "1"; b.textContent = "确认删除？"; b.classList.add("danger");
+      setTimeout(() => { if (b.isConnected) { b.dataset.armed = "0"; b.textContent = "删除"; b.classList.remove("danger"); } }, 5000);
+      return;
+    }
     try {
       await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-policy-rules/" + encodeURIComponent(id), "DELETE");
       await loadTeam(); render(); say("规则已删除");
     } catch (e) { say(e.message, "err"); }
   };
+  $("#save-model-config") && ($("#save-model-config").onclick = async () => {
+    const model = ($("#model-name") ? $("#model-name").value : "").trim();
+    const apiKey = ($("#model-key") ? $("#model-key").value : "").trim();
+    if (!model) return say("先填模型标识", "err");
+    if (!apiKey) return say("先填 API Key", "err");
+    try {
+      await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-config", "PUT", { model, apiKey });
+      await loadTeam(); render(); say("模型接入已保存");
+    } catch (e) { say(e.message, "err"); }
+  });
+  $("#rotate-key") && ($("#rotate-key").onclick = async () => {
+    const apiKey = ($("#model-key") ? $("#model-key").value : "").trim();
+    if (!apiKey) return say("先填新的 API Key", "err");
+    const model = (state.modelConfig && state.modelConfig.model) || "";
+    try {
+      await api("/v1/teams/" + encodeURIComponent(state.teamId) + "/model-config", "PUT", { model, apiKey });
+      await loadTeam(); render(); say("Key 已更新");
+    } catch (e) { say(e.message, "err"); }
+  });
 }
 
 (async function start() {

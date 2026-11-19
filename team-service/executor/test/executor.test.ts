@@ -40,6 +40,9 @@ describe("isolated team code executor manifests", () => {
     expect(job.spec.template.spec.hostNetwork).not.toBe(true);
     expect(job.spec.template.spec.containers[0].securityContext).toMatchObject({ allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } });
     expect(job.spec.template.spec.securityContext).toMatchObject({ runAsNonRoot: true, runAsUser: 65532 });
+    // emptyDir 属主是 root:root 0755，runner 以 65532 跑进去写不了 ——
+    // 没有 fsGroup 时 git init 报 Permission denied，代码任务必然失败。
+    expect(job.spec.template.spec.securityContext).toMatchObject({ fsGroup: 65532 });
     expect(job.spec.template.spec.volumes.map((item: any) => item.hostPath)).not.toContain(expect.anything());
     expect(JSON.stringify(job)).not.toContain("modelKey");
     expect(JSON.stringify(job)).not.toContain("gitToken");
@@ -100,6 +103,17 @@ describe("executor input validation", () => {
     expect(() => validateTarListing("repo/src/index.js\nrepo/package.json\n")).not.toThrow();
     expect(() => validateTarVerboseListing("-rw-r--r-- 0/0 3 2026-01-01 00:00 repo/a.txt\ndrwxr-xr-x 0/0 0 2026-01-01 00:00 repo/src/")).not.toThrow();
     expect(() => validateTarVerboseListing("lrwxrwxrwx 0/0 0 2026-01-01 00:00 repo/link -> /etc")).toThrow("only regular files");
+  });
+
+  it("accepts a real GitHub tarball listing (顶层目录条目 + 文件)", () => {
+    // GitHub 的 tarball 清单长这样：顶层目录条目以 / 结尾，去掉首段后是空串。
+    // 之前把它判成不安全路径，导致所有真实仓库快照在解包前就被拒绝。
+    expect(() => validateTarListing("Hello-World-master/\nHello-World-master/README\n")).not.toThrow();
+    expect(() => validateTarListing("repo-abc123/\nrepo-abc123/src/\nrepo-abc123/src/index.js\n")).not.toThrow();
+  });
+
+  it("rejects entries that straddle multiple root directories", () => {
+    expect(() => validateTarListing("repo-a/file.txt\nrepo-b/file.txt\n")).toThrow("multiple root directories");
   });
 });
 

@@ -4,6 +4,19 @@
 
 This covers changes you'll notice in the app. Earlier versions belong to upstream AnyModelBot's history and are not part of this distribution.
 
+## 1.0.0-zdzui.3 - 2026-11-20
+
+### New
+
+- **Code tasks now run for real in a cluster:** the whole chain — dispatch, approval, pulling the repository snapshot, running the AI edit inside a container, reporting the change back, and landing the branch and diff — has been verified end to end in the k3s cluster. This is the first hard evidence for the "real DSH runner" gap.
+
+### Fixed
+
+- **Repository snapshots were wrongly flagged as unsafe:** GitHub's code tarballs carry an outer directory (like `Hello-World-master/`). Strip that one level and it becomes an empty path, which the safety check read as a path traversal — so every real GitHub repository was rejected before unpacking, and code tasks could never start. The top-level directory entry is now allowed, while all entries must still sit under a single top-level directory (so mixed-in directories can't sneak in).
+- **Code task containers couldn't create a git repo:** the executor container runs as a non-root user, but the workspace is an emptyDir mount owned by root, so `git init` failed with Permission denied and `git config` then reported "not in a git directory". The Pod now sets fsGroup, so the volumes are mounted with the runtime user's group and the container can create `.git`.
+- **Git refused to operate in the workspace:** same cause — the workspace is owned by root while git runs as a different uid, and git's "dubious ownership" protection declines to treat it as a repository. The workspace is now explicitly registered as a safe directory.
+- **Code task queue timing on real PostgreSQL:** when deciding whether a job could be picked up, the clock used for the check wasn't the same one used when writing the job (they differ by less than a millisecond, plus network latency between the database and the app), so a freshly dispatched job was judged "not due yet". Both sides now use the database's own clock.
+
 ## 1.0.0-zdzui.2 - 2026-11-19
 
 ### New

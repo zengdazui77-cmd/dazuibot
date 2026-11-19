@@ -71,6 +71,13 @@ export function buildTaskJob(payload: CodeTaskDispatch, config: ExecutorConfig):
             runAsNonRoot: true,
             runAsUser: 65532,
             runAsGroup: 65532,
+            // emptyDir 挂载出来的目录默认属主是 root:root、权限 0755，
+            // runner 以 65532 身份跑进去就写不了 —— 表现为 `git init` 报
+            // "/workspace/.git: Permission denied"，随后 `git config` 报
+            // "fatal: not in a git directory"。fsGroup 让 k8s 把这些卷的
+            // 属组改成 runAsGroup 并置位组写权限，runner 才建得出 .git。
+            fsGroup: 65532,
+            fsGroupChangePolicy: "OnRootMismatch",
             seccompProfile: { type: "RuntimeDefault" },
           },
           containers: [{

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -29,6 +29,21 @@ async function apiRequest(url, options = {}) {
     signal: options.signal,
   })
   return response
+}
+
+// /workspace 是 emptyDir 挂载点，容器根文件系统只读，rm 掉挂载点本身必然失败（EROFS）。
+// 所以只清空目录内容，再重建目录本身。
+async function clearWorkspace() {
+  await mkdir(workspace, { recursive: true, mode: 0o700 })
+  let entries = []
+  try {
+    entries = await readdir(workspace)
+  } catch {
+    return
+  }
+  for (const entry of entries) {
+    await rm(path.join(workspace, entry), { recursive: true, force: true })
+  }
 }
 
 async function snapshot() {
@@ -98,6 +113,10 @@ async function runDsh(abortSignal) {
 
 async function initializeGit() {
   await exec('git', ['init', '--initial-branch', `dazuibot-base-${jobId.replace(/[^A-Za-z0-9_-]/g, '')}`], { cwd: workspace, maxBuffer: 64 * 1024 })
+  // /workspace 是 emptyDir 挂载点，属主是 root(uid 0)；runner 以 65532 身份运行，
+  // git 的 dubious ownership 检查会拒绝把它当成仓库，报
+  // "fatal: not in a git directory"。这里显式把工作区登记成安全目录。
+  await exec('git', ['config', '--global', '--add', 'safe.directory', workspace], { cwd: workspace })
   await exec('git', ['config', 'user.name', 'Dazuibot Code Task'], { cwd: workspace })
   await exec('git', ['config', 'user.email', 'code-task@localhost'], { cwd: workspace })
   await exec('git', ['add', '--all'], { cwd: workspace, maxBuffer: 2 * 1024 * 1024 })
@@ -128,8 +147,7 @@ async function collectDiff(summary) {
 
 const controller = new AbortController()
 try {
-  await rm(workspace, { recursive: true, force: true })
-  await mkdir(workspace, { recursive: true, mode: 0o700 })
+  await clearWorkspace()
   await snapshot()
   await initializeGit()
   const result = await runDsh(controller.signal)

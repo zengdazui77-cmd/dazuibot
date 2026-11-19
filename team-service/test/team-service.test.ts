@@ -520,6 +520,15 @@ describe("cloud team identity and invitations", () => {
     expect((await service.listProjects(owner, team.id)).map((project) => project.id)).toEqual([gitlab.id]);
   });
 
+  it("未指定分支时代码任务使用项目的默认分支", async () => {
+    now += 60_000;
+    const owner = await service.authenticate((await signIn("task-default-branch@example.com")).token);
+    const team = await service.createTeam(owner, "Default branch team");
+    const project = await service.createProject(owner, team.id, { name: "Legacy repo", repositoryUrl: "https://github.com/acme/legacy-repo", defaultBranch: "master" });
+    const task = await service.createCodeTask(owner, team.id, project.id, { instructions: "List the repository root files." });
+    expect(task).toMatchObject({ projectId: project.id, branch: "master", status: "pending_approval" });
+  });
+
   it("creates code tasks as pending approval and never executes them in the text worker", async () => {
     now += 60_000;
     const owner = await service.authenticate((await signIn("task-owner@example.com")).token);
