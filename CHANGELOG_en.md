@@ -4,7 +4,7 @@
 
 This covers changes you'll notice in the app. Earlier versions belong to upstream AnyModelBot's history and are not part of this distribution.
 
-## Unreleased
+## 1.0.0-zdzui.2 - 2026-11-19
 
 ### New
 

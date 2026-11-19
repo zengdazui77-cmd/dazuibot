@@ -1,7 +1,7 @@
 {
   "name": "dazuibot",
   "productName": "dazuibot",
-  "version": "1.0.0-zdzui.1",
+  "version": "1.0.0-zdzui.2",
   "private": true,
   "description": "dazuibot：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
   "license": "MIT",
