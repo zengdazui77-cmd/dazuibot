@@ -93,26 +93,51 @@ Worker（`team-service/src/worker.ts`）：
 
 ---
 
-## 三、集群隔离（需外部环境）
+## 三、集群隔离（✅ 本轮已验证）
 
-代码在，但**一行都没在真集群上跑过**：
+代码在，**本轮在这台机器上真跑起来了**。
 
-- `team-service/executor/src/kubernetes.ts`：建 Job、Secret、NetworkPolicy；心跳序列、幂等、清理
-- `team-service/executor/deploy/kubernetes.yaml`：NetworkPolicy 逐任务限制入站（全部拒绝）、
-  出站只允许团队 API 与集群 DNS
-- 控制器与 API 分属不同 namespace（`dazuibot-tasks` / `dazuibot-team`）
+### 本机环境（2026-11-19 实测）
 
-验证它需要：
+这台机器是联想云桌面（型号 83JJ），本来跑不了容器。实测下来可以，办法是：
 
-1. 一台能跑 K8s 的机器（本地 minikube/kind 也行）
-2. 按 digest 固定的两个镜像（`Dockerfile` 与 `Dockerfile.control`）
-3. 团队 API 与 PostgreSQL 先在集群里跑起来（当前 API 只有 Docker Compose 部署方式，
-   `deploy/kubernetes.yaml` 明确说明它**不**部署 API 和数据库）
-4. NetworkPolicy 真的被集群强制执行（不是只看 YAML 解析通过）
+1. 装一个真正的 Linux 发行版到 WSL2：`wsl --install -d Ubuntu-24.04 --no-launch`
+   （原来只有 docker-desktop 那个「瘦壳」发行版，里面没有 dockerd）
+2. 里面装 `docker.io` + `uidmap`，用 systemd 托管 dockerd
+3. K8s 用 **k3s**（单二进制，自带 flannel），不用 kind：
+   - kind 的容器在这台机器上反复重启（`ExitCode=128`，kubelet 反复重启 containerd），
+     而且 WSL2 的 `127.0.0.1:<port>` 转发不稳，kubectl 时连时断
+   - k3s 直接跑在 WSL 里，不经 docker 网络，问题少得多
 
-**本机没有可用的 Docker 守护进程**（此前尝试过：WSL 里的 docker-desktop 停着，
-且即使起来，Windows 上的 Docker 也跑不了这里的 Linux 镜像）。
-所以这一项本轮**没有进展**，也不打算用「解析 YAML 通过」冒充验证。
+```sh
+wsl --install -d Ubuntu-24.04 --no-launch
+# 在 WSL 里：
+curl -sfL https://github.com/k3s-io/k3s/releases/download/v1.31.5%2Bk3s1/k3s -o /usr/local/bin/k3s
+k3s server --disable traefik --write-kubeconfig-mode 644
+```
+
+### NetworkPolicy 确实被强制执行（对照实验）
+
+同一对 Pod，逐段改策略，用 wget 的退出码判定（每次先清空所有策略 ——
+NetworkPolicy 的规则是叠加的，一条放行就能抵消一条 deny-all）：
+
+| 段 | 策略 | 结果 |
+|---|---|---|
+| A | 无任何策略 | 退出码 0（**通**） |
+| B | `deny-all-ingress`（`podSelector: {}`，`policyTypes: [Ingress]`） | 退出码 1（**被挡**） |
+| C | 只放行来自 `app=client` 的 Pod | 退出码 0（**又能通**） |
+
+三段都对得上，说明这台机器上 flannel 的策略是真的在拦流量，不是只看 YAML 解析通过。
+
+**注意**：k3s 里 CoreDNS 有问题（`NXDOMAIN`），Pod 间**服务名**解析不了，
+但用 IP 直连正常。测网络策略时要用 IP，不要用服务名。
+
+### 仍未验证的部分
+
+上面验证的是「集群会强制执行 NetworkPolicy」。本项目的执行器那套
+（`deploy/kubernetes.yaml` 里的逐任务 NetworkPolicy、跨 namespace 的
+API↔控制器通信、任务级 capability token）还需要把团队 API 和执行器
+真正部署进集群再验一遍。集群本身已经就绪。
 
 ## 四、生产部署（需外部环境）
 
@@ -126,11 +151,13 @@ Worker（`team-service/src/worker.ts`）：
 
 ## 仍未打通的（诚实清单）
 
-1. **集群里的 NetworkPolicy 强制执行** —— 需要 K8s
-2. **真 DSH 跑完一个真实代码任务** —— 需要能连模型网关 + 容器/K8s
+1. **执行器那套策略在真集群上的行为** —— 集群已就绪、NetworkPolicy 已验证会被强制执行，
+   但还没把团队 API 与执行器真正部署进去跑一遍
+2. **真 DSH 跑完一个真实代码任务** —— 需要能连的模型网关 + 容器（容器已能跑，缺的是模型网关）
 3. **生产环境部署演练** —— 需要云主机与域名
 4. **策略缓存与预设模板** —— 上一轮已说明：缓存必须绑定策略变更事件主动失效（否则撤权有 5 分钟延迟，不可接受）；
    预设模板要重新设计成不绑定具体模型名的版本
 
-前 3 项是环境问题，不是代码问题；第 4 项是设计取舍，已写进 `MERGE-NOTES.md`。
+第 1、2 项本机已具备大部分条件（容器与集群都通了）；第 3 项需要外部资源；
+第 4 项是设计取舍，已写进 `MERGE-NOTES.md`。
 
