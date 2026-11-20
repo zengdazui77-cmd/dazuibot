@@ -6,7 +6,7 @@
 
 - **权威副本**：`02-完整项目源码/dazuibot-master/team-service`（桌面 App 仓库内）
 - **工作副本**：`C:\Users\zdz\teamsvc\team-service`（我调试时临时解压出来的）
-- **部署包**：`03-团队服务部署/dazuibot-team-service-pilot-ready-r5.zip`（= 权威副本，已逐字节核对）
+- **部署包**：`03-团队服务部署/dazuibot-team-service-pilot-ready-r17.zip`（= 权威副本，已逐字节核对）
 
 两份代码分叉已久，各有对方没有的东西：
 
