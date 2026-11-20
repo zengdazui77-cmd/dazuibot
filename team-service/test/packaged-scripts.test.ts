@@ -3,11 +3,35 @@ import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
+import zlib from "node:zlib";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "..");
+/** 极简 zip 读取：只解第一个匹配的条目，够用来检查包里的文档内容。 */
+function readZipEntry(zipPath: string, entryName: string): string | undefined {
+  const buf = fs.readFileSync(zipPath);
+  const needle = Buffer.from(entryName, "utf8");
+  let off = 0;
+  while (off + 30 <= buf.length) {
+    if (buf.readUInt32LE(off) !== 0x04034b50) break;
+    const method = buf.readUInt16LE(off + 8);
+    const compSize = buf.readUInt32LE(off + 18);
+    const nameLen = buf.readUInt16LE(off + 26);
+    const extraLen = buf.readUInt16LE(off + 28);
+    const nameStart = off + 30;
+    const name = buf.subarray(nameStart, nameStart + nameLen).toString("utf8");
+    const dataStart = nameStart + nameLen + extraLen;
+    if (name === entryName) {
+      const raw = buf.subarray(dataStart, dataStart + compSize);
+      return (method === 8 ? zlib.inflateRawSync(raw) : raw).toString("utf8");
+    }
+    off = dataStart + compSize;
+  }
+  return undefined;
+}
+
 
 /**
  * 打包脚本和本地验收脚本都在部署包里，但它们不在 vitest 的覆盖范围内——
@@ -157,4 +181,34 @@ ${stderr}`);
       child.kill();
     }
   }, 90_000);
+
+  // 部署指引里写的包名不能写死构建号：写死了就得每次打包都改文档，
+  // 而文档又在包里——等于包引用自己，下次改构建号就忘了改文档，
+  // 收到包的人按文档 unzip 一个不存在的文件名。
+  // 现在源码里写占位符，打包时替换成真正的包名。这里防占位符漏替换。
+  it("打包后不会残留 {{PILOT_ZIP_NAME}} 占位符", () => {
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "dz-pilot-check-"));
+    try {
+      execFileSync(process.execPath, [path.join(repo, "scripts", "package-pilot.mjs"), "--out", outDir], {
+        cwd: repo,
+        env: { ...process.env, PILOT_BUILD: "rtest" },
+        stdio: "ignore",
+      });
+      const zip = path.join(outDir, "dazuibot-team-service-pilot-ready-rtest.zip");
+      expect(fs.existsSync(zip)).toBe(true);
+      // 真的读包里的那份文档，确认占位符被换成了真正的包名。
+      const packed = readZipEntry(zip, "team-service/deploy/first-pilot-zh.md");
+      expect(packed).toBeDefined();
+      expect(packed).not.toContain("{{PILOT_ZIP_NAME}}");
+      expect(packed).toContain("dazuibot-team-service-pilot-ready-rtest.zip");
+    } finally {
+      fs.rmSync(outDir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("打包脚本会把包名占位符替换成真正的包名", () => {
+    const packer = fs.readFileSync(path.join(repo, "scripts", "package-pilot.mjs"), "utf8");
+    expect(packer).toContain("PILOT_ZIP_NAME");
+    expect(packer).toContain("{{PILOT_ZIP_NAME}}");
+  });
 });

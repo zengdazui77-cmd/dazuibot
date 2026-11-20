@@ -43,11 +43,11 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 sudo systemctl enable --now docker nginx
 ```
 
-公开 GitHub 分支尚不包含这份未提交原型，因此不能直接从 GitHub 克隆后假定里面有团队服务。本次工作区生成的 `dazuibot-team-service-pilot-ready-r17.zip` 包含服务源码和部署文件，不含 `.env` 密钥、依赖目录和构建产物；对应 SHA-256 在同目录的 `.sha256` 文件中。把这个压缩包上传到云主机后运行：
+公开 GitHub 分支尚不包含这份未提交原型，因此不能直接从 GitHub 克隆后假定里面有团队服务。本次工作区生成的 `{{PILOT_ZIP_NAME}}` 包含服务源码和部署文件，不含 `.env` 密钥、依赖目录和构建产物；对应 SHA-256 在同目录的 `.sha256` 文件中。把这个压缩包上传到云主机后运行：
 
 ```sh
 sudo apt-get install -y unzip
-unzip dazuibot-team-service-pilot-ready-r17.zip -d "$HOME"
+unzip {{PILOT_ZIP_NAME}} -d "$HOME"
 cd "$HOME/team-service"
 ```
 

@@ -162,6 +162,13 @@ function dosDateTime(date) {
  * 源码不变则包逐字节不变，SHA 才能当校验用。
  */
 function writeZip(target, entries) {
+  // 替换占位符：部署指引里的包名不能写死构建号（写死就等于每次打包都要改文档，
+  // 而文档又在包里，成了自己引用自己）。这里在打包时把占位符换成真正的包名。
+  const substitute = (raw, name) => {
+    if (!name.endsWith(".md") && !name.endsWith(".txt")) return raw;
+    if (!raw.includes("{{PILOT_ZIP_NAME}}")) return raw;
+    return Buffer.from(raw.toString("utf8").split("{{PILOT_ZIP_NAME}}").join(process.env.PILOT_ZIP_NAME ?? ""), "utf8");
+  };
   const chunks = [];
   const central = [];
   let offset = 0;
@@ -170,7 +177,7 @@ function writeZip(target, entries) {
   for (const entry of entries) {
     const name = entry.name;
     const nameBytes = Buffer.from(name, "utf8");
-    const raw = fs.readFileSync(path.join(repo, entry.source));
+    const raw = substitute(fs.readFileSync(path.join(repo, entry.source)), name);
     const stamp = dosDateTime(fs.statSync(path.join(repo, entry.source)).mtime);
     const deflated = zlib.deflateRawSync(raw, { level: 9 });
     // 压缩后反而更大时退回 store
@@ -236,6 +243,8 @@ function main() {
   // 构建号形如 r5；不要重复 "r" 前缀
   const build = (process.env.PILOT_BUILD ?? new Date().toISOString().slice(0, 10).replace(/-/g, "")).replace(/^r+/, "r");
   const name = `dazuibot-team-service-pilot-ready-${build}.zip`;
+  // 让 writeZip 能把 {{PILOT_ZIP_NAME}} 换成真正的包名。
+  process.env.PILOT_ZIP_NAME = name;
   const target = path.join(outDir, name);
   fs.mkdirSync(outDir, { recursive: true });
 
