@@ -16,6 +16,11 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadEmbedded } from "./load-embedded.mjs";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const exists = (p) => fs.existsSync(p);
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
@@ -52,7 +57,7 @@ let server = null;
 if (!process.argv[2]) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dz-web-e2e-data-"));
   cleanup.push(() => fs.rmSync(dataDir, { recursive: true, force: true }));
-  const mod = await import("../src/embedded.js");
+  const mod = await loadEmbedded();
   server = await mod.startEmbeddedTeamService({
     dataDir, host: "127.0.0.1", port: 0,
     modelCatalog: ["gpt-4o", "gpt-4o-mini", "claude-sonnet-4"],

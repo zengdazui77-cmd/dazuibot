@@ -8,9 +8,13 @@
  * 走的是内嵌模式（数据落在系统临时目录），和桌面端内嵌跑的是同一条代码路径。
  */
 import os from "node:os";
+import { loadEmbedded } from "./load-embedded.mjs";
 import path from "node:path";
 import { rm } from "node:fs/promises";
-import { startEmbeddedTeamService } from "../src/embedded.js";
+
+// 加载逻辑见 load-embedded.mjs：源码是 TypeScript，编译产物在 dist/，
+// 「tsx 跑」和「node 跑」都得能起来（部署包里只带源码、不带 dist/）。
+const { startEmbeddedTeamService } = await loadEmbedded();
 
 const port = Number(process.env.PORT ?? 8790);
 // 数据目录放在仓库外面，免得打包时被带进去（打包脚本也会再挡一次）。

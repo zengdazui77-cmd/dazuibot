@@ -61,6 +61,7 @@ const INCLUDE = [
   "scripts/backup.sh",
   "scripts/check-nginx-config.sh",
   "scripts/dev-web.mjs",
+  "scripts/load-embedded.mjs",
   "scripts/package-pilot.mjs",
   "scripts/restore-to-new-db.sh",
   "scripts/setup-pilot-env.sh",
