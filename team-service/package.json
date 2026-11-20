@@ -12,7 +12,8 @@
     "test": "vitest run test",
     "test:postgres": "node scripts/test-postgres.mjs",
     "test:postgres:local": "node scripts/test-postgres-local.mjs",
-    "package:pilot": "node scripts/package-pilot.mjs"
+    "package:pilot": "node scripts/package-pilot.mjs",
+    "dev:web": "tsx scripts/dev-web.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.15",

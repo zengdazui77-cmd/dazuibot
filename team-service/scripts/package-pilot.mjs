@@ -60,6 +60,7 @@ const INCLUDE = [
   "package.json",
   "scripts/backup.sh",
   "scripts/check-nginx-config.sh",
+  "scripts/dev-web.mjs",
   "scripts/package-pilot.mjs",
   "scripts/restore-to-new-db.sh",
   "scripts/setup-pilot-env.sh",
@@ -77,7 +78,9 @@ const INCLUDE = [
   "src/model-policy.ts",
   "src/model.ts",
   "src/pglite-pool.ts",
+  "src/policy-monitoring.ts",
   "src/policy-rules.ts",
+  "src/policy-templates.ts",
   "src/service.ts",
   "src/store.ts",
   "src/web-page.ts",
@@ -89,7 +92,16 @@ const INCLUDE = [
 const INCLUDE_DIRS = ["migrations", "test"];
 
 /** 绝不能进包的东西：真实凭据、依赖、构建产物、缓存。 */
-const FORBIDDEN = [/(^|\/)\.env$/, /(^|\/)node_modules(\/|$)/, /(^|\/)dist(\/|$)/, /\.log$/, /(^|\/)backups?(\/|$)/, /(^|\/)\.git(\/|$)/];
+const FORBIDDEN = [
+  /(^|\/)\.env$/,
+  /(^|\/)node_modules(\/|$)/,
+  /(^|\/)dist(\/|$)/,
+  /\.log$/,
+  /(^|\/)backups?(\/|$)/,
+  /(^|\/)\.git(\/|$)/,
+  // 本地验收用的临时数据目录：绝对不能进部署包。
+  /(^|\/)\.tmp-web-data(\/|$)/,
+];
 
 function isForbidden(relative) {
   return FORBIDDEN.some((pattern) => pattern.test(relative));

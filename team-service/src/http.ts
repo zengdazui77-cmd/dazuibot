@@ -336,6 +336,21 @@ export function createTeamHttpServer(config: Config, store: Store, service: Team
       send(res, 200, { violations: await service.listPolicyViolations(p, teamId) });
       return;
     }
+    // 策略告警与策略用量指标
+    if (path[3] === "model-policy-alerts" && path.length === 4 && method === "GET") {
+      send(res, 200, { alerts: await service.listPolicyAlerts(p, teamId) });
+      return;
+    }
+    if (path[3] === "model-policy-metrics" && path.length === 4 && method === "GET") {
+      const period = url.searchParams.get("period") === "day" ? "day" : "hour";
+      send(res, 200, { metrics: await service.getPolicyUsageMetrics(p, teamId, period) });
+      return;
+    }
+    // 策略模板：可直接套用的规则模板，团队内任何成员都可查看
+    if (path[3] === "model-policy-templates" && path.length === 4 && method === "GET") {
+      send(res, 200, { templates: service.listPolicyTemplates() });
+      return;
+    }
     if (path[3] === "usage" && path.length === 4 && method === "GET") {
       send(res, 200, { usage: await service.getUsage(p, teamId) });
       return;

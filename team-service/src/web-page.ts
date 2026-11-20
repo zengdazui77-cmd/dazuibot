@@ -52,6 +52,9 @@ input:focus, select:focus, textarea:focus { outline:2px solid var(--primary); ou
 .notice.err { background:color-mix(in srgb, var(--danger) 12%, var(--surface)); color:var(--danger); }
 .notice.ok { background:color-mix(in srgb, var(--green) 12%, var(--surface)); color:var(--green); }
 .pill { display:inline-block; padding:1px 8px; border-radius:99px; background:var(--well); color:var(--muted); font-size:12px; }
+.pill.danger { background:color-mix(in srgb, var(--danger) 14%, var(--surface)); color:var(--danger); }
+.pill.warn { background:color-mix(in srgb, var(--amber) 16%, var(--surface)); color:var(--amber); }
+.pill.info { background:var(--well); color:var(--fg-2); }
 .list { display:grid; gap:8px; }
 .item { display:flex; gap:var(--space); align-items:center; padding:8px 10px; background:var(--well); border-radius:var(--r-sm); }
 .item .grow { overflow-wrap:anywhere; }
@@ -72,7 +75,7 @@ const SCRIPT = String.raw`
 const $ = (sel, root) => (root || document).querySelector(sel);
 const state = { token: localStorage.getItem("team-token") || "", user: null, teams: [], teamId: localStorage.getItem("team-id") || "",
   tab: "chat", policy: null, members: [], usage: null, audit: [], conversations: [], bots: [],
-  rules: [], violations: [], modelConfig: null,
+  rules: [], violations: [], modelConfig: null, alerts: [], metrics: null,
   activeConversation: "", messages: [], jobs: [], notice: "" };
 
 function say(text, kind) {
@@ -119,7 +122,7 @@ async function login(email, code) {
 async function loadTeam() {
   if (!state.teamId) { render(); return; }
   const id = encodeURIComponent(state.teamId);
-  const [policy, members, usage, audit, convos, bots, rules, violations, modelConfig] = await Promise.all([
+  const [policy, members, usage, audit, convos, bots, rules, violations, modelConfig, alerts, metrics] = await Promise.all([
     api("/v1/teams/" + id + "/model-policy").catch(() => null),
     api("/v1/teams/" + id + "/members").then((r) => r.members || []).catch(() => []),
     api("/v1/teams/" + id + "/usage").then((r) => r.usage).catch(() => null),
@@ -129,10 +132,13 @@ async function loadTeam() {
     api("/v1/teams/" + id + "/model-policy-rules").then((r) => r.rules || []).catch(() => []),
     api("/v1/teams/" + id + "/model-policy-violations").then((r) => r.violations || []).catch(() => []),
     api("/v1/teams/" + id + "/model-config").then((r) => r.modelConfig).catch(() => null),
+    api("/v1/teams/" + id + "/model-policy-alerts").then((r) => r.alerts || []).catch(() => []),
+    api("/v1/teams/" + id + "/model-policy-metrics?period=hour").then((r) => r.metrics).catch(() => null),
   ]);
   state.policy = policy ? policy.modelPolicy : null;
   state.members = members; state.usage = usage; state.audit = audit;
   state.rules = rules; state.violations = violations;
+  state.alerts = alerts; state.metrics = metrics;
   state.conversations = convos; state.bots = bots;
   state.modelConfig = modelConfig;
   if (!state.conversations.some((c) => c.id === state.activeConversation)) state.activeConversation = state.conversations[0] ? state.conversations[0].id : "";
@@ -305,7 +311,29 @@ function renderRules() {
   return '<div class="card"><h2>额外限制</h2>' +
     '<p class="pill">这些规则加在上面的授权范围之上：命中任意一条就会拒绝该次请求。</p>' +
     (rules || '<div class="empty">还没有额外限制</div>') + form + "</div>" +
-    '<div class="card"><h2>被拒绝的请求</h2>' + (vio || '<div class="empty">还没有被拒绝的请求</div>') + "</div>";
+    '<div class="card"><h2>被拒绝的请求</h2>' + (vio || '<div class="empty">还没有被拒绝的请求</div>') + "</div>" +
+    renderAlerts();
+}
+
+function renderAlerts() {
+  const alerts = (state.alerts || []).map((a) => {
+    const sev = a.severity === "critical" ? "danger" : a.severity === "warning" ? "warn" : "info";
+    return '<div class="item"><div class="grow"><div><strong>' + esc(a.message) + "</strong></div>" +
+      '<div class="pill">' + esc(a.type) + " · " + esc((a.timestamp || "").slice(0, 19).replace("T", " ")) + "</div></div>" +
+      '<span class="pill ' + sev + '">' + esc(a.severity) + "</span></div>";
+  }).join("");
+  const m = state.metrics;
+  const metricRows = m
+    ? '<div class="item"><span class="grow">近一小时请求</span><span class="pill">' + esc(m.totalRequests) + " 次</span></div>" +
+      (m.topModels || []).slice(0, 5).map((x) => '<div class="item"><span class="grow">' + esc(x.model) +
+        '</span><span class="pill">' + esc(x.count) + " 次</span></div>").join("") +
+      (m.topUsers || []).slice(0, 5).map((x) => '<div class="item"><span class="grow">' + esc(x.userEmail) +
+        '</span><span class="pill">' + esc(x.requests) + " 次</span></div>").join("")
+    : '<div class="empty">读不到策略指标</div>';
+  return '<div class="card"><h2>策略告警</h2>' +
+    '<p class="pill">根据最近一小时的违规与用量自动生成。</p>' +
+    (alerts || '<div class="empty">当前没有告警</div>') + "</div>" +
+    '<div class="card"><h2>策略用量</h2>' + metricRows + "</div>";
 }
 
 function renderUsage() {

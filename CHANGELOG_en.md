@@ -4,6 +4,18 @@
 
 This covers changes you'll notice in the app. Earlier versions belong to upstream AnyModelBot's history and are not part of this distribution.
 
+## Unreleased
+
+### New
+
+- **The web workspace can show "policy alerts" and "policy usage":** team owners and admins can now see rejected requests, a breakdown of why they were rejected, the most-used models, and the heaviest users, without digging through logs. Regular members only see alerts that concern them, never the whole team's picture.
+- **You can spin up a team service locally to try the web workspace:** `npm run dev:web` starts an embedded team service on your machine (data lives in the system temp directory). Open http://127.0.0.1:8790/ in a browser and you get the full team workspace — the same code path the desktop app uses in embedded mode.
+
+### Fixed
+
+- **Alert badges didn't show severity:** the "rejected" and "alert" badges all looked identical — grey on grey — so there was no way to tell which one mattered. They're now split into red (critical), yellow (warning), and grey (info).
+- **Scripts that ship inside the deployment package weren't tested:** the packaging script and the local acceptance script sit outside test coverage, so a missing import in them only shows up when you actually run them — which is exactly how the acceptance script ended up missing `node:path` and failing on first use. Two checks now guard this: one statically verifies the imports are all there, and one actually starts the service and waits for it to report "团队服务已启动".
+
 ## 1.0.0-zdzui.3 - 2026-11-20
 
 ### New

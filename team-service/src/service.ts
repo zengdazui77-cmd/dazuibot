@@ -6,6 +6,10 @@ import { HttpError } from "./model.js";
 import type { CodeTaskDispatch, Invitation, Member, Principal, Team, TeamAuditEvent, TeamBot, TeamCodeTask, TeamCodeTaskStatus, TeamConversation, TeamJob, TeamMessage, TeamModelPolicyMode, TeamModelPolicyRule, TeamModelPolicyViolation, TeamProject, TeamRole, TeamUsage, TeamUsageMember, User } from "./model.js";
 import { credentialTail, decryptCredential, encryptCredential } from "./credentials.js";
 import { dedupeModels, isModelPermitted, normalizeModelId, permittedModels, resolveMemberModel } from "./model-policy.js";
+import type { PolicyAlert, UsageMetrics } from "./policy-monitoring.js";
+import { PolicyMonitor } from "./policy-monitoring.js";
+import type { PolicyTemplate } from "./policy-templates.js";
+import { listAllTemplates } from "./policy-templates.js";
 import type { Mailer } from "./mailer.js";
 import { Store } from "./store.js";
 
@@ -928,6 +932,51 @@ export class TeamService {
       details: (row.details ?? {}) as Record<string, unknown>,
       createdAt: this.iso(row.created_at),
     }));
+  }
+
+  /**
+   * 策略告警（来自归档副本的 policy-monitoring，按本项目表结构重写）。
+   * 只有 owner/admin 能看到全队告警；其他成员看自己的。
+   */
+  async listPolicyAlerts(principal: Principal, teamId: string): Promise<PolicyAlert[]> {
+    const role = await this.requireMembership(principal, teamId);
+    const allMembers = role === "owner" || role === "admin";
+    const client = await this.store.pool.connect();
+    try {
+      const monitor = new PolicyMonitor(() => this.now());
+      const alerts = await monitor.checkAlerts(client, teamId);
+      if (allMembers) return alerts;
+      // 普通成员只看到跟自己有关的告警：
+      // 带 userId 的是点名到某个人的（配额告警），带 userIds 的是「这些人造成了违规」。
+      return alerts.filter((a) => {
+        const userId = a.details?.userId;
+        if (typeof userId === "string") return userId === principal.userId;
+        const userIds = a.details?.userIds;
+        if (Array.isArray(userIds)) return userIds.includes(principal.userId);
+        // 既没点名也没列出人的（速率限制激增之类）——全队共用一条，
+        // 普通成员看不到，避免泄露全队情况。
+        return false;
+      });
+    } finally {
+      client.release();
+    }
+  }
+
+  /** 策略用量指标：请求数、被拦数、按类型分布、用得最多的模型与人。 */
+  async getPolicyUsageMetrics(principal: Principal, teamId: string, period: "hour" | "day"): Promise<UsageMetrics> {
+    await this.requireMembership(principal, teamId);
+    const client = await this.store.pool.connect();
+    try {
+      const monitor = new PolicyMonitor(() => this.now());
+      return await monitor.getUsageMetrics(client, teamId, period);
+    } finally {
+      client.release();
+    }
+  }
+
+  /** 可直接套用的策略模板列表。 */
+  listPolicyTemplates(): PolicyTemplate[] {
+    return listAllTemplates();
   }
 
   /** 校验并归一化规则内容。 */
