@@ -17,8 +17,12 @@ const port = Number(process.env.PORT ?? 8790);
 // 注意：baseDir 一定要经过 path.join，哪怕设了环境变量也一样——
 // 之前写成 `process.env.X ?? path.join(...)` 时，设了环境变量就把 path.join 跳过了，
 // 漏掉的 import 也就没被发现。
+//
+// 默认目录里再带一段进程号：下面每次启动都会把数据目录整个删掉重来，
+// 目录要是共享的，两个实例同时跑就会把对方的库删了（表现是 PGlite 报
+// "could not seek to end of file"）。用进程号隔开就撞不上了。
 const baseDir = process.env.DEV_WEB_DATA_DIR ?? path.join(os.tmpdir(), "dazuibot-team-web-dev");
-const dataDir = path.join(baseDir, "team-web-dev");
+const dataDir = path.join(baseDir, `team-web-dev-${process.pid}`);
 
 // 每次启动都从干净状态开始，方便反复验收。
 await rm(dataDir, { recursive: true, force: true });

@@ -23,6 +23,10 @@ describe("打包进包的脚本", () => {
     expect(() => execFileSync(process.execPath, ["--check", path.join(repo, "scripts", "dev-web.mjs")])).not.toThrow();
   });
 
+  it("scripts/web-e2e.mjs 语法正确", () => {
+    expect(() => execFileSync(process.execPath, ["--check", path.join(repo, "scripts", "web-e2e.mjs")])).not.toThrow();
+  });
+
   it("scripts/dev-web.mjs 用到的 node 内置模块都 import 了", () => {
     const source = fs.readFileSync(path.join(repo, "scripts", "dev-web.mjs"), "utf8");
     const imported = new Set([...source.matchAll(/from\s+"node:(\w+)"/g)].map((m) => m[1]));

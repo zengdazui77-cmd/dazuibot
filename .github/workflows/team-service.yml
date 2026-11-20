@@ -93,6 +93,23 @@ jobs:
           TEAM_TEST_DATABASE_URL: postgres://team_test:team_test@127.0.0.1:5432/team_test
         run: npm run test:postgres
 
+      # 网页工作台只有真在浏览器里跑一遍才算数：无头 Chrome 走完
+      # 登录 → 建团队 → 接入模型 → 发消息 → 模型授权 → 各标签页 → 控制台无报错。
+      # 脚本在找不到浏览器时会「跳过并返回 0」，那会让 CI 假装通过——
+      # 所以先确认浏览器真的在，找不到就直接让这一步失败。
+      - name: Ensure a browser is available for the web end-to-end test
+        run: |
+          if command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null || command -v chromium >/dev/null || command -v chromium-browser >/dev/null; then
+            echo "browser found"
+          else
+            echo "::error::找不到 Chrome/Chromium，网页端到端测试无法运行"
+            exit 1
+          fi
+
+      - name: End-to-end test of the web workspace
+        working-directory: team-service
+        run: npm run e2e:web
+
   local-pilot:
     name: Local end-to-end pilot (cross-process revocation)
     runs-on: ubuntu-24.04
