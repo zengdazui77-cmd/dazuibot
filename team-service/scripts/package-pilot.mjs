@@ -66,6 +66,7 @@ const INCLUDE = [
   "scripts/setup-pilot-env.sh",
   "scripts/test-postgres-local.mjs",
   "scripts/test-postgres.mjs",
+  "scripts/web-e2e.mjs",
   "src/code-executor.ts",
   "src/config.ts",
   "src/credentials.ts",
